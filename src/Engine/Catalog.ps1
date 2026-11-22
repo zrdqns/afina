@@ -6,8 +6,9 @@
         [pscustomobject]@{ Id = 'startup'; Name = (T 'Inicio'); Icon = 'rocket-launch' }
         [pscustomobject]@{ Id = 'storage'; Name = (T 'Almacenamiento'); Icon = 'hard-drives' }
         [pscustomobject]@{ Id = 'security'; Name = (T 'Seguridad'); Icon = 'shield-check' }
-        [pscustomobject]@{ Id = 'hardware'; Name = (T 'Hardware'); Icon = 'wrench' }
+        [pscustomobject]@{ Id = 'hardware'; Name = (T 'Diagnóstico'); Icon = 'wrench' }
         [pscustomobject]@{ Id = 'optional'; Name = (T 'Opcional'); Icon = 'sliders-horizontal' }
+        [pscustomobject]@{ Id = 'windows'; Name = (T 'Ajustes de Windows'); Icon = 'windows-logo' }
     )
 }
 

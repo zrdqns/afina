@@ -97,8 +97,8 @@ Describe 'Catálogo' {
         ($errors -join ' ') | Should -Match 'Impact'
     }
 
-    It 'Get-AfCategories trae las 8 categorías en orden' {
-        (Get-AfCategories).Id | Should -Be @('energy', 'gaming', 'network', 'startup', 'storage', 'security', 'hardware', 'optional')
+    It 'Get-AfCategories trae las 9 categorías en orden' {
+        (Get-AfCategories).Id | Should -Be @('energy', 'gaming', 'network', 'startup', 'storage', 'security', 'hardware', 'optional', 'windows')
     }
 
     It 'cada revisión del catálogo real pasa Test-AfCheckDefinition' {
@@ -121,5 +121,50 @@ Describe 'Fuentes del catálogo' {
                 $check.SourceUrl | Should -Match '^https://([a-z0-9-]+\.)*(microsoft|xbox)\.com/' -Because $check.Id
             }
         }
+    }
+}
+
+Describe 'Regla de la aguja' {
+    It 'lo mejorable sin marcar no cuenta' {
+        $unmarked = New-TestResult -State Improvable; $unmarked.Preselected = $false
+        Get-AfScore -Results @((New-TestResult -State Ok), $unmarked) | Should -Be 1
+        (Get-AfSummary -Results @($unmarked)).Ready | Should -Be 0
+    }
+    It 'windows no cuenta ni como listo' {
+        $r = New-TestResult -State Improvable -Category 'windows'
+        Get-AfScore -Results @($r) | Should -Be 1
+        (Get-AfSummary -Results @($r)).Ready | Should -Be 0
+    }
+    It 'una lectura en Ok no cuenta como En orden' {
+        $r = New-TestResult -State Ok; $r.Check.Reading = $true
+        (Get-AfSummary -Results @($r)).Ok | Should -Be 0
+        Test-AfOkRow $r | Should -BeFalse
+    }
+    It 'una lectura en Info no queda pendiente' {
+        $r = New-TestResult -State Info -Kind 'Info'; $r.Check.Reading = $true
+        Test-AfRowPending $r | Should -BeFalse
+    }
+}
+Describe 'Get-AfVerdict' {
+    BeforeAll {
+        function New-Disk([string]$State, [hashtable]$Data = @{}) {
+            $check = New-TestCheck -Id 'hardware.disk-health' -Kind 'Manual' -Category 'hardware'
+            [pscustomobject]@{ Check = $check; Detection = (New-AfDetection -State $State -Data $Data); Weight = 2; Preselected = $false }
+        }
+    }
+    It 'Afinada y celebra con todo en orden y el disco bien' {
+        $v = Get-AfVerdict -Results @((New-TestResult -State Ok), (New-Disk 'Ok'))
+        $v.Title | Should -Be 'Afinada'; $v.Celebrate | Should -BeTrue
+    }
+    It 'disco en Manual: Revisa el disco y no celebra' {
+        $v = Get-AfVerdict -Results @((New-TestResult -State Ok), (New-Disk 'Manual'))
+        $v.Title | Should -Be 'Revisa el disco'; $v.Celebrate | Should -BeFalse
+    }
+    It 'disco todavía leyéndose: no celebra' {
+        $v = Get-AfVerdict -Results @((New-TestResult -State Ok), (New-Disk 'Info' @{ Async = $true }))
+        $v.Title | Should -Be 'Afinación'; $v.Celebrate | Should -BeFalse
+    }
+    It 'con cambios marcados pendientes: Afinación' {
+        (Get-AfVerdict -Results @(New-TestResult -State Improvable)).Title | Should -Be 'Afinación'
     }
 }

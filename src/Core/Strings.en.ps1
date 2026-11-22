@@ -238,6 +238,7 @@ Red==>Network
 Reinicia la PC.==>Restart the PC.
 Rendimiento==>Performance
 Rendimiento máximo==>Maximum Performance
+Revisa el disco==>Check the disk
 Revisa en el menú del monitor que la entrada no esté en un modo de compatibilidad.==>In the monitor's menu, check that the input isn't in a compatibility mode.
 Revisa la lista: si no reconoces alguno, consúltalo en VirusTotal desde "Analizar seguridad".==>Check the list: if you don't recognize one, look it up on VirusTotal from "Scan security".
 Se activa al reiniciar==>Turns on after a restart
@@ -405,6 +406,7 @@ ya no está en la PC; se reinstala desde la Microsoft Store==>it's no longer on 
 Activar Restaurar sistema en C:==>Turn on System Restore on C:
 Afinación==>Tune-up
 Afinada==>Tuned up
+Ajustes de Windows==>Windows settings
 Afinado==>In tune
 Al final pide reiniciar.==>A restart is needed at the end.
 Analizando esta PC==>Scanning this PC
@@ -432,6 +434,7 @@ Deshaciendo…==>Undoing…
 Deshecha==>Undone
 Deshecha en parte==>Partly undone
 Deshecho==>Undone
+Diagnóstico==>Diagnostics
 Disco==>Disk
 El análisis no pudo terminar. Revisa el registro en ProgramData\Afina.==>The scan couldn't finish. Check the log in ProgramData\Afina.
 Elige qué optimizar==>Choose what to optimize
