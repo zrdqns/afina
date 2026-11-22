@@ -42,6 +42,7 @@ function Start-AfScan {
     Set-AfNavActive -Window $Window -Filter 'all' -Motion $false
     $Window.FindName('Groups').Children.Clear()
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
+    Show-AfSkeleton -Window $Window
     $Window.FindName('Title').Text = (T 'Analizando esta PC')
     Set-AfTextAnimated -Block $Window.FindName('Summary') -Text (T 'Revisando el hardware…') -Motion $s.Motion
     Set-AfActionsVisible -Window $Window -Visible $false
@@ -72,6 +73,8 @@ function Update-AfAsyncResult {
             if ($index -ge 0) { $Window.Tag.Results[$index] = $result }
             if ($Detection.State -notin 'Improvable', 'Manual', 'Info', 'Error') {
                 $group.Children.RemoveAt($i)
+                # Un grupo sin filas no queda como un encabezado suelto.
+                if (-not @($group.Children | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag }).Count) { $Window.FindName('Groups').Children.Remove($group) }
             } else {
                 $newRow = New-AfRowElement -Result $result -First:($row.FindName('Divider').Visibility -ne 'Visible')
                 Add-AfRowHandlers -Row $newRow
@@ -79,8 +82,9 @@ function Update-AfAsyncResult {
                 $group.Children.Insert($i, $newRow)
                 Start-AfAnimation -Target $newRow -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 300 -Ease Out -Enabled ([bool]$Window.Tag.Motion) | Out-Null
             }
-            Update-AfNavCounts -Window $Window -Results @($Window.Tag.Results) -Only @('optional')
+            Update-AfNavCounts -Window $Window -Results @($Window.Tag.Results) -Only @($old.Check.Category)
             Update-AfPrimary -Window $Window
+            Update-AfEmptyState -Window $Window
             return
         }
     }
@@ -91,6 +95,9 @@ function Complete-AfScan {
     $s = $Window.Tag
     $s.Phase = 'ready'
     $results = @($s.Results)
+    $groups = $Window.FindName('Groups')
+    foreach ($ghost in @($groups.Children | Where-Object { "$($_.Tag)" -like 'skeleton*' })) { $groups.Children.Remove($ghost) }
+    $Window.FindName('PcSkeleton').Visibility = 'Collapsed'
     Add-AfOkGroup -Window $Window -Results $results -Motion $s.Motion
     Update-AfNavCounts -Window $Window -Results $results -Only @('ok') -Motion $s.Motion
     $summary = Get-AfSummary -Results $results
@@ -103,6 +110,7 @@ function Complete-AfScan {
     if ($score -ge 0.999) { Start-AfCelebration -Window $Window -Motion $s.Motion }
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize
     Set-AfActionsVisible -Window $Window -Visible $true -Motion $s.Motion
+    Update-AfEmptyState -Window $Window
     Write-AfLog -Level Info -Message ('Análisis terminado en {0:N1} s: {1} listos, {2} a mano, {3} en orden.' -f ((Get-Date) - $s.StartedAt).TotalSeconds, $summary.Ready, $summary.Manual, $summary.Ok)
     if ($s.Snapshot) {
         $timer = New-Object System.Windows.Threading.DispatcherTimer
@@ -118,7 +126,9 @@ function Receive-AfEvents {
     $s = $Window.Tag
     $item = $null
     if ($s.ApplyQueue) {
-        while ($s.ApplyQueue.TryDequeue([ref]$item)) { Receive-AfApplyEvent -Window $Window -Item $item }
+        # Cada evento se deja ver un momento (Set-AfApplyHold); con seis o más en cola, la ventana se pone al día de golpe.
+        $catchUp = $s.ApplyQueue.Count -ge 6
+        while (($catchUp -or -not $s.ApplyHoldUntil -or (Get-Date) -ge $s.ApplyHoldUntil) -and $s.ApplyQueue.TryDequeue([ref]$item)) { Receive-AfApplyEvent -Window $Window -Item $item }
     }
     if (-not $s.Queue) { return }
     while ($s.Queue.TryDequeue([ref]$item)) {

@@ -3,8 +3,8 @@
 }
 
 Describe 'Carga del código' {
-    It 'Get-AfVersion devuelve 0.3.0' {
-        Get-AfVersion | Should -Be '0.3.0'
+    It 'Get-AfVersion devuelve 0.4.0' {
+        Get-AfVersion | Should -Be '0.4.0'
     }
 
     It 'AfCode contiene la definición de Get-AfVersion' {

@@ -39,21 +39,32 @@ try {
     # Las actualizaciones no entran: su análisis es en segundo plano (arriba), no se deshacen y pueden tardar horas.
     $session = New-AfSession -Directory (Join-Path $out 'respaldos') -User $inventory.User
     $todo = Get-AfApplyOrder -Items @($results | Where-Object { $_.Detection.State -eq 'Improvable' -and (Test-AfCanApply -Check $_.Check) })
-    $changes = foreach ($result in $todo) { Invoke-AfChange -Session $session -Check $result.Check -Detection $result.Detection -Inventory $inventory }
+    # Cada cambio anota sus pasos reales (los que la ventana muestra en vivo).
+    $stepsById = @{}
+    $changes = foreach ($result in $todo) {
+        $seen = New-Object System.Collections.ArrayList
+        Invoke-AfChange -Session $session -Check $result.Check -Detection $result.Detection -Inventory $inventory -Step { param($name) [void]$seen.Add($name) }.GetNewClosure()
+        $stepsById[$result.Check.Id] = @($seen) -join ','
+    }
 
     # Verifica con un análisis nuevo.
     $after = @($catalog | ForEach-Object { Invoke-AfCheck -Check $_ -Inventory (Get-AfInventory -Reads $reads) })
     $report.Changes = @($changes | ForEach-Object {
             $id = $_.CheckId
             $now = @($after | Where-Object { $_.Check.Id -eq $id })[0]
-            [pscustomobject]@{ Id = $id; Status = $_.Status; Message = $_.Message; Note = $_.Note; Records = @($_.Records).Count; StateAfter = $now.Detection.State; CurrentAfter = $now.Detection.Current }
+            $expected = if ($now.Check.NoUndo) { 'apply,backup' } else { 'save,apply,backup' }
+            [pscustomobject]@{ Id = $id; Status = $_.Status; Message = $_.Message; Note = $_.Note; Records = @($_.Records).Count; StateAfter = $now.Detection.State; CurrentAfter = $now.Detection.Current; Steps = $stepsById[$id]; StepsOk = $stepsById[$id] -eq $expected }
         })
 
     # Deshace todo y compara con el estado de antes de aplicar.
     $user = Get-AfUserForSid -Sid $session.User.Sid
     $undoable = @($session.Changes | Where-Object { Test-AfChangeUndoable -Change $_ })
     [array]::Reverse($undoable)
-    $report.Undo = @(foreach ($change in $undoable) { $done = Undo-AfChange -Session $session -Change $change; [pscustomobject]@{ Id = $done.CheckId; Status = $done.Status; Message = $done.Message } })
+    $report.Undo = @(foreach ($change in $undoable) {
+            $seen = New-Object System.Collections.ArrayList
+            $done = Undo-AfChange -Session $session -Change $change -Step { param($name) [void]$seen.Add($name) }.GetNewClosure()
+            [pscustomobject]@{ Id = $done.CheckId; Status = $done.Status; Message = $done.Message; Steps = @($seen) -join ','; StepsOk = (@($seen) -join ',') -eq 'restore,backup' }
+        })
 
     # Piezas que el catálogo no llega a aplicar aquí (sin VMP ni apps promocionales): ida y vuelta directa.
     $report.Pieces = @(Test-AfSandboxPieces -User $user)
@@ -70,6 +81,8 @@ try {
         @($report.Changes | Where-Object { $_.Status -ne 'Applied' }).Count -eq 0 -and
         @($applied | Where-Object { $_.StateAfter -ne 'Ok' }).Count -eq 0 -and
         @($report.Undo | Where-Object { $_.Status -ne 'Undone' }).Count -eq 0 -and
+        @($report.Changes | Where-Object { -not $_.StepsOk }).Count -eq 0 -and
+        @($report.Undo | Where-Object { -not $_.StepsOk }).Count -eq 0 -and
         $report.Differences.Count -eq 0 -and
         $report.RecordsNotRestored.Count -eq 0 -and
         @($report.Pieces | Where-Object { -not $_.Restored }).Count -eq 0 -and

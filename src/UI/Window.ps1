@@ -282,11 +282,14 @@
 
       <Border Grid.Column="0" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="14,22,14,12">
         <DockPanel LastChildFill="False">
-          <StackPanel x:Name="PcCard" DockPanel.Dock="Top" Margin="8,0,8,0" Opacity="0">
-            <TextBlock x:Name="PcName" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
-            <TextBlock x:Name="PcKind" FontSize="12" Foreground="{DynamicResource Text3}" Margin="0,3,0,0"/>
-            <StackPanel x:Name="Specs" Margin="0,16,0,0"/>
-          </StackPanel>
+          <Grid DockPanel.Dock="Top" Margin="8,0,8,0">
+            <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
+            <StackPanel x:Name="PcCard" Opacity="0">
+              <TextBlock x:Name="PcName" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
+              <TextBlock x:Name="PcKind" FontSize="12" Foreground="{DynamicResource Text3}" Margin="0,3,0,0"/>
+              <StackPanel x:Name="Specs" Margin="0,16,0,0"/>
+            </StackPanel>
+          </Grid>
           <Grid x:Name="NavHost" DockPanel.Dock="Top" Margin="0,24,0,0">
             <StackPanel x:Name="Nav"/>
             <Border x:Name="NavIndicator" Width="2" Height="32" CornerRadius="2" Background="{DynamicResource Red}" HorizontalAlignment="Left" VerticalAlignment="Top">
@@ -302,7 +305,10 @@
           <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="32,26,32,14">
-          <TextBlock x:Name="Title" Text="Analizando esta PC" FontFamily="{DynamicResource DisplayFont}" FontSize="28" FontWeight="Light"/>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock x:Name="Title" Text="Analizando esta PC" FontFamily="{DynamicResource DisplayFont}" FontSize="28" FontWeight="Light"/>
+            <TextBlock x:Name="TitleCount" FontSize="13.5" Foreground="{DynamicResource Text2}" Margin="12,0,0,7" VerticalAlignment="Bottom" Visibility="Collapsed"/>
+          </StackPanel>
           <StackPanel x:Name="GaugeArea">
           <Grid x:Name="Gauge" Height="46" Margin="0,22,0,0">
             <Canvas x:Name="Ticks" Height="20" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
@@ -323,14 +329,23 @@
         </StackPanel>
         <ScrollViewer x:Name="ListScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="32,4,32,28" Focusable="False">
           <Grid>
-            <Border x:Name="PanelBorder" Background="{DynamicResource Panel}" CornerRadius="14" BorderBrush="{DynamicResource Line}" BorderThickness="1" Visibility="Collapsed">
-              <StackPanel x:Name="Groups" Margin="0,0,0,6"/>
-            </Border>
+            <StackPanel>
+              <Border x:Name="EmptyState" Background="{DynamicResource Panel}" CornerRadius="14" BorderBrush="{DynamicResource Line}" BorderThickness="1" Padding="22,20,22,10" Margin="0,0,0,14" Visibility="Collapsed"/>
+              <Border x:Name="PanelBorder" Background="{DynamicResource Panel}" CornerRadius="14" BorderBrush="{DynamicResource Line}" BorderThickness="1" Visibility="Collapsed">
+                <StackPanel x:Name="Groups" Margin="0,0,0,6"/>
+              </Border>
+            </StackPanel>
             <Border x:Name="HistoryPanel" Visibility="Collapsed">
               <StackPanel x:Name="HistoryList"/>
             </Border>
           </Grid>
         </ScrollViewer>
+        <Border x:Name="FollowChip" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,18" Padding="14,7,14,7" CornerRadius="99" Background="{DynamicResource Raised}" BorderBrush="{DynamicResource Line2}" BorderThickness="1" Cursor="Hand" Visibility="Collapsed">
+          <StackPanel Orientation="Horizontal">
+            <Ellipse Width="7" Height="7" Fill="{DynamicResource Red}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="Seguir el avance" FontSize="12.5" Foreground="{DynamicResource Text}"/>
+          </StackPanel>
+        </Border>
       </Grid>
     </Grid>
 
@@ -490,6 +505,11 @@ function New-AfWindow {
     Set-AfIconData -Path $window.FindName('NoteIcon') -Name 'shield-check'
     Set-AfIconData -Path $window.FindName('GhostIcon') -Name 'arrow-clockwise'
     $window.FindName('Version').Text = 'v' + (Get-AfVersion)
+    # Mover la lista a mano pausa el seguimiento del cambio en curso; la píldora lo retoma.
+    $scroll = $window.FindName('ListScroll')
+    $scroll.Add_PreviewMouseWheel({ param($sender, $e) Suspend-AfFollow -Window ([System.Windows.Window]::GetWindow($sender)) })
+    $scroll.AddHandler([System.Windows.Controls.Primitives.Thumb]::DragStartedEvent, [System.Windows.Controls.Primitives.DragStartedEventHandler] { param($sender, $e) Suspend-AfFollow -Window ([System.Windows.Window]::GetWindow($sender)) })
+    $window.FindName('FollowChip').Add_MouseLeftButtonUp({ param($sender, $e) Resume-AfFollow -Window ([System.Windows.Window]::GetWindow($sender)) })
     $window
 }
 

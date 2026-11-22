@@ -84,14 +84,14 @@ Describe 'Historial' {
         $w.Close()
     }
 
-    It 'sin sesiones muestra el texto vacío' {
+    It 'sin sesiones muestra la tarjeta vacía' {
         $w = New-AfWindow -Theme Black
         $state = Get-AfUiState -Window $w
         $state.BackupDirectory = Join-Path $TestDrive 'vacia'
         Show-AfHistory -Window $w
         $list = $w.FindName('HistoryList')
         $list.Children.Count | Should -Be 1
-        $list.Children[0].Text | Should -Be 'Todavía no se aplicaron cambios en esta PC.'
+        $list.Children[0] | Should -BeOfType ([System.Windows.Controls.Border])
         $w.Close()
     }
 }

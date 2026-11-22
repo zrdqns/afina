@@ -207,16 +207,16 @@ Describe 'Filas al aplicar' {
 }
 
 Describe 'Aplicar en la ventana' {
-    It 'ChangeProgress muestra el texto en la fila sin cambiar su estado' {
+    It 'ChangeProgress muestra el texto en el paso Aplicando sin cambiar el estado de la fila' {
         $w = New-TestWindow
         Start-FakeApply -Window $w
         Receive-AfApplyEvent -Window $w -Item ([pscustomobject]@{ Type = 'ChangeStart'; Id = 'gpu.hags' })
+        Receive-AfApplyEvent -Window $w -Item ([pscustomobject]@{ Type = 'ChangeStep'; Id = 'gpu.hags'; Step = 'apply' })
         $row = Get-AfRowById -Window $w -Id 'gpu.hags'
         $spinner = @($row.FindName('Lead').Children)[0]
         Receive-AfApplyEvent -Window $w -Item ([pscustomobject]@{ Type = 'ChangeProgress'; Id = 'gpu.hags'; Text = 'Descargando 1 de 2' })
-        $note = $row.FindName('RowNote')
-        $note.Text | Should -Be 'Descargando 1 de 2'
-        $note.Visibility | Should -Be 'Visible'
+        $apply = @($row.FindName('Steps').Children | Where-Object { $_.Tag -eq 'apply' })[0]
+        $apply.Children[1].Text | Should -Be 'Aplicando · Descargando 1 de 2'
         @($row.FindName('Lead').Children)[0] | Should -Be $spinner
         $w.Close()
     }

@@ -23,6 +23,7 @@
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <Rectangle x:Name="Divider" Grid.ColumnSpan="4" Grid.Column="1" Height="1" VerticalAlignment="Top" Margin="0,-11,0,0" Fill="{DynamicResource Line}" Visibility="Collapsed"/>
     <Grid x:Name="Lead" Grid.Column="0" Width="18" Height="18" VerticalAlignment="Top" Margin="0,1,0,0"/>
@@ -39,6 +40,7 @@
       </Border>
     </StackPanel>
     <Border x:Name="Detail" Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Visibility="Collapsed" ClipToBounds="True" MaxHeight="0"/>
+    <StackPanel x:Name="Steps" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Margin="0,8,0,0" Visibility="Collapsed" ClipToBounds="True" MaxHeight="0"/>
   </Grid>
 </Border>
 '@
@@ -326,7 +328,84 @@ function Set-AfRowStatus {
     }
     [void]$lead.Children.Add($element)
     Start-AfAnimation -Target $element -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 300 -Ease Icon -Enabled $Motion | Out-Null
+    # El check entra con un pequeño impulso.
+    if ($Status -eq 'Applied' -and $Motion) {
+        $scale = New-Object System.Windows.Media.ScaleTransform(0.6, 0.6)
+        $element.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+        $element.RenderTransform = $scale
+        foreach ($axis in [System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty) {
+            Start-AfAnimation -Target $scale -Property $axis -From 0.6 -To 1 -DurationMs 300 -Ease Icon | Out-Null
+        }
+    }
     if ($Message) { Set-AfRowNote -Row $Row -Text $Message }
+}
+
+# Pasos reales de un cambio en curso (diseño "Afina en vivo"): save, apply, backup o restore.
+function Get-AfStepText {
+    param([string]$Key)
+    switch ($Key) {
+        'save' { (T 'Guardando el valor original') }
+        'apply' { (T 'Aplicando') }
+        'backup' { (T 'Guardando el respaldo') }
+        'restore' { (T 'Restaurando el valor original') }
+        default { $Key }
+    }
+}
+
+function Open-AfRowSteps {
+    param([Parameter(Mandatory)]$Row, [string[]]$Keys = @(), [bool]$Motion = $false)
+    $panel = $Row.FindName('Steps')
+    $panel.Children.Clear()
+    foreach ($key in $Keys) {
+        $line = New-Object System.Windows.Controls.StackPanel
+        $line.Orientation = 'Horizontal'
+        $line.Margin = '0,0,0,4'
+        $line.Tag = $key
+        $dot = New-Object System.Windows.Shapes.Ellipse
+        $dot.Width = 7
+        $dot.Height = 7
+        $dot.Margin = '1,0,10,0'
+        $dot.VerticalAlignment = 'Center'
+        $dot.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Line2')
+        [void]$line.Children.Add($dot)
+        [void]$line.Children.Add((New-AfText -Text (Get-AfStepText -Key $key) -Size 12 -Brush 'Text3'))
+        [void]$panel.Children.Add($line)
+    }
+    $panel.Visibility = 'Visible'
+    # Se mide sin el MaxHeight de 0 (la medida sale recortada a ese límite) y después se abre desde 0.
+    $panel.BeginAnimation([System.Windows.FrameworkElement]::MaxHeightProperty, $null)
+    $panel.MaxHeight = [double]::PositiveInfinity
+    $panel.Measure((New-Object System.Windows.Size([double]::PositiveInfinity, [double]::PositiveInfinity)))
+    Start-AfAnimation -Target $panel -Property ([System.Windows.FrameworkElement]::MaxHeightProperty) -From 0 -To ($panel.DesiredSize.Height + 4) -DurationMs 250 -Ease Out -Enabled $Motion | Out-Null
+    Start-AfAnimation -Target $panel -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 200 -Ease Out -Enabled $Motion | Out-Null
+}
+
+function Set-AfRowStepState {
+    param([Parameter(Mandatory)]$Row, [Parameter(Mandatory)][string]$Key, [Parameter(Mandatory)][ValidateSet('Running', 'Done', 'Failed')][string]$State, [string]$Detail)
+    $line = @($Row.FindName('Steps').Children | Where-Object { $_.Tag -eq $Key })[0]
+    if (-not $line) { return }
+    $line.Resources['State'] = $State
+    $label = Get-AfStepText -Key $Key
+    $line.Children[1].Text = if ($State -eq 'Running' -and $Detail) { '{0} · {1}' -f $label, $Detail } else { $label }
+    $dotBrush = switch ($State) { 'Running' { 'Red' } 'Done' { 'Text' } default { 'RedText' } }
+    $textBrush = switch ($State) { 'Running' { 'Text' } 'Done' { 'Text2' } default { 'RedText' } }
+    $line.Children[0].SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, $dotBrush)
+    $line.Children[1].SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, $textBrush)
+}
+
+function Close-AfRowSteps {
+    param([Parameter(Mandatory)]$Row, [bool]$Motion = $false)
+    $panel = $Row.FindName('Steps')
+    if (-not $Motion) {
+        $panel.BeginAnimation([System.Windows.FrameworkElement]::MaxHeightProperty, $null)
+        $panel.MaxHeight = 0
+        $panel.Children.Clear()
+        $panel.Visibility = 'Collapsed'
+        return
+    }
+    # Con animación se cierra y queda vacío a la vista; Open-AfRowSteps lo rearma la próxima vez.
+    Start-AfAnimation -Target $panel -Property ([System.Windows.FrameworkElement]::MaxHeightProperty) -To 0 -DurationMs 200 -Ease Out | Out-Null
+    Start-AfAnimation -Target $panel -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 150 -Ease Out | Out-Null
 }
 
 function Set-AfRowNote {

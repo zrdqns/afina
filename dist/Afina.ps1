@@ -1,4 +1,4 @@
-# Afina 0.3.0: análisis y optimización de Windows. Generado por build.ps1; no editar a mano.
+# Afina 0.4.0: análisis y optimización de Windows. Generado por build.ps1; no editar a mano.
 # Iconos: Phosphor Icons (https://phosphoricons.com), licencia MIT.
 param(
     [switch]$Scan,
@@ -18,7 +18,7 @@ if ([string]$ExecutionContext.SessionState.LanguageMode -ne 'FullLanguage') {
 }
 
 $Global:AfCodeBlock = {
-function Get-AfVersion { '0.3.0' }
+function Get-AfVersion { '0.4.0' }
 
 # Traducciones al inglés. Cada línea: el texto en español tal cual está en el código (distingue mayúsculas), "==>" y su traducción.
 # Lo usa Get-AfText (alias T) en Core\Localization.ps1; tests\Translations.Tests.ps1 vigila que no falte ninguna.
@@ -496,6 +496,25 @@ Queda 1 para hacer a mano.==>1 left to do by hand.
 Quedan {0} para hacer a mano.==>{0} left to do by hand.
 Reinicia para terminar 1.==>1 needs a restart to finish.
 Reinicia para terminar {0}.==>{0} need a restart to finish.
+Guardando el valor original==>Saving the original value
+Aplicando==>Applying
+Guardando el respaldo==>Saving the backup
+Restaurando el valor original==>Restoring the original value
+Optimizando==>Optimizing
+{0} de {1}==>{0} of {1}
+Seguir el avance==>Follow progress
+Activando Restaurar sistema…==>Turning on System Restore…
+{0} en orden==>{0} all good
+Se revisaron {0} puntos y no hay nada para cambiar.==>{0} checks reviewed, nothing to change.
+Se revisó 1 punto y no hay nada para cambiar.==>1 check reviewed, nothing to change.
+No aplica==>Doesn't apply
+Esta PC está afinada==>This PC is tuned up
+{0} revisados==>{0} checked
+Todavía no hay cambios en esta PC==>No changes on this PC yet
+Laptop gamer==>Gaming laptop
+Escritorio gamer==>Gaming desktop
+, doble canal==>, dual channel
+Cada vez que optimizas, Afina guarda aquí los valores originales para deshacerlos cuando quieras.==>Every time you optimize, Afina saves the original values here so you can undo them whenever you want.
 Afina necesita permisos de administrador. Abre PowerShell como administrador (clic derecho en Inicio) y vuelve a pegar la línea.==>Afina needs administrator rights. Open PowerShell as administrator (right-click Start) and paste the line again.
 Reiniciar ahora==>Restart now
 Restaurar sistema está bloqueado en esta PC; los valores originales igual se guardan.==>System Restore is blocked on this PC; the original values are still saved.
@@ -520,7 +539,6 @@ Sin punto de restauración: Restaurar sistema está apagado. Los valores origina
 Sin punto de restauración; los valores originales se guardan en Afina.==>No restore point; the original values are saved in Afina.
 Sistema==>System
 Tema==>Theme
-Todavía no se aplicaron cambios en esta PC.==>No changes have been applied on this PC yet.
 Todo==>All
 Todo lo que Afina puede ajustar ya está en orden. {0} para hacer a mano.==>Everything Afina can adjust is already in order. {0} to do by hand.
 Valores originales guardados. Se puede deshacer desde Historial.==>Original values saved. It can be undone from History.
@@ -1123,7 +1141,7 @@ function New-AfRestorePoint {
 
 # Transacción de un cambio: cada pieza guarda el valor original antes de escribir (diseño, sección 11).
 function New-AfTransaction {
-    param($User, [scriptblock]$ConfirmDisplay, [scriptblock]$Progress)
+    param($User, [scriptblock]$ConfirmDisplay, [scriptblock]$Progress, [scriptblock]$Step)
     [pscustomobject]@{
         User = $User
         Records = New-Object System.Collections.ArrayList
@@ -1131,6 +1149,8 @@ function New-AfTransaction {
         Notes = New-Object System.Collections.ArrayList
         ConfirmDisplay = $ConfirmDisplay
         Progress = $Progress
+        Step = $Step
+        ApplySent = $false
         # $null: vale el NeedsReboot de la revisión; una pieza lo fija si depende de lo que pasó.
         NeedsReboot = $null
     }
@@ -1143,10 +1163,23 @@ function Set-AfTxProgress {
     try { & $Tx.Progress $Text } catch { Write-AfLog -Level Warn -Message "No se pudo mostrar el avance: $($_.Exception.Message)" }
 }
 
+# Paso real del cambio para la ventana: save, apply, backup o restore. 'apply' sale una sola vez. Nunca corta el cambio.
+function Send-AfTxStep {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][string]$Name)
+    if ($Name -eq 'apply') {
+        if ($Tx.ApplySent) { return }
+        $Tx.ApplySent = $true
+    }
+    if (-not $Tx.Step) { return }
+    try { & $Tx.Step $Name } catch { Write-AfLog -Level Warn -Message "No se pudo mostrar el paso: $($_.Exception.Message)" }
+}
+
 function Add-AfTxRecord {
     param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][hashtable]$Record)
     if (-not $Record.Kind) { throw (T 'El registro del cambio necesita Kind.') }
     [void]$Tx.Records.Add([pscustomobject]$Record)
+    # El valor original ya está guardado: lo que sigue es escribir.
+    Send-AfTxStep -Tx $Tx -Name 'apply'
 }
 
 # Error con un motivo que se puede mostrar en la fila. Uso: throw (New-AfApplyError -Reason '…').
@@ -3014,9 +3047,11 @@ function Test-AfChangeUndoable {
 
 # Aplica una revisión como un todo: si algo falla a mitad, se revierte lo de esa revisión.
 function Invoke-AfChange {
-    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)][hashtable]$Check, $Detection, $Inventory, [scriptblock]$ConfirmDisplay, [scriptblock]$Progress)
+    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)][hashtable]$Check, $Detection, $Inventory, [scriptblock]$ConfirmDisplay, [scriptblock]$Progress, [scriptblock]$Step)
     $user = if ($Inventory -and $Inventory.User) { $Inventory.User } else { Get-AfUserForSid -Sid $Session.User.Sid }
-    $tx = New-AfTransaction -User $user -ConfirmDisplay $ConfirmDisplay -Progress $Progress
+    $tx = New-AfTransaction -User $user -ConfirmDisplay $ConfirmDisplay -Progress $Progress -Step $Step
+    # Sin valor original que guardar, el primer paso ya es aplicar.
+    Send-AfTxStep -Tx $tx -Name $(if ($Check.NoUndo) { 'apply' } else { 'save' })
     $title = if ($Detection -and $Detection.Title) { $Detection.Title } else { $Check.Title }
     $change = [pscustomobject]@{
         CheckId = $Check.Id; Title = $title; NeedsReboot = [bool]$Check.NeedsReboot
@@ -3031,6 +3066,7 @@ function Invoke-AfChange {
         $change.AppliedAt = (Get-Date).ToString('o')
         if ($tx.Notes.Count) { $change.Note = @($tx.Notes) -join ' ' }
         Write-AfLog -Level Info -Message ('Aplicado {0} ({1} registros).' -f $Check.Id, $tx.Records.Count)
+        Send-AfTxStep -Tx $tx -Name 'backup'
     } catch {
         $failure = $_
         $reason = Get-AfApplyReason -ErrorRecord $failure
@@ -3075,7 +3111,7 @@ function Invoke-AfApplyPlan {
     $restore = $null
     if ($Plan.RestoreAction -in 'create', 'enable') {
         if ($Plan.RestoreAction -eq 'enable') {
-            $Queue.Enqueue([pscustomobject]@{ Type = 'Stage'; Text = 'Activando Restaurar sistema…' })
+            $Queue.Enqueue([pscustomobject]@{ Type = 'Stage'; Text = (T 'Activando Restaurar sistema…') })
             Enable-AfSystemRestore | Out-Null
         }
         $Queue.Enqueue([pscustomobject]@{ Type = 'Stage'; Text = (T 'Creando punto de restauración…') })
@@ -3115,10 +3151,14 @@ function Invoke-AfApplyPlan {
         param($text)
         $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeProgress'; Id = $Shared.Current; Text = [string]$text })
     }.GetNewClosure()
+    $step = {
+        param($name)
+        $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeStep'; Id = $Shared.Current; Step = [string]$name })
+    }.GetNewClosure()
     foreach ($item in $items) {
         $Shared.Current = $item.Id
         $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeStart'; Id = $item.Id })
-        $change = Invoke-AfChange -Session $session -Check $item.Check -Detection $item.Detection -Inventory $inventory -ConfirmDisplay $confirm -Progress $progress
+        $change = Invoke-AfChange -Session $session -Check $item.Check -Detection $item.Detection -Inventory $inventory -ConfirmDisplay $confirm -Progress $progress -Step $step
         $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeDone'; Id = $item.Id; Change = $change })
     }
     $Queue.Enqueue([pscustomobject]@{ Type = 'ApplyDone'; SessionPath = $session.Path })
@@ -3134,15 +3174,19 @@ function Invoke-AfUndoPlan {
     [array]::Reverse($changes)
     foreach ($change in $changes) {
         $Queue.Enqueue([pscustomobject]@{ Type = 'UndoStart'; Id = $change.CheckId })
-        Undo-AfChange -Session $session -Change $change | Out-Null
+        $id = $change.CheckId
+        $step = { param($name) $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeStep'; Id = $id; Step = [string]$name }) }.GetNewClosure()
+        Undo-AfChange -Session $session -Change $change -Step $step | Out-Null
         $Queue.Enqueue([pscustomobject]@{ Type = 'UndoDone'; Id = $change.CheckId; Change = $change })
     }
     $Queue.Enqueue([pscustomobject]@{ Type = 'UndoFinished'; SessionPath = $session.Path })
 }
 
 function Undo-AfChange {
-    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)]$Change)
+    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)]$Change, [scriptblock]$Step)
     if (-not (Test-AfChangeUndoable -Change $Change)) { return $Change }
+    $steps = [pscustomobject]@{ Step = $Step; ApplySent = $true }
+    Send-AfTxStep -Tx $steps -Name 'restore'
     $user = Get-AfUserForSid -Sid $Session.User.Sid
     $result = Undo-AfRecords -Records @($Change.Records) -User $user
     $left = @($result.Failed)
@@ -3156,6 +3200,7 @@ function Undo-AfChange {
         $Change.Message = $null
     }
     Write-AfLog -Level Info -Message ('Deshacer {0}: {1}' -f $Change.CheckId, $Change.Status)
+    if ($Change.Status -eq 'Undone') { Send-AfTxStep -Tx $steps -Name 'backup' }
     Save-AfSession -Session $Session
     $Change
 }
@@ -4502,11 +4547,14 @@ function Get-AfWindowXaml {
 
       <Border Grid.Column="0" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="14,22,14,12">
         <DockPanel LastChildFill="False">
-          <StackPanel x:Name="PcCard" DockPanel.Dock="Top" Margin="8,0,8,0" Opacity="0">
-            <TextBlock x:Name="PcName" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
-            <TextBlock x:Name="PcKind" FontSize="12" Foreground="{DynamicResource Text3}" Margin="0,3,0,0"/>
-            <StackPanel x:Name="Specs" Margin="0,16,0,0"/>
-          </StackPanel>
+          <Grid DockPanel.Dock="Top" Margin="8,0,8,0">
+            <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
+            <StackPanel x:Name="PcCard" Opacity="0">
+              <TextBlock x:Name="PcName" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
+              <TextBlock x:Name="PcKind" FontSize="12" Foreground="{DynamicResource Text3}" Margin="0,3,0,0"/>
+              <StackPanel x:Name="Specs" Margin="0,16,0,0"/>
+            </StackPanel>
+          </Grid>
           <Grid x:Name="NavHost" DockPanel.Dock="Top" Margin="0,24,0,0">
             <StackPanel x:Name="Nav"/>
             <Border x:Name="NavIndicator" Width="2" Height="32" CornerRadius="2" Background="{DynamicResource Red}" HorizontalAlignment="Left" VerticalAlignment="Top">
@@ -4522,7 +4570,10 @@ function Get-AfWindowXaml {
           <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="32,26,32,14">
-          <TextBlock x:Name="Title" Text="Analizando esta PC" FontFamily="{DynamicResource DisplayFont}" FontSize="28" FontWeight="Light"/>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock x:Name="Title" Text="Analizando esta PC" FontFamily="{DynamicResource DisplayFont}" FontSize="28" FontWeight="Light"/>
+            <TextBlock x:Name="TitleCount" FontSize="13.5" Foreground="{DynamicResource Text2}" Margin="12,0,0,7" VerticalAlignment="Bottom" Visibility="Collapsed"/>
+          </StackPanel>
           <StackPanel x:Name="GaugeArea">
           <Grid x:Name="Gauge" Height="46" Margin="0,22,0,0">
             <Canvas x:Name="Ticks" Height="20" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
@@ -4543,14 +4594,23 @@ function Get-AfWindowXaml {
         </StackPanel>
         <ScrollViewer x:Name="ListScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="32,4,32,28" Focusable="False">
           <Grid>
-            <Border x:Name="PanelBorder" Background="{DynamicResource Panel}" CornerRadius="14" BorderBrush="{DynamicResource Line}" BorderThickness="1" Visibility="Collapsed">
-              <StackPanel x:Name="Groups" Margin="0,0,0,6"/>
-            </Border>
+            <StackPanel>
+              <Border x:Name="EmptyState" Background="{DynamicResource Panel}" CornerRadius="14" BorderBrush="{DynamicResource Line}" BorderThickness="1" Padding="22,20,22,10" Margin="0,0,0,14" Visibility="Collapsed"/>
+              <Border x:Name="PanelBorder" Background="{DynamicResource Panel}" CornerRadius="14" BorderBrush="{DynamicResource Line}" BorderThickness="1" Visibility="Collapsed">
+                <StackPanel x:Name="Groups" Margin="0,0,0,6"/>
+              </Border>
+            </StackPanel>
             <Border x:Name="HistoryPanel" Visibility="Collapsed">
               <StackPanel x:Name="HistoryList"/>
             </Border>
           </Grid>
         </ScrollViewer>
+        <Border x:Name="FollowChip" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,18" Padding="14,7,14,7" CornerRadius="99" Background="{DynamicResource Raised}" BorderBrush="{DynamicResource Line2}" BorderThickness="1" Cursor="Hand" Visibility="Collapsed">
+          <StackPanel Orientation="Horizontal">
+            <Ellipse Width="7" Height="7" Fill="{DynamicResource Red}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="Seguir el avance" FontSize="12.5" Foreground="{DynamicResource Text}"/>
+          </StackPanel>
+        </Border>
       </Grid>
     </Grid>
 
@@ -4710,6 +4770,11 @@ function New-AfWindow {
     Set-AfIconData -Path $window.FindName('NoteIcon') -Name 'shield-check'
     Set-AfIconData -Path $window.FindName('GhostIcon') -Name 'arrow-clockwise'
     $window.FindName('Version').Text = 'v' + (Get-AfVersion)
+    # Mover la lista a mano pausa el seguimiento del cambio en curso; la píldora lo retoma.
+    $scroll = $window.FindName('ListScroll')
+    $scroll.Add_PreviewMouseWheel({ param($sender, $e) Suspend-AfFollow -Window ([System.Windows.Window]::GetWindow($sender)) })
+    $scroll.AddHandler([System.Windows.Controls.Primitives.Thumb]::DragStartedEvent, [System.Windows.Controls.Primitives.DragStartedEventHandler] { param($sender, $e) Suspend-AfFollow -Window ([System.Windows.Window]::GetWindow($sender)) })
+    $window.FindName('FollowChip').Add_MouseLeftButtonUp({ param($sender, $e) Resume-AfFollow -Window ([System.Windows.Window]::GetWindow($sender)) })
     $window
 }
 
@@ -4771,6 +4836,7 @@ function Get-AfRowXaml {
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <Rectangle x:Name="Divider" Grid.ColumnSpan="4" Grid.Column="1" Height="1" VerticalAlignment="Top" Margin="0,-11,0,0" Fill="{DynamicResource Line}" Visibility="Collapsed"/>
     <Grid x:Name="Lead" Grid.Column="0" Width="18" Height="18" VerticalAlignment="Top" Margin="0,1,0,0"/>
@@ -4787,6 +4853,7 @@ function Get-AfRowXaml {
       </Border>
     </StackPanel>
     <Border x:Name="Detail" Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Visibility="Collapsed" ClipToBounds="True" MaxHeight="0"/>
+    <StackPanel x:Name="Steps" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Margin="0,8,0,0" Visibility="Collapsed" ClipToBounds="True" MaxHeight="0"/>
   </Grid>
 </Border>
 '@
@@ -5074,7 +5141,84 @@ function Set-AfRowStatus {
     }
     [void]$lead.Children.Add($element)
     Start-AfAnimation -Target $element -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 300 -Ease Icon -Enabled $Motion | Out-Null
+    # El check entra con un pequeño impulso.
+    if ($Status -eq 'Applied' -and $Motion) {
+        $scale = New-Object System.Windows.Media.ScaleTransform(0.6, 0.6)
+        $element.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+        $element.RenderTransform = $scale
+        foreach ($axis in [System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty) {
+            Start-AfAnimation -Target $scale -Property $axis -From 0.6 -To 1 -DurationMs 300 -Ease Icon | Out-Null
+        }
+    }
     if ($Message) { Set-AfRowNote -Row $Row -Text $Message }
+}
+
+# Pasos reales de un cambio en curso (diseño "Afina en vivo"): save, apply, backup o restore.
+function Get-AfStepText {
+    param([string]$Key)
+    switch ($Key) {
+        'save' { (T 'Guardando el valor original') }
+        'apply' { (T 'Aplicando') }
+        'backup' { (T 'Guardando el respaldo') }
+        'restore' { (T 'Restaurando el valor original') }
+        default { $Key }
+    }
+}
+
+function Open-AfRowSteps {
+    param([Parameter(Mandatory)]$Row, [string[]]$Keys = @(), [bool]$Motion = $false)
+    $panel = $Row.FindName('Steps')
+    $panel.Children.Clear()
+    foreach ($key in $Keys) {
+        $line = New-Object System.Windows.Controls.StackPanel
+        $line.Orientation = 'Horizontal'
+        $line.Margin = '0,0,0,4'
+        $line.Tag = $key
+        $dot = New-Object System.Windows.Shapes.Ellipse
+        $dot.Width = 7
+        $dot.Height = 7
+        $dot.Margin = '1,0,10,0'
+        $dot.VerticalAlignment = 'Center'
+        $dot.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Line2')
+        [void]$line.Children.Add($dot)
+        [void]$line.Children.Add((New-AfText -Text (Get-AfStepText -Key $key) -Size 12 -Brush 'Text3'))
+        [void]$panel.Children.Add($line)
+    }
+    $panel.Visibility = 'Visible'
+    # Se mide sin el MaxHeight de 0 (la medida sale recortada a ese límite) y después se abre desde 0.
+    $panel.BeginAnimation([System.Windows.FrameworkElement]::MaxHeightProperty, $null)
+    $panel.MaxHeight = [double]::PositiveInfinity
+    $panel.Measure((New-Object System.Windows.Size([double]::PositiveInfinity, [double]::PositiveInfinity)))
+    Start-AfAnimation -Target $panel -Property ([System.Windows.FrameworkElement]::MaxHeightProperty) -From 0 -To ($panel.DesiredSize.Height + 4) -DurationMs 250 -Ease Out -Enabled $Motion | Out-Null
+    Start-AfAnimation -Target $panel -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 200 -Ease Out -Enabled $Motion | Out-Null
+}
+
+function Set-AfRowStepState {
+    param([Parameter(Mandatory)]$Row, [Parameter(Mandatory)][string]$Key, [Parameter(Mandatory)][ValidateSet('Running', 'Done', 'Failed')][string]$State, [string]$Detail)
+    $line = @($Row.FindName('Steps').Children | Where-Object { $_.Tag -eq $Key })[0]
+    if (-not $line) { return }
+    $line.Resources['State'] = $State
+    $label = Get-AfStepText -Key $Key
+    $line.Children[1].Text = if ($State -eq 'Running' -and $Detail) { '{0} · {1}' -f $label, $Detail } else { $label }
+    $dotBrush = switch ($State) { 'Running' { 'Red' } 'Done' { 'Text' } default { 'RedText' } }
+    $textBrush = switch ($State) { 'Running' { 'Text' } 'Done' { 'Text2' } default { 'RedText' } }
+    $line.Children[0].SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, $dotBrush)
+    $line.Children[1].SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, $textBrush)
+}
+
+function Close-AfRowSteps {
+    param([Parameter(Mandatory)]$Row, [bool]$Motion = $false)
+    $panel = $Row.FindName('Steps')
+    if (-not $Motion) {
+        $panel.BeginAnimation([System.Windows.FrameworkElement]::MaxHeightProperty, $null)
+        $panel.MaxHeight = 0
+        $panel.Children.Clear()
+        $panel.Visibility = 'Collapsed'
+        return
+    }
+    # Con animación se cierra y queda vacío a la vista; Open-AfRowSteps lo rearma la próxima vez.
+    Start-AfAnimation -Target $panel -Property ([System.Windows.FrameworkElement]::MaxHeightProperty) -To 0 -DurationMs 200 -Ease Out | Out-Null
+    Start-AfAnimation -Target $panel -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 150 -Ease Out | Out-Null
 }
 
 function Set-AfRowNote {
@@ -5196,8 +5340,7 @@ function Set-AfPcCard {
     $inv = $Inventory
     $Window.FindName('PcName').Text = Format-AfPcName -Device $inv.Device
     $discrete = @($inv.Gpus | Where-Object IsDiscrete)[0]
-    $kind = if ($inv.Device.IsLaptop) { (T 'Laptop') } else { (T 'Escritorio') }
-    if ($discrete) { $kind += ' gamer' }
+    $kind = if ($inv.Device.IsLaptop) { if ($discrete) { (T 'Laptop gamer') } else { (T 'Laptop') } } elseif ($discrete) { (T 'Escritorio gamer') } else { (T 'Escritorio') }
     $Window.FindName('PcKind').Text = $kind
     $specs = $Window.FindName('Specs')
     $specs.Children.Clear()
@@ -5208,7 +5351,7 @@ function Set-AfPcCard {
         [void]$specs.Children.Add((New-AfSpecRow -Icon 'graphics-card' -Text $gpuText))
     }
     if ($inv.Memory) {
-        $channel = if ($inv.Memory.Socketed -and @($inv.Memory.Modules).Count -eq 1) { (T ', un canal') } elseif ($inv.Memory.Socketed -and @($inv.Memory.Modules).Count -ge 2) { ', doble canal' } else { '' }
+        $channel = if ($inv.Memory.Socketed -and @($inv.Memory.Modules).Count -eq 1) { (T ', un canal') } elseif ($inv.Memory.Socketed -and @($inv.Memory.Modules).Count -ge 2) { (T ', doble canal') } else { '' }
         [void]$specs.Children.Add((New-AfSpecRow -Icon 'memory' -Text ('{0} GB{1}' -f $inv.Memory.TotalGB, $channel)))
     }
     if ($inv.Storage) {
@@ -5218,7 +5361,95 @@ function Set-AfPcCard {
     if ($inv.Os) { [void]$specs.Children.Add((New-AfSpecRow -Icon 'windows-logo' -Text (([string]$inv.Os.Caption -replace '^Microsoft\s+', '')))) }
     if ($inv.Device.IsLaptop) { [void]$specs.Children.Add((New-AfSpecRow -Icon 'plug-charging' -Text $(if ($inv.Device.OnBattery) { (T 'En batería') } else { (T 'Con cargador') }))) }
     $card = $Window.FindName('PcCard')
+    $Window.FindName('PcSkeleton').Visibility = 'Collapsed'
     Start-AfAnimation -Target $card -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 300 -Ease Out -Enabled $Animate | Out-Null
+}
+
+# Esqueletos del análisis (diseño "Afina en vivo"): barras con un brillo que recorre, en los colores del tema.
+function New-AfShimmerBrush {
+    param([Parameter(Mandatory)]$Window, [bool]$Motion = $false)
+    $base = $Window.FindResource('Line').Color
+    $light = $Window.FindResource('Line2').Color
+    $brush = New-Object System.Windows.Media.LinearGradientBrush
+    $brush.StartPoint = New-Object System.Windows.Point(0, 0.5)
+    $brush.EndPoint = New-Object System.Windows.Point(1, 0.5)
+    foreach ($stop in @(@($base, 0.0), @($light, 0.5), @($base, 1.0))) { [void]$brush.GradientStops.Add((New-Object System.Windows.Media.GradientStop($stop[0], $stop[1]))) }
+    $shift = New-Object System.Windows.Media.TranslateTransform
+    $brush.RelativeTransform = $shift
+    if ($Motion) {
+        $sweep = New-Object System.Windows.Media.Animation.DoubleAnimation(-1, 1, (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(1400))))
+        $sweep.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+        $shift.BeginAnimation([System.Windows.Media.TranslateTransform]::XProperty, $sweep)
+    }
+    $brush
+}
+
+function New-AfShimmerBar {
+    param([Parameter(Mandatory)]$Brush, [double]$Width = 120, [double]$Height = 10, [string]$Margin = '0')
+    $bar = New-Object System.Windows.Shapes.Rectangle
+    $bar.Width = $Width
+    $bar.Height = $Height
+    $bar.RadiusX = $Height / 2
+    $bar.RadiusY = $Height / 2
+    $bar.HorizontalAlignment = 'Left'
+    $bar.Margin = $Margin
+    $bar.Fill = $Brush
+    $bar
+}
+
+# Al empezar a analizar: la tarjeta de la PC (si todavía no tiene datos) y un grupo fantasma por categoría.
+function Show-AfSkeleton {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $brush = New-AfShimmerBrush -Window $Window -Motion ([bool]$s.Motion)
+    if (-not $Window.FindName('PcName').Text) {
+        $pc = $Window.FindName('PcSkeleton')
+        $pc.Children.Clear()
+        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 150 -Height 14 -Margin '0,3,0,8'))
+        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 72 -Height 9 -Margin '0,0,0,22'))
+        foreach ($width in 120, 140, 104, 150, 96, 88) { [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width $width -Height 9 -Margin '24,0,0,15')) }
+        $pc.Visibility = 'Visible'
+    }
+    $groups = $Window.FindName('Groups')
+    foreach ($category in Get-AfCategories) {
+        $group = New-Object System.Windows.Controls.StackPanel
+        $group.Tag = 'skeleton:' + $category.Id
+        $group.ClipToBounds = $true
+        if ($groups.Children.Count) {
+            $line = New-Object System.Windows.Shapes.Rectangle
+            $line.Height = 1
+            $line.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Line')
+            [void]$group.Children.Add($line)
+        }
+        [void]$group.Children.Add((New-AfShimmerBar -Brush $brush -Width 92 -Height 8 -Margin '18,16,18,10'))
+        foreach ($k in 0, 1) {
+            $row = New-Object System.Windows.Controls.StackPanel
+            $row.Orientation = 'Horizontal'
+            $row.Margin = '18,6,18,10'
+            $box = New-AfShimmerBar -Brush $brush -Width 15 -Height 15 -Margin '0,0,16,0'
+            $box.RadiusX = 4
+            $box.RadiusY = 4
+            [void]$row.Children.Add($box)
+            $texts = New-Object System.Windows.Controls.StackPanel
+            [void]$texts.Children.Add((New-AfShimmerBar -Brush $brush -Width (190 + 70 * $k) -Height 10 -Margin '0,2,0,7'))
+            [void]$texts.Children.Add((New-AfShimmerBar -Brush $brush -Width 112 -Height 8))
+            [void]$row.Children.Add($texts)
+            [void]$group.Children.Add($row)
+        }
+        [void]$groups.Children.Add($group)
+    }
+    $Window.FindName('EmptyState').Visibility = 'Collapsed'
+    $Window.FindName('PanelBorder').Visibility = 'Visible'
+}
+
+# Una categoría sin filas cierra su fantasma; con animación queda en altura 0 y se va al terminar el análisis.
+function Close-AfSkeletonGroup {
+    param([Parameter(Mandatory)]$Window, [Parameter(Mandatory)]$Group, [bool]$Motion = $false)
+    if (-not $Motion) { $Window.FindName('Groups').Children.Remove($Group); return }
+    $Group.Tag = 'skeleton-closing'
+    $Group.MaxHeight = $Group.ActualHeight
+    Start-AfAnimation -Target $Group -Property ([System.Windows.FrameworkElement]::MaxHeightProperty) -To 0 -DurationMs 250 -Ease Out | Out-Null
+    Start-AfAnimation -Target $Group -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 200 -Ease Out | Out-Null
 }
 
 function Get-AfNavEntries {
@@ -5258,7 +5489,12 @@ function New-AfNav {
         [void]$grid.Children.Add($label)
         [void]$grid.Children.Add($countHost)
         $button.Content = $grid
-        $button.Add_Click({ param($sender, $e) Set-AfFilter -Window ([System.Windows.Window]::GetWindow($sender)) -Filter $sender.Tag })
+        $button.Add_Click({ param($sender, $e)
+                $w = [System.Windows.Window]::GetWindow($sender)
+                # Elegir otra categoría mientras aplica pausa el seguimiento.
+                Suspend-AfFollow -Window $w
+                Set-AfFilter -Window $w -Filter $sender.Tag
+            })
         [void]$nav.Children.Add($button)
         $refs[$entry.Id] = @{ Button = $button; IconOff = $iconOff; IconOn = $iconOn; Label = $label; CountHost = $countHost; Count = 0 }
     }
@@ -5286,6 +5522,7 @@ function Set-AfNavCount {
     param([Parameter(Mandatory)]$Window, [string]$Category, [int]$Count, [bool]$Motion = $false)
     $ref = $Window.Tag.Nav[$Category]
     if (-not $ref) { return }
+    $previous = $ref.Count
     $ref.Count = $Count
     $hostGrid = $ref.CountHost
     $hostGrid.Children.Clear()
@@ -5299,6 +5536,17 @@ function Set-AfNavCount {
     }
     [void]$hostGrid.Children.Add($element)
     Start-AfAnimation -Target $element -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 300 -Ease Icon -Enabled $Motion | Out-Null
+    # Cuando la cuenta cambia, el número da un pequeño salto.
+    if ($Motion -and $previous -ne $Count) {
+        $scale = New-Object System.Windows.Media.ScaleTransform(1, 1)
+        $element.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+        $element.RenderTransform = $scale
+        $bump = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+        [void]$bump.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame(1.3, [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds(120)), (New-AfKeySpline -Ease Out))))
+        [void]$bump.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame(1.0, [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds(300)), (New-AfKeySpline -Ease Out))))
+        $scale.BeginAnimation([System.Windows.Media.ScaleTransform]::ScaleXProperty, $bump)
+        $scale.BeginAnimation([System.Windows.Media.ScaleTransform]::ScaleYProperty, $bump)
+    }
 }
 
 function Get-AfNavCount {
@@ -5331,7 +5579,7 @@ function Set-AfNavActive {
 }
 
 function Set-AfFilter {
-    param([Parameter(Mandatory)]$Window, [string]$Filter)
+    param([Parameter(Mandatory)]$Window, [string]$Filter, [switch]$NoScroll)
     $state = $Window.Tag
     # Desde el Historial, elegir una categoría vuelve a la lista; mientras deshace, se queda.
     if ($Window.FindName('HistoryPanel').Visibility -eq 'Visible') {
@@ -5345,7 +5593,171 @@ function Set-AfFilter {
         $group.Visibility = if ($show) { 'Visible' } else { 'Collapsed' }
         if ($group.Tag -eq 'ok' -and $Filter -eq 'ok') { Set-AfOkGroupOpen -Group $group -Open $true -Motion $false }
     }
-    $Window.FindName('ListScroll').ScrollToTop()
+    Update-AfEmptyState -Window $Window
+    if (-not $NoScroll) { $Window.FindName('ListScroll').ScrollToTop() }
+}
+
+# Tarjeta de estado: un círculo con icono, título y texto. Quien la usa agrega líneas debajo.
+function New-AfStateCard {
+    param([string]$Icon, [string]$Title, [string]$Text)
+    $panel = New-Object System.Windows.Controls.StackPanel
+    $head = New-Object System.Windows.Controls.DockPanel
+    $head.Margin = '0,0,0,12'
+    $ring = New-Object System.Windows.Controls.Border
+    $ring.Width = 44
+    $ring.Height = 44
+    $ring.CornerRadius = 22
+    $ring.BorderThickness = 1
+    $ring.Margin = '0,0,14,0'
+    $ring.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Line2')
+    $ring.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Raised')
+    $glyph = New-AfIcon -Name $Icon -Variant $(if ($Icon -in (Get-AfFillIconNames)) { 'Fill' } else { 'Bold' }) -Size 20 -Brush 'Text'
+    $glyph.HorizontalAlignment = 'Center'
+    $glyph.VerticalAlignment = 'Center'
+    $ring.Child = $glyph
+    [System.Windows.Controls.DockPanel]::SetDock($ring, 'Left')
+    [void]$head.Children.Add($ring)
+    $texts = New-Object System.Windows.Controls.StackPanel
+    $texts.VerticalAlignment = 'Center'
+    [void]$texts.Children.Add((New-AfText -Text $Title -Size 15 -Brush 'Text' -Display -Weight 'Medium'))
+    if ($Text) {
+        $sub = New-AfText -Text $Text -Size 12.5 -Brush 'Text2'
+        $sub.Margin = '0,3,0,0'
+        [void]$texts.Children.Add($sub)
+    }
+    [void]$head.Children.Add($texts)
+    [void]$panel.Children.Add($head)
+    $panel
+}
+
+function New-AfStateLine {
+    param([string]$Icon, [string]$Text, [string]$Value, [switch]$Muted)
+    $line = New-Object System.Windows.Controls.Border
+    $line.BorderThickness = '0,1,0,0'
+    $line.Padding = '0,9,0,9'
+    $line.Background = [System.Windows.Media.Brushes]::Transparent
+    $line.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Line')
+    $dock = New-Object System.Windows.Controls.DockPanel
+    $mark = New-AfIcon -Name $Icon -Size 14 -Brush $(if ($Muted) { 'Text3' } else { 'Text' })
+    $mark.Margin = '2,0,14,0'
+    [System.Windows.Controls.DockPanel]::SetDock($mark, 'Left')
+    [void]$dock.Children.Add($mark)
+    if ($Value) {
+        $valueText = New-AfText -Text $Value -Size 12 -Brush $(if ($Muted) { 'Text3' } else { 'Text2' })
+        $valueText.Margin = '12,0,0,0'
+        [System.Windows.Controls.DockPanel]::SetDock($valueText, 'Right')
+        [void]$dock.Children.Add($valueText)
+    }
+    [void]$dock.Children.Add((New-AfText -Text $Text -Size 12.5 -Brush $(if ($Muted) { 'Text3' } else { 'Text2' })))
+    $line.Child = $dock
+    $line
+}
+
+# Sin pantallas vacías (diseño "Afina en vivo"): una categoría en orden o la PC ya afinada muestran su tarjeta.
+function Update-AfEmptyState {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $empty = $Window.FindName('EmptyState')
+    if ($s.Phase -in 'scanning', 'history' -or $Window.FindName('HistoryPanel').Visibility -eq 'Visible') {
+        $empty.Visibility = 'Collapsed'
+        return
+    }
+    $visible = @($Window.FindName('Groups').Children | Where-Object { $_.Visibility -eq 'Visible' })
+    $Window.FindName('PanelBorder').Visibility = if ($visible.Count) { 'Visible' } else { 'Collapsed' }
+    $hasRows = @($visible | Where-Object { $_.Tag -ne 'ok' }).Count -gt 0
+    $results = @($s.Results)
+    $card = $null
+    if ($s.Filter -eq 'all' -and -not $hasRows -and $results.Count) {
+        $card = New-AfStateCard -Icon 'check-circle' -Title (T 'Esta PC está afinada')
+        foreach ($category in Get-AfCategories) {
+            $count = @($results | Where-Object { $_.Check.Category -eq $category.Id }).Count
+            if (-not $count) { continue }
+            $line = New-AfStateLine -Icon $category.Icon -Text $category.Name -Value ((T '{0} revisados') -f $count)
+            $line.Cursor = 'Hand'
+            $line.Tag = $category.Id
+            $line.Add_MouseLeftButtonUp({ param($sender, $e) Set-AfFilter -Window ([System.Windows.Window]::GetWindow($sender)) -Filter $sender.Tag })
+            [void]$card.Children.Add($line)
+        }
+    } elseif ($s.Filter -notin 'all', 'ok' -and -not $hasRows) {
+        $category = @(Get-AfCategories | Where-Object { $_.Id -eq $s.Filter })[0]
+        $checked = @($results | Where-Object { $_.Check.Category -eq $s.Filter })
+        if ($category -and $checked.Count) {
+            $text = if ($checked.Count -eq 1) { (T 'Se revisó 1 punto y no hay nada para cambiar.') } else { (T 'Se revisaron {0} puntos y no hay nada para cambiar.') -f $checked.Count }
+            $card = New-AfStateCard -Icon 'check-circle' -Title ((T '{0} en orden') -f $category.Name) -Text $text
+            foreach ($result in $checked) {
+                $title = if ($result.Detection.Title) { $result.Detection.Title } else { $result.Check.Title }
+                $line = if ($result.Detection.State -eq 'NotApplicable') { New-AfStateLine -Icon 'info' -Text $title -Value (T 'No aplica') -Muted } else { New-AfStateLine -Icon 'check' -Text $title -Value $result.Detection.Current }
+                [void]$card.Children.Add($line)
+            }
+        }
+    }
+    if ($card) {
+        $empty.Child = $card
+        $empty.Visibility = 'Visible'
+        Start-AfAnimation -Target $empty -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 250 -Ease Out -Enabled ([bool]$s.Motion) | Out-Null
+    } else {
+        $empty.Visibility = 'Collapsed'
+        $empty.Child = $null
+    }
+}
+
+# Seguimiento del cambio en curso (diseño "Afina en vivo"): solo mientras aplica o deshace desde la lista.
+function Test-AfFollowPhase {
+    param([Parameter(Mandatory)]$State)
+    $State.Phase -in 'applying', 'display', 'restore', 'undoing' -and -not $State.UndoFromHistory
+}
+
+# Desplaza la lista con una salida suave; sin animaciones, va directo.
+function Start-AfScrollTo {
+    param([Parameter(Mandatory)]$Window, [double]$Offset, [bool]$Motion = $false)
+    $s = $Window.Tag
+    $scroll = $Window.FindName('ListScroll')
+    if ($s.ScrollTimer) { $s.ScrollTimer.Stop(); $s.ScrollTimer = $null }
+    $target = [math]::Max(0, [math]::Min($Offset, $scroll.ScrollableHeight))
+    if (-not $Motion) { $scroll.ScrollToVerticalOffset($target); return }
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds(15)
+    $timer.Tag = @{ Scroll = $scroll; From = $scroll.VerticalOffset; To = $target; Start = Get-Date }
+    $timer.Add_Tick({ param($sender, $e)
+            $st = $sender.Tag
+            $t = [math]::Min(1, ((Get-Date) - $st.Start).TotalMilliseconds / 300)
+            $st.Scroll.ScrollToVerticalOffset($st.From + ($st.To - $st.From) * (1 - [math]::Pow(1 - $t, 3)))
+            if ($t -ge 1) { $sender.Stop() }
+        })
+    $s.ScrollTimer = $timer
+    $timer.Start()
+}
+
+function Move-AfFollow {
+    param([Parameter(Mandatory)]$Window, [string]$Id)
+    $s = $Window.Tag
+    if (-not $s.Follow) { return }
+    $row = Get-AfRowById -Window $Window -Id $Id
+    if (-not $row) { return }
+    if ($s.Filter -ne $row.Tag.Check.Category) { Set-AfFilter -Window $Window -Filter $row.Tag.Check.Category -NoScroll }
+    $scroll = $Window.FindName('ListScroll')
+    $scroll.UpdateLayout()
+    $y = 0
+    try { $y = $row.TranslatePoint((New-Object System.Windows.Point(0, 0)), $Window.FindName('PanelBorder')).Y } catch { }
+    Start-AfScrollTo -Window $Window -Offset ($y - 24) -Motion ([bool]$s.Motion)
+}
+
+function Suspend-AfFollow {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    if ($s -isnot [hashtable] -or -not $s.Follow -or -not (Test-AfFollowPhase -State $s)) { return }
+    $s.Follow = $false
+    $chip = $Window.FindName('FollowChip')
+    $chip.Visibility = 'Visible'
+    Start-AfAnimation -Target $chip -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 250 -Ease Out -Enabled ([bool]$s.Motion) | Out-Null
+}
+
+function Resume-AfFollow {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $s.Follow = $true
+    $Window.FindName('FollowChip').Visibility = 'Collapsed'
+    if ($s.FollowId) { Move-AfFollow -Window $Window -Id $s.FollowId }
 }
 
 function Update-AfGaugeLayout {
@@ -5474,15 +5886,24 @@ function Add-AfRowHandlers {
 function Add-AfCategoryGroup {
     param([Parameter(Mandatory)]$Window, [Parameter(Mandatory)]$Category, [object[]]$Results = @(), [bool]$Motion = $false)
     $visible = @($Results | Where-Object { $_.Detection.State -in 'Improvable', 'Manual', 'Info', 'Error' })
-    if (-not $visible.Count) { return }
     $groups = $Window.FindName('Groups')
+    $skeleton = @($groups.Children | Where-Object { $_.Tag -eq ('skeleton:' + $Category.Id) })[0]
+    if (-not $visible.Count) {
+        if ($skeleton) { Close-AfSkeletonGroup -Window $Window -Group $skeleton -Motion $Motion }
+        return
+    }
     $Window.FindName('PanelBorder').Visibility = 'Visible'
-    $first = @($groups.Children | Where-Object { $_.Tag -ne 'ok' }).Count -eq 0
+    $first = @($groups.Children | Where-Object { $_.Tag -ne 'ok' -and "$($_.Tag)" -notlike 'skeleton*' }).Count -eq 0
     $group = New-AfGroupElement -Category $Category -Results $visible -First:$first
     $filter = $Window.Tag.Filter
     $group.Visibility = if ($filter -eq 'all' -or $filter -eq $Category.Id) { 'Visible' } else { 'Collapsed' }
     $okGroup = @($groups.Children | Where-Object { $_.Tag -eq 'ok' })[0]
-    if ($okGroup) { $groups.Children.Insert($groups.Children.IndexOf($okGroup), $group) } else { [void]$groups.Children.Add($group) }
+    if ($skeleton) {
+        # El grupo real entra en el lugar de su fantasma.
+        $index = $groups.Children.IndexOf($skeleton)
+        $groups.Children.RemoveAt($index)
+        $groups.Children.Insert($index, $group)
+    } elseif ($okGroup) { $groups.Children.Insert($groups.Children.IndexOf($okGroup), $group) } else { [void]$groups.Children.Add($group) }
     $k = 0
     foreach ($child in $group.Children) {
         if ($child -is [System.Windows.Controls.Border] -and $child.Tag) { Add-AfRowHandlers -Row $child }
@@ -5644,6 +6065,7 @@ function Show-AfResults {
     $Window.FindName('PcCard').Opacity = 1
     Update-AfPrimary -Window $Window
     Set-AfNeedle -Window $Window -Fraction (Get-AfScore -Results $Results) -Motion $Animate
+    Update-AfEmptyState -Window $Window
 }
 
 # Confirmación, aplicando, listo y deshacer (diseño, sección 8, pasos 4 a 8).
@@ -5781,6 +6203,7 @@ function Set-AfReadyView {
     $s = $Window.Tag
     $s.Phase = 'ready'
     $Window.FindName('Groups').IsHitTestVisible = $true
+    Stop-AfFollow -Window $Window
     $effective = @(Get-AfEffectiveResults -Window $Window)
     $summary = Get-AfSummary -Results $effective
     $score = Get-AfScore -Results $effective
@@ -5795,6 +6218,7 @@ function Set-AfDoneView {
     $s = $Window.Tag
     $s.Phase = 'done'
     $Window.FindName('Groups').IsHitTestVisible = $true
+    Stop-AfFollow -Window $Window
     $changes = @($s.Applied.Values)
     $applied = @($changes | Where-Object { $_.Status -eq 'Applied' })
     $notApplied = @($changes | Where-Object { $_.Status -in 'Failed', 'Reverted' }).Count
@@ -5877,7 +6301,10 @@ function Start-AfApply {
     $s.ApplyTotal = $c.Count
     $s.ApplyIndex = 0
     $s.ApplyCount = 0
-    $s.ApplyNote = 'Preparando…'
+    $s.ApplyNote = (T 'Preparando…')
+    $s.Follow = $true
+    $s.FollowId = $null
+    $s.ApplyHoldUntil = [datetime]::MinValue
     $s.Shared = [hashtable]::Synchronized(@{ DisplayAnswer = $null; ContinueWithoutRestore = $null; Current = $null })
     $s.ApplyQueue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
     $plan = [pscustomobject]@{
@@ -5899,8 +6326,34 @@ function Start-AfApply {
 function Set-AfApplyingFooter {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
-    $label = if ($s.ApplyIndex -gt 0) { (T 'Aplicando {0} de {1}') -f $s.ApplyIndex, $s.ApplyTotal } else { 'Preparando…' }
+    $label = if ($s.ApplyIndex -gt 0) { (T 'Aplicando {0} de {1}') -f $s.ApplyIndex, $s.ApplyTotal } else { (T 'Preparando…') }
     Set-AfFooter -Window $Window -Note $s.ApplyNote -NoteIcon 'shield-check' -Primary $label -Busy -Motion $s.Motion
+}
+
+# Arriba, mientras aplica: "Optimizando 2 de 5" y el cambio en curso con su paso.
+function Set-AfApplyingHeader {
+    param([Parameter(Mandatory)]$Window, [string]$Step)
+    $s = $Window.Tag
+    $Window.FindName('Title').Text = (T 'Optimizando')
+    $count = $Window.FindName('TitleCount')
+    $count.Text = (T '{0} de {1}') -f $s.ApplyIndex, [math]::Max($s.ApplyIndex, $s.ApplyTotal)
+    $count.Visibility = 'Visible'
+    $rest = ' · ' + $(if ($Step) { Get-AfStepText -Key $Step } else { '' }) + '…'
+    Set-AfLeadSummary -Window $Window -Lead $s.FollowTitle -Rest $rest
+}
+
+# Con animaciones, la ventana deja ver cada evento un momento. El motor no espera: solo la lectura de la cola.
+function Set-AfApplyHold {
+    param([Parameter(Mandatory)]$Window, [int]$Milliseconds)
+    $s = $Window.Tag
+    if ($s.Motion) { $s.ApplyHoldUntil = (Get-Date).AddMilliseconds($Milliseconds) }
+}
+
+# Fin del seguimiento: sin píldora ni cuenta junto al título.
+function Stop-AfFollow {
+    param([Parameter(Mandatory)]$Window)
+    $Window.FindName('FollowChip').Visibility = 'Collapsed'
+    $Window.FindName('TitleCount').Visibility = 'Collapsed'
 }
 
 function Start-AfDisplayCountdown {
@@ -5933,6 +6386,10 @@ function Start-AfUndo {
     $s.UndoFromHistory = [bool]$FromHistory
     $s.Phase = 'undoing'
     $s.UndoIndex = 0
+    $s.UndoSessionPath = $SessionPath
+    $s.Follow = $true
+    $s.FollowId = $null
+    $s.ApplyHoldUntil = [datetime]::MinValue
     $session = Import-AfSession -Path $SessionPath
     $s.UndoTotal = @($session.Changes | Where-Object { ($ChangeIds.Count -eq 0 -or $ChangeIds -contains $_.CheckId) -and (Test-AfChangeUndoable -Change $_) }).Count
     if ($FromHistory) { $Window.FindName('HistoryList').IsHitTestVisible = $false } else { $Window.FindName('Groups').IsHitTestVisible = $false }
@@ -5976,14 +6433,40 @@ function Receive-AfApplyEvent {
         'Cancelled' { Set-AfReadyView -Window $Window }
         'ChangeStart' {
             $s.ApplyIndex++
+            $s.FollowId = $Item.Id
+            $s.FollowStep = $null
             $row = Get-AfRowById -Window $Window -Id $Item.Id
-            if ($row) { Set-AfRowStatus -Row $row -Status Applying -Motion $s.Motion }
+            if ($row) {
+                Set-AfRowStatus -Row $row -Status Applying -Motion $s.Motion
+                $s.FollowTitle = if ($row.Tag.Detection.Title) { $row.Tag.Detection.Title } else { $row.Tag.Check.Title }
+                # La vista va sola a la fila en curso y la abre con sus pasos reales.
+                Move-AfFollow -Window $Window -Id $Item.Id
+                Open-AfRowSteps -Row $row -Keys $(if ($row.Tag.Check.NoUndo) { @('apply', 'backup') } else { @('save', 'apply', 'backup') }) -Motion $s.Motion
+            }
+            Set-AfApplyingHeader -Window $Window
             Set-AfApplyingFooter -Window $Window
+            Set-AfApplyHold -Window $Window -Milliseconds 300
+        }
+        'ChangeStep' {
+            # Desde el Historial, el paso se escribe en la línea del cambio.
+            if ($s.Phase -eq 'undoing' -and $s.UndoFromHistory) {
+                if ($s.HistoryStepText) { $s.HistoryStepText.Text = Get-AfStepText -Key $Item.Step }
+                Set-AfApplyHold -Window $Window -Milliseconds 250
+                break
+            }
+            $row = Get-AfRowById -Window $Window -Id $Item.Id
+            if ($row) {
+                if ($s.FollowStep) { Set-AfRowStepState -Row $row -Key $s.FollowStep -State Done }
+                Set-AfRowStepState -Row $row -Key $Item.Step -State Running
+            }
+            $s.FollowStep = $Item.Step
+            if ($s.Phase -ne 'undoing') { Set-AfApplyingHeader -Window $Window -Step $Item.Step }
+            Set-AfApplyHold -Window $Window -Milliseconds 250
         }
         'ChangeProgress' {
-            # Avance de un cambio largo (actualizaciones): solo cambia la nota, el indicador sigue girando.
+            # Avance de un cambio largo (actualizaciones): va en el paso Aplicando; el indicador sigue girando.
             $row = Get-AfRowById -Window $Window -Id $Item.Id
-            if ($row) { Set-AfRowNote -Row $row -Text $Item.Text }
+            if ($row) { Set-AfRowStepState -Row $row -Key 'apply' -State Running -Detail $Item.Text }
         }
         'ConfirmDisplay' {
             $s.Phase = 'display'
@@ -6000,14 +6483,20 @@ function Receive-AfApplyEvent {
             $row = Get-AfRowById -Window $Window -Id $Item.Id
             if ($row) {
                 $message = if ($change.Status -eq 'Applied') { $change.Note } else { $change.Message }
+                # Aplicado: los pasos se cierran. Si no, el paso en curso queda marcado como fallido a la vista.
+                if ($change.Status -eq 'Applied') { Close-AfRowSteps -Row $row -Motion $s.Motion }
+                elseif ($s.FollowStep) { Set-AfRowStepState -Row $row -Key $s.FollowStep -State Failed }
                 Set-AfRowStatus -Row $row -Status $change.Status -Message $message -Motion $s.Motion
             }
+            $s.FollowStep = $null
             Set-AfProgress -Window $Window -Fraction ($s.ApplyCount / [math]::Max(1, $s.ApplyTotal)) -Motion $s.Motion
             Update-AfProgressView -Window $Window -Motion $s.Motion
             Set-AfApplyingFooter -Window $Window
         }
         'ApplyDone' {
             $s.SessionPath = $Item.SessionPath
+            # Siguiendo, la vista vuelve a Todo; si la persona eligió otra, se queda ahí.
+            if ($s.Follow) { Set-AfFilter -Window $Window -Filter 'all' }
             Set-AfDoneView -Window $Window
             $score = Get-AfScore -Results @(Get-AfEffectiveResults -Window $Window)
             Set-AfNeedle -Window $Window -Fraction $score -Motion $s.Motion -DurationMs 700 -Ease Out
@@ -6016,10 +6505,19 @@ function Receive-AfApplyEvent {
         }
         'UndoStart' {
             $s.UndoIndex++
+            $s.FollowId = $Item.Id
+            $s.FollowStep = $null
             if (-not $s.UndoFromHistory) {
                 $row = Get-AfRowById -Window $Window -Id $Item.Id
-                if ($row) { Set-AfRowStatus -Row $row -Status Undoing -Motion $s.Motion }
+                if ($row) {
+                    Set-AfRowStatus -Row $row -Status Undoing -Motion $s.Motion
+                    Move-AfFollow -Window $Window -Id $Item.Id
+                    Open-AfRowSteps -Row $row -Keys @('restore', 'backup') -Motion $s.Motion
+                }
+            } else {
+                Set-AfHistoryLineBusy -Window $Window -SessionPath $s.UndoSessionPath -Id $Item.Id
             }
+            Set-AfApplyHold -Window $Window -Milliseconds 300
             Set-AfFooter -Window $Window -Primary ((T 'Deshaciendo {0} de {1}') -f $s.UndoIndex, [math]::Max($s.UndoIndex, $s.UndoTotal)) -Busy
         }
         'UndoDone' {
@@ -6029,8 +6527,10 @@ function Receive-AfApplyEvent {
                     if ($s.Applied) { $s.Applied.Remove($Item.Id) }
                     if ($row) { Reset-AfRow -Row $row -Motion $s.Motion | Out-Null }
                 } elseif ($row) {
+                    if ($s.FollowStep) { Set-AfRowStepState -Row $row -Key $s.FollowStep -State Failed }
                     Set-AfRowStatus -Row $row -Status Failed -Message $Item.Change.Message -Motion $s.Motion
                 }
+                $s.FollowStep = $null
                 Update-AfProgressView -Window $Window -Motion $s.Motion
             }
         }
@@ -6147,6 +6647,7 @@ function New-AfHistorySession {
     foreach ($change in $changes) {
         $line = New-Object System.Windows.Controls.DockPanel
         $line.Margin = '0,6,0,6'
+        $line.Tag = $change.CheckId
         if (Test-AfChangeUndoable -Change $change) {
             $action = New-AfUndoButton -Text (T 'Deshacer') -SessionPath $Session.Path -Ids @($change.CheckId)
             [System.Windows.Controls.DockPanel]::SetDock($action, 'Right')
@@ -6175,6 +6676,27 @@ function New-AfHistorySession {
     $card
 }
 
+# Mientras deshace desde el Historial: la línea del cambio cambia su botón por un indicador y el paso en curso.
+function Set-AfHistoryLineBusy {
+    param([Parameter(Mandatory)]$Window, [string]$SessionPath, [string]$Id)
+    $Window.Tag.HistoryStepText = $null
+    $card = @($Window.FindName('HistoryList').Children | Where-Object { $_.Tag -eq $SessionPath })[0]
+    if (-not $card) { return }
+    $line = @($card.Child.Children | Where-Object { $_.Tag -eq $Id })[0]
+    if (-not $line) { return }
+    foreach ($button in @($line.Children | Where-Object { $_ -is [System.Windows.Controls.Button] })) { $line.Children.Remove($button) }
+    $busy = New-Object System.Windows.Controls.StackPanel
+    $busy.Orientation = 'Horizontal'
+    [System.Windows.Controls.DockPanel]::SetDock($busy, 'Right')
+    $spinner = New-AfSpinner -Size 13
+    $spinner.Margin = '0,0,8,0'
+    [void]$busy.Children.Add($spinner)
+    $text = New-AfText -Text '' -Size 12 -Brush 'Text3'
+    [void]$busy.Children.Add($text)
+    $line.Children.Insert(0, $busy)
+    $Window.Tag.HistoryStepText = $text
+}
+
 function Show-AfHistory {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
@@ -6183,6 +6705,7 @@ function Show-AfHistory {
     $Window.FindName('Title').Text = (T 'Historial')
     $Window.FindName('GaugeArea').Visibility = 'Collapsed'
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
+    $Window.FindName('EmptyState').Visibility = 'Collapsed'
     $Window.FindName('HistoryPanel').Visibility = 'Visible'
     $Window.FindName('Summary').Inlines.Clear()
     $Window.FindName('Summary').Text = (T 'Cada sesión guarda los valores originales. Se puede deshacer completa o cambio por cambio.')
@@ -6191,8 +6714,13 @@ function Show-AfHistory {
     $list.Children.Clear()
     $sessions = @(Get-AfSessions -Directory $s.BackupDirectory)
     if (-not $sessions.Count) {
-        $empty = New-AfText -Text (T 'Todavía no se aplicaron cambios en esta PC.') -Size 13 -Brush 'Text2'
-        $empty.Margin = '2,4,0,0'
+        $empty = New-Object System.Windows.Controls.Border
+        $empty.CornerRadius = 14
+        $empty.BorderThickness = 1
+        $empty.Padding = '22,20,22,16'
+        $empty.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Panel')
+        $empty.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Line')
+        $empty.Child = New-AfStateCard -Icon 'clock-counter-clockwise' -Title (T 'Todavía no hay cambios en esta PC') -Text (T 'Cada vez que optimizas, Afina guarda aquí los valores originales para deshacerlos cuando quieras.')
         [void]$list.Children.Add($empty)
     }
     foreach ($session in $sessions) { [void]$list.Children.Add((New-AfHistorySession -Session $session)) }
@@ -6214,6 +6742,7 @@ function Hide-AfHistory {
         return
     }
     if ($s.PhaseBeforeHistory -eq 'done') { Set-AfDoneView -Window $Window } else { Set-AfReadyView -Window $Window }
+    Update-AfEmptyState -Window $Window
 }
 
 # El análisis corre en un runspace aparte y solo encola eventos; la ventana los lee con un DispatcherTimer.
@@ -6332,6 +6861,7 @@ function Start-AfScan {
     Set-AfNavActive -Window $Window -Filter 'all' -Motion $false
     $Window.FindName('Groups').Children.Clear()
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
+    Show-AfSkeleton -Window $Window
     $Window.FindName('Title').Text = (T 'Analizando esta PC')
     Set-AfTextAnimated -Block $Window.FindName('Summary') -Text (T 'Revisando el hardware…') -Motion $s.Motion
     Set-AfActionsVisible -Window $Window -Visible $false
@@ -6362,6 +6892,8 @@ function Update-AfAsyncResult {
             if ($index -ge 0) { $Window.Tag.Results[$index] = $result }
             if ($Detection.State -notin 'Improvable', 'Manual', 'Info', 'Error') {
                 $group.Children.RemoveAt($i)
+                # Un grupo sin filas no queda como un encabezado suelto.
+                if (-not @($group.Children | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag }).Count) { $Window.FindName('Groups').Children.Remove($group) }
             } else {
                 $newRow = New-AfRowElement -Result $result -First:($row.FindName('Divider').Visibility -ne 'Visible')
                 Add-AfRowHandlers -Row $newRow
@@ -6369,8 +6901,9 @@ function Update-AfAsyncResult {
                 $group.Children.Insert($i, $newRow)
                 Start-AfAnimation -Target $newRow -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 300 -Ease Out -Enabled ([bool]$Window.Tag.Motion) | Out-Null
             }
-            Update-AfNavCounts -Window $Window -Results @($Window.Tag.Results) -Only @('optional')
+            Update-AfNavCounts -Window $Window -Results @($Window.Tag.Results) -Only @($old.Check.Category)
             Update-AfPrimary -Window $Window
+            Update-AfEmptyState -Window $Window
             return
         }
     }
@@ -6381,6 +6914,9 @@ function Complete-AfScan {
     $s = $Window.Tag
     $s.Phase = 'ready'
     $results = @($s.Results)
+    $groups = $Window.FindName('Groups')
+    foreach ($ghost in @($groups.Children | Where-Object { "$($_.Tag)" -like 'skeleton*' })) { $groups.Children.Remove($ghost) }
+    $Window.FindName('PcSkeleton').Visibility = 'Collapsed'
     Add-AfOkGroup -Window $Window -Results $results -Motion $s.Motion
     Update-AfNavCounts -Window $Window -Results $results -Only @('ok') -Motion $s.Motion
     $summary = Get-AfSummary -Results $results
@@ -6393,6 +6929,7 @@ function Complete-AfScan {
     if ($score -ge 0.999) { Start-AfCelebration -Window $Window -Motion $s.Motion }
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize
     Set-AfActionsVisible -Window $Window -Visible $true -Motion $s.Motion
+    Update-AfEmptyState -Window $Window
     Write-AfLog -Level Info -Message ('Análisis terminado en {0:N1} s: {1} listos, {2} a mano, {3} en orden.' -f ((Get-Date) - $s.StartedAt).TotalSeconds, $summary.Ready, $summary.Manual, $summary.Ok)
     if ($s.Snapshot) {
         $timer = New-Object System.Windows.Threading.DispatcherTimer
@@ -6408,7 +6945,9 @@ function Receive-AfEvents {
     $s = $Window.Tag
     $item = $null
     if ($s.ApplyQueue) {
-        while ($s.ApplyQueue.TryDequeue([ref]$item)) { Receive-AfApplyEvent -Window $Window -Item $item }
+        # Cada evento se deja ver un momento (Set-AfApplyHold); con seis o más en cola, la ventana se pone al día de golpe.
+        $catchUp = $s.ApplyQueue.Count -ge 6
+        while (($catchUp -or -not $s.ApplyHoldUntil -or (Get-Date) -ge $s.ApplyHoldUntil) -and $s.ApplyQueue.TryDequeue([ref]$item)) { Receive-AfApplyEvent -Window $Window -Item $item }
     }
     if (-not $s.Queue) { return }
     while ($s.Queue.TryDequeue([ref]$item)) {

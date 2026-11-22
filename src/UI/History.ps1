@@ -85,6 +85,7 @@ function New-AfHistorySession {
     foreach ($change in $changes) {
         $line = New-Object System.Windows.Controls.DockPanel
         $line.Margin = '0,6,0,6'
+        $line.Tag = $change.CheckId
         if (Test-AfChangeUndoable -Change $change) {
             $action = New-AfUndoButton -Text (T 'Deshacer') -SessionPath $Session.Path -Ids @($change.CheckId)
             [System.Windows.Controls.DockPanel]::SetDock($action, 'Right')
@@ -113,6 +114,27 @@ function New-AfHistorySession {
     $card
 }
 
+# Mientras deshace desde el Historial: la línea del cambio cambia su botón por un indicador y el paso en curso.
+function Set-AfHistoryLineBusy {
+    param([Parameter(Mandatory)]$Window, [string]$SessionPath, [string]$Id)
+    $Window.Tag.HistoryStepText = $null
+    $card = @($Window.FindName('HistoryList').Children | Where-Object { $_.Tag -eq $SessionPath })[0]
+    if (-not $card) { return }
+    $line = @($card.Child.Children | Where-Object { $_.Tag -eq $Id })[0]
+    if (-not $line) { return }
+    foreach ($button in @($line.Children | Where-Object { $_ -is [System.Windows.Controls.Button] })) { $line.Children.Remove($button) }
+    $busy = New-Object System.Windows.Controls.StackPanel
+    $busy.Orientation = 'Horizontal'
+    [System.Windows.Controls.DockPanel]::SetDock($busy, 'Right')
+    $spinner = New-AfSpinner -Size 13
+    $spinner.Margin = '0,0,8,0'
+    [void]$busy.Children.Add($spinner)
+    $text = New-AfText -Text '' -Size 12 -Brush 'Text3'
+    [void]$busy.Children.Add($text)
+    $line.Children.Insert(0, $busy)
+    $Window.Tag.HistoryStepText = $text
+}
+
 function Show-AfHistory {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
@@ -121,6 +143,7 @@ function Show-AfHistory {
     $Window.FindName('Title').Text = (T 'Historial')
     $Window.FindName('GaugeArea').Visibility = 'Collapsed'
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
+    $Window.FindName('EmptyState').Visibility = 'Collapsed'
     $Window.FindName('HistoryPanel').Visibility = 'Visible'
     $Window.FindName('Summary').Inlines.Clear()
     $Window.FindName('Summary').Text = (T 'Cada sesión guarda los valores originales. Se puede deshacer completa o cambio por cambio.')
@@ -129,8 +152,13 @@ function Show-AfHistory {
     $list.Children.Clear()
     $sessions = @(Get-AfSessions -Directory $s.BackupDirectory)
     if (-not $sessions.Count) {
-        $empty = New-AfText -Text (T 'Todavía no se aplicaron cambios en esta PC.') -Size 13 -Brush 'Text2'
-        $empty.Margin = '2,4,0,0'
+        $empty = New-Object System.Windows.Controls.Border
+        $empty.CornerRadius = 14
+        $empty.BorderThickness = 1
+        $empty.Padding = '22,20,22,16'
+        $empty.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Panel')
+        $empty.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Line')
+        $empty.Child = New-AfStateCard -Icon 'clock-counter-clockwise' -Title (T 'Todavía no hay cambios en esta PC') -Text (T 'Cada vez que optimizas, Afina guarda aquí los valores originales para deshacerlos cuando quieras.')
         [void]$list.Children.Add($empty)
     }
     foreach ($session in $sessions) { [void]$list.Children.Add((New-AfHistorySession -Session $session)) }
@@ -152,4 +180,5 @@ function Hide-AfHistory {
         return
     }
     if ($s.PhaseBeforeHistory -eq 'done') { Set-AfDoneView -Window $Window } else { Set-AfReadyView -Window $Window }
+    Update-AfEmptyState -Window $Window
 }

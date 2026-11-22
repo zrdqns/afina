@@ -1,6 +1,6 @@
 ﻿# Transacción de un cambio: cada pieza guarda el valor original antes de escribir (diseño, sección 11).
 function New-AfTransaction {
-    param($User, [scriptblock]$ConfirmDisplay, [scriptblock]$Progress)
+    param($User, [scriptblock]$ConfirmDisplay, [scriptblock]$Progress, [scriptblock]$Step)
     [pscustomobject]@{
         User = $User
         Records = New-Object System.Collections.ArrayList
@@ -8,6 +8,8 @@ function New-AfTransaction {
         Notes = New-Object System.Collections.ArrayList
         ConfirmDisplay = $ConfirmDisplay
         Progress = $Progress
+        Step = $Step
+        ApplySent = $false
         # $null: vale el NeedsReboot de la revisión; una pieza lo fija si depende de lo que pasó.
         NeedsReboot = $null
     }
@@ -20,10 +22,23 @@ function Set-AfTxProgress {
     try { & $Tx.Progress $Text } catch { Write-AfLog -Level Warn -Message "No se pudo mostrar el avance: $($_.Exception.Message)" }
 }
 
+# Paso real del cambio para la ventana: save, apply, backup o restore. 'apply' sale una sola vez. Nunca corta el cambio.
+function Send-AfTxStep {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][string]$Name)
+    if ($Name -eq 'apply') {
+        if ($Tx.ApplySent) { return }
+        $Tx.ApplySent = $true
+    }
+    if (-not $Tx.Step) { return }
+    try { & $Tx.Step $Name } catch { Write-AfLog -Level Warn -Message "No se pudo mostrar el paso: $($_.Exception.Message)" }
+}
+
 function Add-AfTxRecord {
     param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][hashtable]$Record)
     if (-not $Record.Kind) { throw (T 'El registro del cambio necesita Kind.') }
     [void]$Tx.Records.Add([pscustomobject]$Record)
+    # El valor original ya está guardado: lo que sigue es escribir.
+    Send-AfTxStep -Tx $Tx -Name 'apply'
 }
 
 # Error con un motivo que se puede mostrar en la fila. Uso: throw (New-AfApplyError -Reason '…').

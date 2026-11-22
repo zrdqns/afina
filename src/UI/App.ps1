@@ -66,8 +66,7 @@ function Set-AfPcCard {
     $inv = $Inventory
     $Window.FindName('PcName').Text = Format-AfPcName -Device $inv.Device
     $discrete = @($inv.Gpus | Where-Object IsDiscrete)[0]
-    $kind = if ($inv.Device.IsLaptop) { (T 'Laptop') } else { (T 'Escritorio') }
-    if ($discrete) { $kind += ' gamer' }
+    $kind = if ($inv.Device.IsLaptop) { if ($discrete) { (T 'Laptop gamer') } else { (T 'Laptop') } } elseif ($discrete) { (T 'Escritorio gamer') } else { (T 'Escritorio') }
     $Window.FindName('PcKind').Text = $kind
     $specs = $Window.FindName('Specs')
     $specs.Children.Clear()
@@ -78,7 +77,7 @@ function Set-AfPcCard {
         [void]$specs.Children.Add((New-AfSpecRow -Icon 'graphics-card' -Text $gpuText))
     }
     if ($inv.Memory) {
-        $channel = if ($inv.Memory.Socketed -and @($inv.Memory.Modules).Count -eq 1) { (T ', un canal') } elseif ($inv.Memory.Socketed -and @($inv.Memory.Modules).Count -ge 2) { ', doble canal' } else { '' }
+        $channel = if ($inv.Memory.Socketed -and @($inv.Memory.Modules).Count -eq 1) { (T ', un canal') } elseif ($inv.Memory.Socketed -and @($inv.Memory.Modules).Count -ge 2) { (T ', doble canal') } else { '' }
         [void]$specs.Children.Add((New-AfSpecRow -Icon 'memory' -Text ('{0} GB{1}' -f $inv.Memory.TotalGB, $channel)))
     }
     if ($inv.Storage) {
@@ -88,7 +87,95 @@ function Set-AfPcCard {
     if ($inv.Os) { [void]$specs.Children.Add((New-AfSpecRow -Icon 'windows-logo' -Text (([string]$inv.Os.Caption -replace '^Microsoft\s+', '')))) }
     if ($inv.Device.IsLaptop) { [void]$specs.Children.Add((New-AfSpecRow -Icon 'plug-charging' -Text $(if ($inv.Device.OnBattery) { (T 'En batería') } else { (T 'Con cargador') }))) }
     $card = $Window.FindName('PcCard')
+    $Window.FindName('PcSkeleton').Visibility = 'Collapsed'
     Start-AfAnimation -Target $card -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 300 -Ease Out -Enabled $Animate | Out-Null
+}
+
+# Esqueletos del análisis (diseño "Afina en vivo"): barras con un brillo que recorre, en los colores del tema.
+function New-AfShimmerBrush {
+    param([Parameter(Mandatory)]$Window, [bool]$Motion = $false)
+    $base = $Window.FindResource('Line').Color
+    $light = $Window.FindResource('Line2').Color
+    $brush = New-Object System.Windows.Media.LinearGradientBrush
+    $brush.StartPoint = New-Object System.Windows.Point(0, 0.5)
+    $brush.EndPoint = New-Object System.Windows.Point(1, 0.5)
+    foreach ($stop in @(@($base, 0.0), @($light, 0.5), @($base, 1.0))) { [void]$brush.GradientStops.Add((New-Object System.Windows.Media.GradientStop($stop[0], $stop[1]))) }
+    $shift = New-Object System.Windows.Media.TranslateTransform
+    $brush.RelativeTransform = $shift
+    if ($Motion) {
+        $sweep = New-Object System.Windows.Media.Animation.DoubleAnimation(-1, 1, (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(1400))))
+        $sweep.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+        $shift.BeginAnimation([System.Windows.Media.TranslateTransform]::XProperty, $sweep)
+    }
+    $brush
+}
+
+function New-AfShimmerBar {
+    param([Parameter(Mandatory)]$Brush, [double]$Width = 120, [double]$Height = 10, [string]$Margin = '0')
+    $bar = New-Object System.Windows.Shapes.Rectangle
+    $bar.Width = $Width
+    $bar.Height = $Height
+    $bar.RadiusX = $Height / 2
+    $bar.RadiusY = $Height / 2
+    $bar.HorizontalAlignment = 'Left'
+    $bar.Margin = $Margin
+    $bar.Fill = $Brush
+    $bar
+}
+
+# Al empezar a analizar: la tarjeta de la PC (si todavía no tiene datos) y un grupo fantasma por categoría.
+function Show-AfSkeleton {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $brush = New-AfShimmerBrush -Window $Window -Motion ([bool]$s.Motion)
+    if (-not $Window.FindName('PcName').Text) {
+        $pc = $Window.FindName('PcSkeleton')
+        $pc.Children.Clear()
+        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 150 -Height 14 -Margin '0,3,0,8'))
+        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 72 -Height 9 -Margin '0,0,0,22'))
+        foreach ($width in 120, 140, 104, 150, 96, 88) { [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width $width -Height 9 -Margin '24,0,0,15')) }
+        $pc.Visibility = 'Visible'
+    }
+    $groups = $Window.FindName('Groups')
+    foreach ($category in Get-AfCategories) {
+        $group = New-Object System.Windows.Controls.StackPanel
+        $group.Tag = 'skeleton:' + $category.Id
+        $group.ClipToBounds = $true
+        if ($groups.Children.Count) {
+            $line = New-Object System.Windows.Shapes.Rectangle
+            $line.Height = 1
+            $line.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Line')
+            [void]$group.Children.Add($line)
+        }
+        [void]$group.Children.Add((New-AfShimmerBar -Brush $brush -Width 92 -Height 8 -Margin '18,16,18,10'))
+        foreach ($k in 0, 1) {
+            $row = New-Object System.Windows.Controls.StackPanel
+            $row.Orientation = 'Horizontal'
+            $row.Margin = '18,6,18,10'
+            $box = New-AfShimmerBar -Brush $brush -Width 15 -Height 15 -Margin '0,0,16,0'
+            $box.RadiusX = 4
+            $box.RadiusY = 4
+            [void]$row.Children.Add($box)
+            $texts = New-Object System.Windows.Controls.StackPanel
+            [void]$texts.Children.Add((New-AfShimmerBar -Brush $brush -Width (190 + 70 * $k) -Height 10 -Margin '0,2,0,7'))
+            [void]$texts.Children.Add((New-AfShimmerBar -Brush $brush -Width 112 -Height 8))
+            [void]$row.Children.Add($texts)
+            [void]$group.Children.Add($row)
+        }
+        [void]$groups.Children.Add($group)
+    }
+    $Window.FindName('EmptyState').Visibility = 'Collapsed'
+    $Window.FindName('PanelBorder').Visibility = 'Visible'
+}
+
+# Una categoría sin filas cierra su fantasma; con animación queda en altura 0 y se va al terminar el análisis.
+function Close-AfSkeletonGroup {
+    param([Parameter(Mandatory)]$Window, [Parameter(Mandatory)]$Group, [bool]$Motion = $false)
+    if (-not $Motion) { $Window.FindName('Groups').Children.Remove($Group); return }
+    $Group.Tag = 'skeleton-closing'
+    $Group.MaxHeight = $Group.ActualHeight
+    Start-AfAnimation -Target $Group -Property ([System.Windows.FrameworkElement]::MaxHeightProperty) -To 0 -DurationMs 250 -Ease Out | Out-Null
+    Start-AfAnimation -Target $Group -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 200 -Ease Out | Out-Null
 }
 
 function Get-AfNavEntries {
@@ -128,7 +215,12 @@ function New-AfNav {
         [void]$grid.Children.Add($label)
         [void]$grid.Children.Add($countHost)
         $button.Content = $grid
-        $button.Add_Click({ param($sender, $e) Set-AfFilter -Window ([System.Windows.Window]::GetWindow($sender)) -Filter $sender.Tag })
+        $button.Add_Click({ param($sender, $e)
+                $w = [System.Windows.Window]::GetWindow($sender)
+                # Elegir otra categoría mientras aplica pausa el seguimiento.
+                Suspend-AfFollow -Window $w
+                Set-AfFilter -Window $w -Filter $sender.Tag
+            })
         [void]$nav.Children.Add($button)
         $refs[$entry.Id] = @{ Button = $button; IconOff = $iconOff; IconOn = $iconOn; Label = $label; CountHost = $countHost; Count = 0 }
     }
@@ -156,6 +248,7 @@ function Set-AfNavCount {
     param([Parameter(Mandatory)]$Window, [string]$Category, [int]$Count, [bool]$Motion = $false)
     $ref = $Window.Tag.Nav[$Category]
     if (-not $ref) { return }
+    $previous = $ref.Count
     $ref.Count = $Count
     $hostGrid = $ref.CountHost
     $hostGrid.Children.Clear()
@@ -169,6 +262,17 @@ function Set-AfNavCount {
     }
     [void]$hostGrid.Children.Add($element)
     Start-AfAnimation -Target $element -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 300 -Ease Icon -Enabled $Motion | Out-Null
+    # Cuando la cuenta cambia, el número da un pequeño salto.
+    if ($Motion -and $previous -ne $Count) {
+        $scale = New-Object System.Windows.Media.ScaleTransform(1, 1)
+        $element.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+        $element.RenderTransform = $scale
+        $bump = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+        [void]$bump.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame(1.3, [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds(120)), (New-AfKeySpline -Ease Out))))
+        [void]$bump.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame(1.0, [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds(300)), (New-AfKeySpline -Ease Out))))
+        $scale.BeginAnimation([System.Windows.Media.ScaleTransform]::ScaleXProperty, $bump)
+        $scale.BeginAnimation([System.Windows.Media.ScaleTransform]::ScaleYProperty, $bump)
+    }
 }
 
 function Get-AfNavCount {
@@ -201,7 +305,7 @@ function Set-AfNavActive {
 }
 
 function Set-AfFilter {
-    param([Parameter(Mandatory)]$Window, [string]$Filter)
+    param([Parameter(Mandatory)]$Window, [string]$Filter, [switch]$NoScroll)
     $state = $Window.Tag
     # Desde el Historial, elegir una categoría vuelve a la lista; mientras deshace, se queda.
     if ($Window.FindName('HistoryPanel').Visibility -eq 'Visible') {
@@ -215,7 +319,171 @@ function Set-AfFilter {
         $group.Visibility = if ($show) { 'Visible' } else { 'Collapsed' }
         if ($group.Tag -eq 'ok' -and $Filter -eq 'ok') { Set-AfOkGroupOpen -Group $group -Open $true -Motion $false }
     }
-    $Window.FindName('ListScroll').ScrollToTop()
+    Update-AfEmptyState -Window $Window
+    if (-not $NoScroll) { $Window.FindName('ListScroll').ScrollToTop() }
+}
+
+# Tarjeta de estado: un círculo con icono, título y texto. Quien la usa agrega líneas debajo.
+function New-AfStateCard {
+    param([string]$Icon, [string]$Title, [string]$Text)
+    $panel = New-Object System.Windows.Controls.StackPanel
+    $head = New-Object System.Windows.Controls.DockPanel
+    $head.Margin = '0,0,0,12'
+    $ring = New-Object System.Windows.Controls.Border
+    $ring.Width = 44
+    $ring.Height = 44
+    $ring.CornerRadius = 22
+    $ring.BorderThickness = 1
+    $ring.Margin = '0,0,14,0'
+    $ring.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Line2')
+    $ring.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Raised')
+    $glyph = New-AfIcon -Name $Icon -Variant $(if ($Icon -in (Get-AfFillIconNames)) { 'Fill' } else { 'Bold' }) -Size 20 -Brush 'Text'
+    $glyph.HorizontalAlignment = 'Center'
+    $glyph.VerticalAlignment = 'Center'
+    $ring.Child = $glyph
+    [System.Windows.Controls.DockPanel]::SetDock($ring, 'Left')
+    [void]$head.Children.Add($ring)
+    $texts = New-Object System.Windows.Controls.StackPanel
+    $texts.VerticalAlignment = 'Center'
+    [void]$texts.Children.Add((New-AfText -Text $Title -Size 15 -Brush 'Text' -Display -Weight 'Medium'))
+    if ($Text) {
+        $sub = New-AfText -Text $Text -Size 12.5 -Brush 'Text2'
+        $sub.Margin = '0,3,0,0'
+        [void]$texts.Children.Add($sub)
+    }
+    [void]$head.Children.Add($texts)
+    [void]$panel.Children.Add($head)
+    $panel
+}
+
+function New-AfStateLine {
+    param([string]$Icon, [string]$Text, [string]$Value, [switch]$Muted)
+    $line = New-Object System.Windows.Controls.Border
+    $line.BorderThickness = '0,1,0,0'
+    $line.Padding = '0,9,0,9'
+    $line.Background = [System.Windows.Media.Brushes]::Transparent
+    $line.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Line')
+    $dock = New-Object System.Windows.Controls.DockPanel
+    $mark = New-AfIcon -Name $Icon -Size 14 -Brush $(if ($Muted) { 'Text3' } else { 'Text' })
+    $mark.Margin = '2,0,14,0'
+    [System.Windows.Controls.DockPanel]::SetDock($mark, 'Left')
+    [void]$dock.Children.Add($mark)
+    if ($Value) {
+        $valueText = New-AfText -Text $Value -Size 12 -Brush $(if ($Muted) { 'Text3' } else { 'Text2' })
+        $valueText.Margin = '12,0,0,0'
+        [System.Windows.Controls.DockPanel]::SetDock($valueText, 'Right')
+        [void]$dock.Children.Add($valueText)
+    }
+    [void]$dock.Children.Add((New-AfText -Text $Text -Size 12.5 -Brush $(if ($Muted) { 'Text3' } else { 'Text2' })))
+    $line.Child = $dock
+    $line
+}
+
+# Sin pantallas vacías (diseño "Afina en vivo"): una categoría en orden o la PC ya afinada muestran su tarjeta.
+function Update-AfEmptyState {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $empty = $Window.FindName('EmptyState')
+    if ($s.Phase -in 'scanning', 'history' -or $Window.FindName('HistoryPanel').Visibility -eq 'Visible') {
+        $empty.Visibility = 'Collapsed'
+        return
+    }
+    $visible = @($Window.FindName('Groups').Children | Where-Object { $_.Visibility -eq 'Visible' })
+    $Window.FindName('PanelBorder').Visibility = if ($visible.Count) { 'Visible' } else { 'Collapsed' }
+    $hasRows = @($visible | Where-Object { $_.Tag -ne 'ok' }).Count -gt 0
+    $results = @($s.Results)
+    $card = $null
+    if ($s.Filter -eq 'all' -and -not $hasRows -and $results.Count) {
+        $card = New-AfStateCard -Icon 'check-circle' -Title (T 'Esta PC está afinada')
+        foreach ($category in Get-AfCategories) {
+            $count = @($results | Where-Object { $_.Check.Category -eq $category.Id }).Count
+            if (-not $count) { continue }
+            $line = New-AfStateLine -Icon $category.Icon -Text $category.Name -Value ((T '{0} revisados') -f $count)
+            $line.Cursor = 'Hand'
+            $line.Tag = $category.Id
+            $line.Add_MouseLeftButtonUp({ param($sender, $e) Set-AfFilter -Window ([System.Windows.Window]::GetWindow($sender)) -Filter $sender.Tag })
+            [void]$card.Children.Add($line)
+        }
+    } elseif ($s.Filter -notin 'all', 'ok' -and -not $hasRows) {
+        $category = @(Get-AfCategories | Where-Object { $_.Id -eq $s.Filter })[0]
+        $checked = @($results | Where-Object { $_.Check.Category -eq $s.Filter })
+        if ($category -and $checked.Count) {
+            $text = if ($checked.Count -eq 1) { (T 'Se revisó 1 punto y no hay nada para cambiar.') } else { (T 'Se revisaron {0} puntos y no hay nada para cambiar.') -f $checked.Count }
+            $card = New-AfStateCard -Icon 'check-circle' -Title ((T '{0} en orden') -f $category.Name) -Text $text
+            foreach ($result in $checked) {
+                $title = if ($result.Detection.Title) { $result.Detection.Title } else { $result.Check.Title }
+                $line = if ($result.Detection.State -eq 'NotApplicable') { New-AfStateLine -Icon 'info' -Text $title -Value (T 'No aplica') -Muted } else { New-AfStateLine -Icon 'check' -Text $title -Value $result.Detection.Current }
+                [void]$card.Children.Add($line)
+            }
+        }
+    }
+    if ($card) {
+        $empty.Child = $card
+        $empty.Visibility = 'Visible'
+        Start-AfAnimation -Target $empty -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 250 -Ease Out -Enabled ([bool]$s.Motion) | Out-Null
+    } else {
+        $empty.Visibility = 'Collapsed'
+        $empty.Child = $null
+    }
+}
+
+# Seguimiento del cambio en curso (diseño "Afina en vivo"): solo mientras aplica o deshace desde la lista.
+function Test-AfFollowPhase {
+    param([Parameter(Mandatory)]$State)
+    $State.Phase -in 'applying', 'display', 'restore', 'undoing' -and -not $State.UndoFromHistory
+}
+
+# Desplaza la lista con una salida suave; sin animaciones, va directo.
+function Start-AfScrollTo {
+    param([Parameter(Mandatory)]$Window, [double]$Offset, [bool]$Motion = $false)
+    $s = $Window.Tag
+    $scroll = $Window.FindName('ListScroll')
+    if ($s.ScrollTimer) { $s.ScrollTimer.Stop(); $s.ScrollTimer = $null }
+    $target = [math]::Max(0, [math]::Min($Offset, $scroll.ScrollableHeight))
+    if (-not $Motion) { $scroll.ScrollToVerticalOffset($target); return }
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds(15)
+    $timer.Tag = @{ Scroll = $scroll; From = $scroll.VerticalOffset; To = $target; Start = Get-Date }
+    $timer.Add_Tick({ param($sender, $e)
+            $st = $sender.Tag
+            $t = [math]::Min(1, ((Get-Date) - $st.Start).TotalMilliseconds / 300)
+            $st.Scroll.ScrollToVerticalOffset($st.From + ($st.To - $st.From) * (1 - [math]::Pow(1 - $t, 3)))
+            if ($t -ge 1) { $sender.Stop() }
+        })
+    $s.ScrollTimer = $timer
+    $timer.Start()
+}
+
+function Move-AfFollow {
+    param([Parameter(Mandatory)]$Window, [string]$Id)
+    $s = $Window.Tag
+    if (-not $s.Follow) { return }
+    $row = Get-AfRowById -Window $Window -Id $Id
+    if (-not $row) { return }
+    if ($s.Filter -ne $row.Tag.Check.Category) { Set-AfFilter -Window $Window -Filter $row.Tag.Check.Category -NoScroll }
+    $scroll = $Window.FindName('ListScroll')
+    $scroll.UpdateLayout()
+    $y = 0
+    try { $y = $row.TranslatePoint((New-Object System.Windows.Point(0, 0)), $Window.FindName('PanelBorder')).Y } catch { }
+    Start-AfScrollTo -Window $Window -Offset ($y - 24) -Motion ([bool]$s.Motion)
+}
+
+function Suspend-AfFollow {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    if ($s -isnot [hashtable] -or -not $s.Follow -or -not (Test-AfFollowPhase -State $s)) { return }
+    $s.Follow = $false
+    $chip = $Window.FindName('FollowChip')
+    $chip.Visibility = 'Visible'
+    Start-AfAnimation -Target $chip -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 250 -Ease Out -Enabled ([bool]$s.Motion) | Out-Null
+}
+
+function Resume-AfFollow {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $s.Follow = $true
+    $Window.FindName('FollowChip').Visibility = 'Collapsed'
+    if ($s.FollowId) { Move-AfFollow -Window $Window -Id $s.FollowId }
 }
 
 function Update-AfGaugeLayout {
@@ -344,15 +612,24 @@ function Add-AfRowHandlers {
 function Add-AfCategoryGroup {
     param([Parameter(Mandatory)]$Window, [Parameter(Mandatory)]$Category, [object[]]$Results = @(), [bool]$Motion = $false)
     $visible = @($Results | Where-Object { $_.Detection.State -in 'Improvable', 'Manual', 'Info', 'Error' })
-    if (-not $visible.Count) { return }
     $groups = $Window.FindName('Groups')
+    $skeleton = @($groups.Children | Where-Object { $_.Tag -eq ('skeleton:' + $Category.Id) })[0]
+    if (-not $visible.Count) {
+        if ($skeleton) { Close-AfSkeletonGroup -Window $Window -Group $skeleton -Motion $Motion }
+        return
+    }
     $Window.FindName('PanelBorder').Visibility = 'Visible'
-    $first = @($groups.Children | Where-Object { $_.Tag -ne 'ok' }).Count -eq 0
+    $first = @($groups.Children | Where-Object { $_.Tag -ne 'ok' -and "$($_.Tag)" -notlike 'skeleton*' }).Count -eq 0
     $group = New-AfGroupElement -Category $Category -Results $visible -First:$first
     $filter = $Window.Tag.Filter
     $group.Visibility = if ($filter -eq 'all' -or $filter -eq $Category.Id) { 'Visible' } else { 'Collapsed' }
     $okGroup = @($groups.Children | Where-Object { $_.Tag -eq 'ok' })[0]
-    if ($okGroup) { $groups.Children.Insert($groups.Children.IndexOf($okGroup), $group) } else { [void]$groups.Children.Add($group) }
+    if ($skeleton) {
+        # El grupo real entra en el lugar de su fantasma.
+        $index = $groups.Children.IndexOf($skeleton)
+        $groups.Children.RemoveAt($index)
+        $groups.Children.Insert($index, $group)
+    } elseif ($okGroup) { $groups.Children.Insert($groups.Children.IndexOf($okGroup), $group) } else { [void]$groups.Children.Add($group) }
     $k = 0
     foreach ($child in $group.Children) {
         if ($child -is [System.Windows.Controls.Border] -and $child.Tag) { Add-AfRowHandlers -Row $child }
@@ -514,4 +791,5 @@ function Show-AfResults {
     $Window.FindName('PcCard').Opacity = 1
     Update-AfPrimary -Window $Window
     Set-AfNeedle -Window $Window -Fraction (Get-AfScore -Results $Results) -Motion $Animate
+    Update-AfEmptyState -Window $Window
 }

@@ -133,6 +133,7 @@ function Set-AfReadyView {
     $s = $Window.Tag
     $s.Phase = 'ready'
     $Window.FindName('Groups').IsHitTestVisible = $true
+    Stop-AfFollow -Window $Window
     $effective = @(Get-AfEffectiveResults -Window $Window)
     $summary = Get-AfSummary -Results $effective
     $score = Get-AfScore -Results $effective
@@ -147,6 +148,7 @@ function Set-AfDoneView {
     $s = $Window.Tag
     $s.Phase = 'done'
     $Window.FindName('Groups').IsHitTestVisible = $true
+    Stop-AfFollow -Window $Window
     $changes = @($s.Applied.Values)
     $applied = @($changes | Where-Object { $_.Status -eq 'Applied' })
     $notApplied = @($changes | Where-Object { $_.Status -in 'Failed', 'Reverted' }).Count
@@ -229,7 +231,10 @@ function Start-AfApply {
     $s.ApplyTotal = $c.Count
     $s.ApplyIndex = 0
     $s.ApplyCount = 0
-    $s.ApplyNote = 'Preparando…'
+    $s.ApplyNote = (T 'Preparando…')
+    $s.Follow = $true
+    $s.FollowId = $null
+    $s.ApplyHoldUntil = [datetime]::MinValue
     $s.Shared = [hashtable]::Synchronized(@{ DisplayAnswer = $null; ContinueWithoutRestore = $null; Current = $null })
     $s.ApplyQueue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
     $plan = [pscustomobject]@{
@@ -251,8 +256,34 @@ function Start-AfApply {
 function Set-AfApplyingFooter {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
-    $label = if ($s.ApplyIndex -gt 0) { (T 'Aplicando {0} de {1}') -f $s.ApplyIndex, $s.ApplyTotal } else { 'Preparando…' }
+    $label = if ($s.ApplyIndex -gt 0) { (T 'Aplicando {0} de {1}') -f $s.ApplyIndex, $s.ApplyTotal } else { (T 'Preparando…') }
     Set-AfFooter -Window $Window -Note $s.ApplyNote -NoteIcon 'shield-check' -Primary $label -Busy -Motion $s.Motion
+}
+
+# Arriba, mientras aplica: "Optimizando 2 de 5" y el cambio en curso con su paso.
+function Set-AfApplyingHeader {
+    param([Parameter(Mandatory)]$Window, [string]$Step)
+    $s = $Window.Tag
+    $Window.FindName('Title').Text = (T 'Optimizando')
+    $count = $Window.FindName('TitleCount')
+    $count.Text = (T '{0} de {1}') -f $s.ApplyIndex, [math]::Max($s.ApplyIndex, $s.ApplyTotal)
+    $count.Visibility = 'Visible'
+    $rest = ' · ' + $(if ($Step) { Get-AfStepText -Key $Step } else { '' }) + '…'
+    Set-AfLeadSummary -Window $Window -Lead $s.FollowTitle -Rest $rest
+}
+
+# Con animaciones, la ventana deja ver cada evento un momento. El motor no espera: solo la lectura de la cola.
+function Set-AfApplyHold {
+    param([Parameter(Mandatory)]$Window, [int]$Milliseconds)
+    $s = $Window.Tag
+    if ($s.Motion) { $s.ApplyHoldUntil = (Get-Date).AddMilliseconds($Milliseconds) }
+}
+
+# Fin del seguimiento: sin píldora ni cuenta junto al título.
+function Stop-AfFollow {
+    param([Parameter(Mandatory)]$Window)
+    $Window.FindName('FollowChip').Visibility = 'Collapsed'
+    $Window.FindName('TitleCount').Visibility = 'Collapsed'
 }
 
 function Start-AfDisplayCountdown {
@@ -285,6 +316,10 @@ function Start-AfUndo {
     $s.UndoFromHistory = [bool]$FromHistory
     $s.Phase = 'undoing'
     $s.UndoIndex = 0
+    $s.UndoSessionPath = $SessionPath
+    $s.Follow = $true
+    $s.FollowId = $null
+    $s.ApplyHoldUntil = [datetime]::MinValue
     $session = Import-AfSession -Path $SessionPath
     $s.UndoTotal = @($session.Changes | Where-Object { ($ChangeIds.Count -eq 0 -or $ChangeIds -contains $_.CheckId) -and (Test-AfChangeUndoable -Change $_) }).Count
     if ($FromHistory) { $Window.FindName('HistoryList').IsHitTestVisible = $false } else { $Window.FindName('Groups').IsHitTestVisible = $false }
@@ -328,14 +363,40 @@ function Receive-AfApplyEvent {
         'Cancelled' { Set-AfReadyView -Window $Window }
         'ChangeStart' {
             $s.ApplyIndex++
+            $s.FollowId = $Item.Id
+            $s.FollowStep = $null
             $row = Get-AfRowById -Window $Window -Id $Item.Id
-            if ($row) { Set-AfRowStatus -Row $row -Status Applying -Motion $s.Motion }
+            if ($row) {
+                Set-AfRowStatus -Row $row -Status Applying -Motion $s.Motion
+                $s.FollowTitle = if ($row.Tag.Detection.Title) { $row.Tag.Detection.Title } else { $row.Tag.Check.Title }
+                # La vista va sola a la fila en curso y la abre con sus pasos reales.
+                Move-AfFollow -Window $Window -Id $Item.Id
+                Open-AfRowSteps -Row $row -Keys $(if ($row.Tag.Check.NoUndo) { @('apply', 'backup') } else { @('save', 'apply', 'backup') }) -Motion $s.Motion
+            }
+            Set-AfApplyingHeader -Window $Window
             Set-AfApplyingFooter -Window $Window
+            Set-AfApplyHold -Window $Window -Milliseconds 300
+        }
+        'ChangeStep' {
+            # Desde el Historial, el paso se escribe en la línea del cambio.
+            if ($s.Phase -eq 'undoing' -and $s.UndoFromHistory) {
+                if ($s.HistoryStepText) { $s.HistoryStepText.Text = Get-AfStepText -Key $Item.Step }
+                Set-AfApplyHold -Window $Window -Milliseconds 250
+                break
+            }
+            $row = Get-AfRowById -Window $Window -Id $Item.Id
+            if ($row) {
+                if ($s.FollowStep) { Set-AfRowStepState -Row $row -Key $s.FollowStep -State Done }
+                Set-AfRowStepState -Row $row -Key $Item.Step -State Running
+            }
+            $s.FollowStep = $Item.Step
+            if ($s.Phase -ne 'undoing') { Set-AfApplyingHeader -Window $Window -Step $Item.Step }
+            Set-AfApplyHold -Window $Window -Milliseconds 250
         }
         'ChangeProgress' {
-            # Avance de un cambio largo (actualizaciones): solo cambia la nota, el indicador sigue girando.
+            # Avance de un cambio largo (actualizaciones): va en el paso Aplicando; el indicador sigue girando.
             $row = Get-AfRowById -Window $Window -Id $Item.Id
-            if ($row) { Set-AfRowNote -Row $row -Text $Item.Text }
+            if ($row) { Set-AfRowStepState -Row $row -Key 'apply' -State Running -Detail $Item.Text }
         }
         'ConfirmDisplay' {
             $s.Phase = 'display'
@@ -352,14 +413,20 @@ function Receive-AfApplyEvent {
             $row = Get-AfRowById -Window $Window -Id $Item.Id
             if ($row) {
                 $message = if ($change.Status -eq 'Applied') { $change.Note } else { $change.Message }
+                # Aplicado: los pasos se cierran. Si no, el paso en curso queda marcado como fallido a la vista.
+                if ($change.Status -eq 'Applied') { Close-AfRowSteps -Row $row -Motion $s.Motion }
+                elseif ($s.FollowStep) { Set-AfRowStepState -Row $row -Key $s.FollowStep -State Failed }
                 Set-AfRowStatus -Row $row -Status $change.Status -Message $message -Motion $s.Motion
             }
+            $s.FollowStep = $null
             Set-AfProgress -Window $Window -Fraction ($s.ApplyCount / [math]::Max(1, $s.ApplyTotal)) -Motion $s.Motion
             Update-AfProgressView -Window $Window -Motion $s.Motion
             Set-AfApplyingFooter -Window $Window
         }
         'ApplyDone' {
             $s.SessionPath = $Item.SessionPath
+            # Siguiendo, la vista vuelve a Todo; si la persona eligió otra, se queda ahí.
+            if ($s.Follow) { Set-AfFilter -Window $Window -Filter 'all' }
             Set-AfDoneView -Window $Window
             $score = Get-AfScore -Results @(Get-AfEffectiveResults -Window $Window)
             Set-AfNeedle -Window $Window -Fraction $score -Motion $s.Motion -DurationMs 700 -Ease Out
@@ -368,10 +435,19 @@ function Receive-AfApplyEvent {
         }
         'UndoStart' {
             $s.UndoIndex++
+            $s.FollowId = $Item.Id
+            $s.FollowStep = $null
             if (-not $s.UndoFromHistory) {
                 $row = Get-AfRowById -Window $Window -Id $Item.Id
-                if ($row) { Set-AfRowStatus -Row $row -Status Undoing -Motion $s.Motion }
+                if ($row) {
+                    Set-AfRowStatus -Row $row -Status Undoing -Motion $s.Motion
+                    Move-AfFollow -Window $Window -Id $Item.Id
+                    Open-AfRowSteps -Row $row -Keys @('restore', 'backup') -Motion $s.Motion
+                }
+            } else {
+                Set-AfHistoryLineBusy -Window $Window -SessionPath $s.UndoSessionPath -Id $Item.Id
             }
+            Set-AfApplyHold -Window $Window -Milliseconds 300
             Set-AfFooter -Window $Window -Primary ((T 'Deshaciendo {0} de {1}') -f $s.UndoIndex, [math]::Max($s.UndoIndex, $s.UndoTotal)) -Busy
         }
         'UndoDone' {
@@ -381,8 +457,10 @@ function Receive-AfApplyEvent {
                     if ($s.Applied) { $s.Applied.Remove($Item.Id) }
                     if ($row) { Reset-AfRow -Row $row -Motion $s.Motion | Out-Null }
                 } elseif ($row) {
+                    if ($s.FollowStep) { Set-AfRowStepState -Row $row -Key $s.FollowStep -State Failed }
                     Set-AfRowStatus -Row $row -Status Failed -Message $Item.Change.Message -Motion $s.Motion
                 }
+                $s.FollowStep = $null
                 Update-AfProgressView -Window $Window -Motion $s.Motion
             }
         }

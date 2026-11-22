@@ -474,6 +474,25 @@ Queda 1 para hacer a mano.==>1 left to do by hand.
 Quedan {0} para hacer a mano.==>{0} left to do by hand.
 Reinicia para terminar 1.==>1 needs a restart to finish.
 Reinicia para terminar {0}.==>{0} need a restart to finish.
+Guardando el valor original==>Saving the original value
+Aplicando==>Applying
+Guardando el respaldo==>Saving the backup
+Restaurando el valor original==>Restoring the original value
+Optimizando==>Optimizing
+{0} de {1}==>{0} of {1}
+Seguir el avance==>Follow progress
+Activando Restaurar sistema…==>Turning on System Restore…
+{0} en orden==>{0} all good
+Se revisaron {0} puntos y no hay nada para cambiar.==>{0} checks reviewed, nothing to change.
+Se revisó 1 punto y no hay nada para cambiar.==>1 check reviewed, nothing to change.
+No aplica==>Doesn't apply
+Esta PC está afinada==>This PC is tuned up
+{0} revisados==>{0} checked
+Todavía no hay cambios en esta PC==>No changes on this PC yet
+Laptop gamer==>Gaming laptop
+Escritorio gamer==>Gaming desktop
+, doble canal==>, dual channel
+Cada vez que optimizas, Afina guarda aquí los valores originales para deshacerlos cuando quieras.==>Every time you optimize, Afina saves the original values here so you can undo them whenever you want.
 Afina necesita permisos de administrador. Abre PowerShell como administrador (clic derecho en Inicio) y vuelve a pegar la línea.==>Afina needs administrator rights. Open PowerShell as administrator (right-click Start) and paste the line again.
 Reiniciar ahora==>Restart now
 Restaurar sistema está bloqueado en esta PC; los valores originales igual se guardan.==>System Restore is blocked on this PC; the original values are still saved.
@@ -498,7 +517,6 @@ Sin punto de restauración: Restaurar sistema está apagado. Los valores origina
 Sin punto de restauración; los valores originales se guardan en Afina.==>No restore point; the original values are saved in Afina.
 Sistema==>System
 Tema==>Theme
-Todavía no se aplicaron cambios en esta PC.==>No changes have been applied on this PC yet.
 Todo==>All
 Todo lo que Afina puede ajustar ya está en orden. {0} para hacer a mano.==>Everything Afina can adjust is already in order. {0} to do by hand.
 Valores originales guardados. Se puede deshacer desde Historial.==>Original values saved. It can be undone from History.

@@ -14,7 +14,10 @@ function Enable-AfSystemRestore { Start-Sleep -Milliseconds 400; $true }
 function New-AfRestorePoint { Start-Sleep -Milliseconds 900; [pscustomobject]@{ Ok = $true; At = (Get-Date).ToString('o'); Message = $null } }
 function Restore-AfDemo { param($Record, $User) Start-Sleep -Milliseconds 250 }
 function Invoke-AfChange {
-    param($Session, $Check, $Detection, $Inventory, $ConfirmDisplay, $Progress)
+    param($Session, $Check, $Detection, $Inventory, $ConfirmDisplay, $Progress, $Step)
+    # Los mismos pasos que el motor de verdad (save, apply, backup), con pausas de mentira.
+    if ($Step -and -not $Check.NoUndo) { & $Step 'save'; Start-Sleep -Milliseconds 300 }
+    if ($Step) { & $Step 'apply' }
     Start-Sleep -Milliseconds 650
     if ($Check.Id -like 'updates.*' -and $Progress) {
         foreach ($n in 1, 2) { foreach ($step in 'Descargando {0} de {1}', 'Instalando {0} de {1}') { & $Progress ((T $step) -f $n, 2); Start-Sleep -Milliseconds 700 } }
@@ -27,6 +30,7 @@ function Invoke-AfChange {
         Status = $status; Message = $(if ($status -eq 'Reverted') { ((T 'Se volvió a {0} Hz') -f 60) + '.' }); Note = $(if ($Check.Id -eq 'storage.temp') { ((T 'Se liberaron {0}') -f (Format-AfSize -Bytes 2040109466)) + '.' })
         AppliedAt = (Get-Date).ToString('o'); UndoneAt = $null; Records = $records
     }
+    if ($Step -and $status -eq 'Applied') { & $Step 'backup'; Start-Sleep -Milliseconds 250 }
     [void]$Session.Changes.Add($change)
     Save-AfSession -Session $Session
     $change
@@ -51,8 +55,16 @@ if ($AutoPlay) {
                 param($sender, $e)
                 $st = $sender.Tag
                 $w = $st.Window
+                # Una captura espera la ventana (Wait-AfUi) y el temporizador vuelve a entrar: un solo tick a la vez.
+                if ($st.Busy) { return }
+                $st.Busy = $true
                 $shoot = { param($name) if (-not $st.Shots[$name]) { $st.Shots[$name] = $true; Save-AfWindowSnapshot -Window $w -Path (Join-Path $Global:AfDemoOut "demo-$name.png") } }
+                try {
                 switch ($w.Tag.Phase) {
+                    'scanning' {
+                        # El análisis a medio armar: ya están los datos de la PC y quedan grupos fantasma.
+                        if ($w.FindName('PcName').Text -and @($w.FindName('Groups').Children | Where-Object { "$($_.Tag)" -like 'skeleton:*' }).Count) { & $shoot 'analizando' }
+                    }
                     'ready' {
                         if ($st.Shots['analisis']) { return }
                         if ($Global:AfDemoOptional -and -not $st.Shots['opcional']) {
@@ -91,24 +103,39 @@ if ($AutoPlay) {
                             try { $encoder.Save($stream) } finally { $stream.Dispose() }
                             $prefs.IsOpen = $false
                         }
+                        # Sin nada marcado (una PC ya afinada), el demo marca lo primero que haya: aplicar es de mentira.
+                        if (-not (Get-AfSelectedCount -Window $w)) {
+                            $box = @(Get-AfRows -Window $w | ForEach-Object { Get-AfRowCheckBox -Row $_ } | Where-Object { $_ })[0]
+                            if ($box) { $box.IsChecked = $true; Update-AfPrimary -Window $w }
+                        }
                         # Sin nada para aplicar no hay confirmación: termina aquí.
                         if (-not (Get-AfSelectedCount -Window $w)) { $sender.Stop(); $w.Close(); return }
                         Invoke-AfPrimaryAction -Window $w
                     }
                     'confirm' { & $shoot 'confirmar'; Invoke-AfPrimaryAction -Window $w }
                     'applying' {
+                        # Una fila con sus pasos a la vista (uno en curso).
+                        if (@(Get-AfRows -Window $w | Where-Object { @($_.FindName('Steps').Children | Where-Object { $_.Resources['State'] -eq 'Running' }).Count }).Count) { & $shoot 'paso' }
                         if ($Global:AfDemoOptional) {
-                            $busy = @(Get-AfRows -Window $w | Where-Object { $_.FindName('RowNote').Text -match '^(Descargando|Instalando|Actualizando|Downloading|Installing|Updating)' })
+                            $busy = @(Get-AfRows -Window $w | Where-Object { @($_.FindName('Steps').Children | Where-Object { $_.Tag -eq 'apply' -and $_.Children[1].Text -match ' · ' }).Count })
                             if ($busy.Count) { & $shoot 'aplicando' }
                         } elseif ($w.Tag.ApplyCount -ge 2) { & $shoot 'aplicando' }
                     }
                     'display' { & $shoot 'pantalla'; Invoke-AfPrimaryAction -Window $w }
                     'done' {
                         $st.DoneTicks++
-                        if ($st.DoneTicks -ge 5) { & $shoot 'listo'; Show-AfHistory -Window $w }
+                        if ($st.DoneTicks -ge 5) {
+                            & $shoot 'listo'
+                            # Una categoría sin nada para cambiar muestra su tarjeta.
+                            $groups = @($w.FindName('Groups').Children)
+                            $quiet = @(Get-AfCategories | Where-Object { $id = $_.Id; -not @($groups | Where-Object { $_.Tag -eq $id }).Count })[0]
+                            if ($quiet) { Set-AfFilter -Window $w -Filter $quiet.Id; & $shoot 'en-orden'; Set-AfFilter -Window $w -Filter 'all' }
+                            Show-AfHistory -Window $w
+                        }
                     }
                     'history' { & $shoot 'historial'; $sender.Stop(); $w.Close() }
                 }
+                } finally { $st.Busy = $false }
             })
         $timer.Start()
     }

@@ -23,9 +23,11 @@ function Test-AfChangeUndoable {
 
 # Aplica una revisión como un todo: si algo falla a mitad, se revierte lo de esa revisión.
 function Invoke-AfChange {
-    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)][hashtable]$Check, $Detection, $Inventory, [scriptblock]$ConfirmDisplay, [scriptblock]$Progress)
+    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)][hashtable]$Check, $Detection, $Inventory, [scriptblock]$ConfirmDisplay, [scriptblock]$Progress, [scriptblock]$Step)
     $user = if ($Inventory -and $Inventory.User) { $Inventory.User } else { Get-AfUserForSid -Sid $Session.User.Sid }
-    $tx = New-AfTransaction -User $user -ConfirmDisplay $ConfirmDisplay -Progress $Progress
+    $tx = New-AfTransaction -User $user -ConfirmDisplay $ConfirmDisplay -Progress $Progress -Step $Step
+    # Sin valor original que guardar, el primer paso ya es aplicar.
+    Send-AfTxStep -Tx $tx -Name $(if ($Check.NoUndo) { 'apply' } else { 'save' })
     $title = if ($Detection -and $Detection.Title) { $Detection.Title } else { $Check.Title }
     $change = [pscustomobject]@{
         CheckId = $Check.Id; Title = $title; NeedsReboot = [bool]$Check.NeedsReboot
@@ -40,6 +42,7 @@ function Invoke-AfChange {
         $change.AppliedAt = (Get-Date).ToString('o')
         if ($tx.Notes.Count) { $change.Note = @($tx.Notes) -join ' ' }
         Write-AfLog -Level Info -Message ('Aplicado {0} ({1} registros).' -f $Check.Id, $tx.Records.Count)
+        Send-AfTxStep -Tx $tx -Name 'backup'
     } catch {
         $failure = $_
         $reason = Get-AfApplyReason -ErrorRecord $failure
@@ -84,7 +87,7 @@ function Invoke-AfApplyPlan {
     $restore = $null
     if ($Plan.RestoreAction -in 'create', 'enable') {
         if ($Plan.RestoreAction -eq 'enable') {
-            $Queue.Enqueue([pscustomobject]@{ Type = 'Stage'; Text = 'Activando Restaurar sistema…' })
+            $Queue.Enqueue([pscustomobject]@{ Type = 'Stage'; Text = (T 'Activando Restaurar sistema…') })
             Enable-AfSystemRestore | Out-Null
         }
         $Queue.Enqueue([pscustomobject]@{ Type = 'Stage'; Text = (T 'Creando punto de restauración…') })
@@ -124,10 +127,14 @@ function Invoke-AfApplyPlan {
         param($text)
         $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeProgress'; Id = $Shared.Current; Text = [string]$text })
     }.GetNewClosure()
+    $step = {
+        param($name)
+        $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeStep'; Id = $Shared.Current; Step = [string]$name })
+    }.GetNewClosure()
     foreach ($item in $items) {
         $Shared.Current = $item.Id
         $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeStart'; Id = $item.Id })
-        $change = Invoke-AfChange -Session $session -Check $item.Check -Detection $item.Detection -Inventory $inventory -ConfirmDisplay $confirm -Progress $progress
+        $change = Invoke-AfChange -Session $session -Check $item.Check -Detection $item.Detection -Inventory $inventory -ConfirmDisplay $confirm -Progress $progress -Step $step
         $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeDone'; Id = $item.Id; Change = $change })
     }
     $Queue.Enqueue([pscustomobject]@{ Type = 'ApplyDone'; SessionPath = $session.Path })
@@ -143,15 +150,19 @@ function Invoke-AfUndoPlan {
     [array]::Reverse($changes)
     foreach ($change in $changes) {
         $Queue.Enqueue([pscustomobject]@{ Type = 'UndoStart'; Id = $change.CheckId })
-        Undo-AfChange -Session $session -Change $change | Out-Null
+        $id = $change.CheckId
+        $step = { param($name) $Queue.Enqueue([pscustomobject]@{ Type = 'ChangeStep'; Id = $id; Step = [string]$name }) }.GetNewClosure()
+        Undo-AfChange -Session $session -Change $change -Step $step | Out-Null
         $Queue.Enqueue([pscustomobject]@{ Type = 'UndoDone'; Id = $change.CheckId; Change = $change })
     }
     $Queue.Enqueue([pscustomobject]@{ Type = 'UndoFinished'; SessionPath = $session.Path })
 }
 
 function Undo-AfChange {
-    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)]$Change)
+    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)]$Change, [scriptblock]$Step)
     if (-not (Test-AfChangeUndoable -Change $Change)) { return $Change }
+    $steps = [pscustomobject]@{ Step = $Step; ApplySent = $true }
+    Send-AfTxStep -Tx $steps -Name 'restore'
     $user = Get-AfUserForSid -Sid $Session.User.Sid
     $result = Undo-AfRecords -Records @($Change.Records) -User $user
     $left = @($result.Failed)
@@ -165,6 +176,7 @@ function Undo-AfChange {
         $Change.Message = $null
     }
     Write-AfLog -Level Info -Message ('Deshacer {0}: {1}' -f $Change.CheckId, $Change.Status)
+    if ($Change.Status -eq 'Undone') { Send-AfTxStep -Tx $steps -Name 'backup' }
     Save-AfSession -Session $Session
     $Change
 }

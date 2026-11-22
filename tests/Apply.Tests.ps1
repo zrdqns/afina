@@ -9,6 +9,16 @@
             Detect = { param($inv) New-AfDetection -State Improvable }; Apply = $Apply
         }
     }
+    # Corre el plan de aplicar con una revisión y devuelve sus eventos ChangeStep.
+    function Get-TestSteps($Check) {
+        $queue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
+        $plan = [pscustomobject]@{
+            Inventory = $script:inv; RestoreAction = 'off'; BackupDirectory = (Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))); Version = 'prueba'
+            Items = @([pscustomobject]@{ Id = $Check.Id; Detection = $script:detected })
+        }
+        Invoke-AfApplyPlan -Plan $plan -Queue $queue -Shared ([hashtable]::Synchronized(@{})) -Catalog @($Check)
+        @($queue.ToArray() | Where-Object { $_.Type -eq 'ChangeStep' })
+    }
 }
 
 AfterAll {
@@ -161,6 +171,35 @@ Describe 'Invoke-AfChange y Undo-AfChange' {
         $progress.Count | Should -Be 1
         $progress[0].Id | Should -Be 'test.change'
         $progress[0].Text | Should -Be 'Paso 1'
+    }
+
+    # Pasos reales para la ventana (diseño "Afina en vivo"): salen de la transacción, no de un reloj.
+    It 'ChangeStep sale en orden: save, apply, backup' {
+        $check = New-TestCheck { param($inv, $detected, $tx) Set-AfRegistryValue -Tx $tx -Path $script:key -Name 'Uno' -Type DWord -Value 2 | Out-Null }
+        $steps = @(Get-TestSteps -Check $check)
+        @($steps.Step) | Should -Be @('save', 'apply', 'backup')
+        @($steps.Id | Select-Object -Unique) | Should -Be @('test.change')
+    }
+
+    It 'una revisión NoUndo empieza en apply' {
+        $check = New-TestCheck { param($inv, $detected, $tx) }
+        $check.NoUndo = $true
+        @((Get-TestSteps -Check $check).Step) | Should -Be @('apply', 'backup')
+    }
+
+    It 'si el cambio falla no hay más pasos' {
+        $check = New-TestCheck { param($inv, $detected, $tx) throw (New-AfApplyError -Reason 'no') }
+        @((Get-TestSteps -Check $check).Step) | Should -Be @('save')
+    }
+
+    It 'deshacer envía restore y backup' {
+        $check = New-TestCheck { param($inv, $detected, $tx) Set-AfRegistryValue -Tx $tx -Path $script:key -Name 'Uno' -Type DWord -Value 2 | Out-Null }
+        [void](Invoke-AfChange -Session $script:session -Check $check -Detection $script:detected -Inventory $script:inv)
+        $queue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
+        Invoke-AfUndoPlan -Plan ([pscustomobject]@{ Mode = 'Undo'; SessionPath = $script:session.Path; ChangeIds = @() }) -Queue $queue
+        $steps = @($queue.ToArray() | Where-Object { $_.Type -eq 'ChangeStep' })
+        @($steps.Step) | Should -Be @('restore', 'backup')
+        $steps[0].Id | Should -Be 'test.change'
     }
 }
 
