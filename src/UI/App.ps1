@@ -137,7 +137,7 @@ function Show-AfSkeleton {
         $pc.Visibility = 'Visible'
     }
     $groups = $Window.FindName('Groups')
-    foreach ($category in Get-AfCategories) {
+    foreach ($category in @(Get-AfCategories | Where-Object { $_.Id -ne 'windows' })) {
         $group = New-Object System.Windows.Controls.StackPanel
         $group.Tag = 'skeleton:' + $category.Id
         $group.ClipToBounds = $true
@@ -199,7 +199,7 @@ function New-AfNav {
         }
         $iconHost = New-Object System.Windows.Controls.Grid
         $iconOff = New-AfIcon -Name $entry.Icon -Size 16 -Brush 'Text2'
-        $iconOn = New-AfIcon -Name $entry.Icon -Variant Fill -Size 16 -Brush 'Text'
+        $iconOn = New-AfIcon -Name $entry.Icon -Variant $(if ($entry.Icon -in (Get-AfFillIconNames)) { 'Fill' } else { 'Bold' }) -Size 16 -Brush 'Text'
         $iconOn.Visibility = 'Collapsed'
         [void]$iconHost.Children.Add($iconOff)
         [void]$iconHost.Children.Add($iconOn)
@@ -231,7 +231,7 @@ function New-AfNav {
 function Set-AfNavSpinners {
     param([Parameter(Mandatory)]$Window)
     foreach ($id in $Window.Tag.Nav.Keys) {
-        if ($id -eq 'all') { continue }
+        if ($id -in 'all', 'windows') { continue }
         $hostGrid = $Window.Tag.Nav[$id].CountHost
         $hostGrid.Children.Clear()
         [void]$hostGrid.Children.Add((New-AfSpinner -Size 12))
@@ -240,7 +240,7 @@ function Set-AfNavSpinners {
 
 function Get-AfPendingCount {
     param([string]$Category, [object[]]$Results = @())
-    if ($Category -eq 'ok') { return @($Results | Where-Object { $_.Detection.State -eq 'Ok' }).Count }
+    if ($Category -eq 'ok') { return @($Results | Where-Object { Test-AfOkRow $_ }).Count }
     @($Results | Where-Object { $_.Check.Category -eq $Category -and ($_.Detection.State -eq 'Manual' -or ($_.Detection.State -eq 'Improvable' -and $_.Check.Kind -eq 'Auto')) }).Count
 }
 
@@ -252,6 +252,8 @@ function Set-AfNavCount {
     $ref.Count = $Count
     $hostGrid = $ref.CountHost
     $hostGrid.Children.Clear()
+    # Ajustes de Windows no lleva número ni check: son opcionales.
+    if ($Category -eq 'windows') { return }
     if ($Count -gt 0 -or $Category -eq 'ok') {
         $text = New-AfText -Text ([string]$Count) -Size 12 -Brush $(if ($Category -eq 'ok') { 'Text3' } else { 'Text' }) -Display -Weight 'Medium'
         $text.HorizontalAlignment = 'Right'
@@ -299,9 +301,17 @@ function Set-AfNavActive {
         $ref.IconOff.Visibility = if ($on) { 'Collapsed' } else { 'Visible' }
         $ref.Label.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, $(if ($on) { 'Text' } else { 'Text2' }))
     }
+    if ($Window.Tag.Nav[$Filter]) { $Window.Tag.Nav[$Filter].Button.BringIntoView() }
     $index = @(Get-AfNavEntries).Id.IndexOf($Filter)
     $y = [math]::Max(0, $index) * 34
     Start-AfAnimation -Target $Window.FindName('NavIndicatorTransform') -Property ([System.Windows.Media.TranslateTransform]::YProperty) -To $y -DurationMs 200 -Ease InOut -Enabled $Motion | Out-Null
+}
+
+# El grupo windows solo se ve al elegirlo: en Todo no aparece, pero lo marcado se aplica igual.
+function Test-AfGroupVisible {
+    param([string]$Tag, [string]$Filter)
+    if ($Tag -eq 'windows') { return $Filter -eq 'windows' }
+    $Filter -eq 'all' -or $Tag -eq $Filter
 }
 
 function Set-AfFilter {
@@ -315,7 +325,7 @@ function Set-AfFilter {
     $state.Filter = $Filter
     Set-AfNavActive -Window $Window -Filter $Filter -Motion $state.Motion
     foreach ($group in $Window.FindName('Groups').Children) {
-        $show = $Filter -eq 'all' -or $group.Tag -eq $Filter
+        $show = Test-AfGroupVisible -Tag "$($group.Tag)" -Filter $Filter
         $group.Visibility = if ($show) { 'Visible' } else { 'Collapsed' }
         if ($group.Tag -eq 'ok' -and $Filter -eq 'ok') { Set-AfOkGroupOpen -Group $group -Open $true -Motion $false }
     }
@@ -392,8 +402,10 @@ function Update-AfEmptyState {
     $Window.FindName('PanelBorder').Visibility = if ($visible.Count) { 'Visible' } else { 'Collapsed' }
     $hasRows = @($visible | Where-Object { $_.Tag -ne 'ok' }).Count -gt 0
     $results = @($s.Results)
+    # Una lectura sana no cuenta como algo por hacer: con solo lecturas, Todo sigue mostrando "afinada".
+    $pending = @($visible | Where-Object { $_.Tag -ne 'ok' } | ForEach-Object { $_.Children } | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag -and $_.Tag.Check -and (Test-AfRowPending $_.Tag) }).Count -gt 0
     $card = $null
-    if ($s.Filter -eq 'all' -and -not $hasRows -and $results.Count) {
+    if ($s.Filter -eq 'all' -and -not $pending -and $results.Count) {
         $card = New-AfStateCard -Icon 'check-circle' -Title (T 'Esta PC está afinada')
         foreach ($category in Get-AfCategories) {
             $count = @($results | Where-Object { $_.Check.Category -eq $category.Id }).Count
@@ -570,6 +582,18 @@ function Set-AfTextAnimated {
     Start-AfAnimation -Target $Block -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 220 -Ease Out -Enabled $Motion | Out-Null
 }
 
+# Título del veredicto; con -Celebrate, celebra una sola vez por análisis o aplicación.
+function Update-AfVerdict {
+    param([Parameter(Mandatory)]$Window, [switch]$Celebrate, [bool]$Motion = $false)
+    $s = $Window.Tag
+    $verdict = Get-AfVerdict -Results @(Get-AfEffectiveResults -Window $Window)
+    Set-AfTextAnimated -Block $Window.FindName('Title') -Text $verdict.Title -Motion $Motion
+    if ($Celebrate -and $verdict.Celebrate -and -not $s.Celebrated) {
+        $s.Celebrated = $true
+        Start-AfCelebration -Window $Window -Motion $s.Motion
+    }
+}
+
 function Set-AfSummary {
     param([Parameter(Mandatory)]$Window, [Parameter(Mandatory)]$Summary, [bool]$Motion = $false)
     $block = $Window.FindName('Summary')
@@ -611,7 +635,7 @@ function Add-AfRowHandlers {
 
 function Add-AfCategoryGroup {
     param([Parameter(Mandatory)]$Window, [Parameter(Mandatory)]$Category, [object[]]$Results = @(), [bool]$Motion = $false)
-    $visible = @($Results | Where-Object { $_.Detection.State -in 'Improvable', 'Manual', 'Info', 'Error' })
+    $visible = @($Results | Where-Object { $_.Detection.State -in 'Improvable', 'Manual', 'Info', 'Error' -or ($_.Detection.State -eq 'Ok' -and $_.Check.Reading) })
     $groups = $Window.FindName('Groups')
     $skeleton = @($groups.Children | Where-Object { $_.Tag -eq ('skeleton:' + $Category.Id) })[0]
     if (-not $visible.Count) {
@@ -622,7 +646,7 @@ function Add-AfCategoryGroup {
     $first = @($groups.Children | Where-Object { $_.Tag -ne 'ok' -and "$($_.Tag)" -notlike 'skeleton*' }).Count -eq 0
     $group = New-AfGroupElement -Category $Category -Results $visible -First:$first
     $filter = $Window.Tag.Filter
-    $group.Visibility = if ($filter -eq 'all' -or $filter -eq $Category.Id) { 'Visible' } else { 'Collapsed' }
+    $group.Visibility = if (Test-AfGroupVisible -Tag $Category.Id -Filter $filter) { 'Visible' } else { 'Collapsed' }
     $okGroup = @($groups.Children | Where-Object { $_.Tag -eq 'ok' })[0]
     if ($skeleton) {
         # El grupo real entra en el lugar de su fantasma.
@@ -656,7 +680,7 @@ function Set-AfOkGroupOpen {
 
 function Add-AfOkGroup {
     param([Parameter(Mandatory)]$Window, [object[]]$Results = @(), [bool]$Motion = $false)
-    $ok = @($Results | Where-Object { $_.Detection.State -eq 'Ok' })
+    $ok = @($Results | Where-Object { Test-AfOkRow $_ })
     if (-not $ok.Count) { return }
     $groups = $Window.FindName('Groups')
     $Window.FindName('PanelBorder').Visibility = 'Visible'

@@ -281,7 +281,7 @@
       </Grid.ColumnDefinitions>
 
       <Border Grid.Column="0" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="14,22,14,12">
-        <DockPanel LastChildFill="False">
+        <DockPanel LastChildFill="True">
           <Grid DockPanel.Dock="Top" Margin="8,0,8,0">
             <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
             <StackPanel x:Name="PcCard" Opacity="0">
@@ -290,12 +290,12 @@
               <StackPanel x:Name="Specs" Margin="0,16,0,0"/>
             </StackPanel>
           </Grid>
-          <Grid x:Name="NavHost" DockPanel.Dock="Top" Margin="0,24,0,0">
+          <ScrollViewer x:Name="NavScroll" VerticalScrollBarVisibility="Auto" Focusable="False"><Grid x:Name="NavHost" Margin="0,24,0,0">
             <StackPanel x:Name="Nav"/>
             <Border x:Name="NavIndicator" Width="2" Height="32" CornerRadius="2" Background="{DynamicResource Red}" HorizontalAlignment="Left" VerticalAlignment="Top">
               <Border.RenderTransform><TranslateTransform x:Name="NavIndicatorTransform"/></Border.RenderTransform>
             </Border>
-          </Grid>
+          </Grid></ScrollViewer>
         </DockPanel>
       </Border>
 

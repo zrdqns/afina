@@ -385,7 +385,7 @@ Describe 'Análisis que se arma' {
         try {
             Start-AfScan -Window $window
             $groups = $window.FindName('Groups')
-            @($groups.Children | Where-Object { "$($_.Tag)" -like 'skeleton:*' }).Count | Should -Be @(Get-AfCategories).Count
+            @($groups.Children | Where-Object { "$($_.Tag)" -like 'skeleton:*' }).Count | Should -Be (@(Get-AfCategories).Count - 1)
             $window.FindName('PanelBorder').Visibility | Should -Be 'Visible'
         } finally { $window.Close() }
     }
@@ -462,6 +462,142 @@ Describe 'Pulido final' {
             $element.RenderTransform | Should -BeOfType ([System.Windows.Media.ScaleTransform])
             Set-AfNavCount -Window $window -Category 'gaming' -Count ($before + 1) -Motion $true
             @($window.Tag.Nav['gaming'].CountHost.Children)[0].RenderTransform | Should -Not -BeOfType ([System.Windows.Media.ScaleTransform])
+        } finally { $window.Close() }
+    }
+}
+Describe 'Ajustes de Windows y lecturas' {
+    BeforeAll {
+        # Resultado inventado a partir de una revisión real: cambia categoría, id, estado y si es lectura.
+        function New-FakeResult([string]$Category, [string]$Id, [string]$State, [bool]$Reading = $false, [string]$Current = 'valor', [bool]$Preselected = $false) {
+            $kind = if ($State -eq 'Improvable') { 'Auto' } else { 'Manual' }
+            $base = @(Get-AfCatalog | Where-Object { $_.Kind -eq $kind })[0]
+            $check = $base.Clone()
+            $check.Id = $Id; $check.Category = $Category; $check.Title = "Titulo $Id"
+            if ($Reading) { $check.Reading = $true }
+            [pscustomobject]@{ Check = $check; Detection = (New-AfDetection -State $State -Current $Current -Target 'meta'); Weight = 2; Preselected = $Preselected }
+        }
+        function New-FakeWindow([object[]]$Results) {
+            $window = New-AfWindow -Theme Black
+            Show-AfResults -Window $window -Results $Results -Animate $false
+            $window.Tag.Motion = $false
+            $window
+        }
+        function Get-GroupByTag($Window, [string]$Tag) { @($Window.FindName('Groups').Children | Where-Object { $_.Tag -eq $Tag })[0] }
+    }
+
+    It 'windows no aparece en Todo' {
+        $window = New-FakeWindow @(New-FakeResult 'windows' 'w.one' 'Improvable')
+        try {
+            Set-AfFilter -Window $window -Filter 'all'
+            (Get-GroupByTag $window 'windows').Visibility | Should -Be 'Collapsed'
+            Set-AfFilter -Window $window -Filter 'windows'
+            (Get-GroupByTag $window 'windows').Visibility | Should -Be 'Visible'
+        } finally { $window.Close() }
+    }
+
+    It 'lo marcado en windows se aplica aunque no se vea' {
+        $window = New-FakeWindow @(New-FakeResult 'windows' 'w.one' 'Improvable' -Preselected $true)
+        try {
+            Set-AfFilter -Window $window -Filter 'all'
+            (Get-AfRowCheckBox -Row (Get-AfRowById -Window $window -Id 'w.one')).IsChecked = $true
+            Get-AfSelectedCount -Window $window | Should -Be 1
+        } finally { $window.Close() }
+    }
+
+    It 'windows no muestra número' {
+        $window = New-FakeWindow @()
+        try {
+            Set-AfNavCount -Window $window -Category windows -Count 3
+            $window.Tag.Nav['windows'].CountHost.Children.Count | Should -Be 0
+        } finally { $window.Close() }
+    }
+
+    It 'una lectura Ok se queda en su grupo y no en En orden' {
+        $window = New-FakeWindow @(New-FakeResult 'hardware' 'h.read' 'Ok' -Reading $true)
+        try {
+            Get-AfRowById -Window $window -Id 'h.read' | Should -Not -BeNullOrEmpty
+            (Get-GroupByTag $window 'hardware') | Should -Not -BeNullOrEmpty
+            Get-GroupByTag $window 'ok' | Should -BeNullOrEmpty
+        } finally { $window.Close() }
+    }
+
+    It 'una lectura Ok muestra su valor' {
+        $window = New-FakeWindow @(New-FakeResult 'hardware' 'h.read' 'Ok' -Reading $true -Current 'Estado sano')
+        try {
+            $sub = (Get-AfRowById -Window $window -Id 'h.read').FindName('RowSub')
+            $sub.Visibility | Should -Be 'Visible'
+            @($sub.Children | Where-Object { $_.Text -eq 'Estado sano' }).Count | Should -Be 1
+        } finally { $window.Close() }
+    }
+
+    It 'con solo lecturas sanas sale Esta PC está afinada' {
+        $window = New-FakeWindow @(New-FakeResult 'hardware' 'h.read' 'Ok' -Reading $true)
+        try {
+            Set-AfFilter -Window $window -Filter 'all'
+            $window.FindName('EmptyState').Visibility | Should -Be 'Visible'
+        } finally { $window.Close() }
+    }
+
+    It 'Diagnóstico con solo lecturas no repite la tarjeta' {
+        $window = New-FakeWindow @(New-FakeResult 'hardware' 'h.read' 'Ok' -Reading $true)
+        try {
+            Set-AfFilter -Window $window -Filter 'hardware'
+            $window.FindName('EmptyState').Visibility | Should -Be 'Collapsed'
+        } finally { $window.Close() }
+    }
+
+    It 'una lectura async que llega en Ok no se borra' {
+        $window = New-FakeWindow @(New-FakeResult 'hardware' 'h.read' 'Info' -Reading $true)
+        try {
+            Update-AfAsyncResult -Window $window -Id 'h.read' -Detection (New-AfDetection -State Ok -Current 'Sano')
+            Get-AfRowById -Window $window -Id 'h.read' | Should -Not -BeNullOrEmpty
+        } finally { $window.Close() }
+    }
+
+    It 'una lectura async No aplica se borra' {
+        $window = New-FakeWindow @(New-FakeResult 'hardware' 'h.read' 'Info' -Reading $true)
+        try {
+            Update-AfAsyncResult -Window $window -Id 'h.read' -Detection (New-AfDetection -State NotApplicable)
+            Get-AfRowById -Window $window -Id 'h.read' | Should -BeNullOrEmpty
+        } finally { $window.Close() }
+    }
+
+    It 'lectura tardía mientras aplica no cambia el título' {
+        $window = New-FakeWindow @(New-FakeResult 'hardware' 'hardware.disk-health' 'Info' -Reading $true)
+        try {
+            $window.Tag.Phase = 'applying'
+            $window.FindName('Title').Text = 'Aplicando'
+            Update-AfAsyncResult -Window $window -Id 'hardware.disk-health' -Detection (New-AfDetection -State Manual -Current 'Mal')
+            $window.FindName('Title').Text | Should -Be 'Aplicando'
+        } finally { $window.Close() }
+    }
+
+    It 'lectura tardía celebra una sola vez' {
+        Mock Start-AfCelebration {}
+        $window = New-FakeWindow @(New-FakeResult 'hardware' 'hardware.disk-health' 'Info' -Reading $true)
+        try {
+            $window.Tag.Phase = 'ready'
+            $window.Tag.Celebrated = $false
+            Update-AfAsyncResult -Window $window -Id 'hardware.disk-health' -Detection (New-AfDetection -State Ok -Current 'Sano')
+            Update-AfAsyncResult -Window $window -Id 'hardware.disk-health' -Detection (New-AfDetection -State Ok -Current 'Sano')
+            Should -Invoke Start-AfCelebration -Times 1 -Exactly
+        } finally { $window.Close() }
+    }
+
+    It 'la barra llega a todas las entradas en la ventana mínima' {
+        $window = New-FakeWindow @()
+        try {
+            Set-AfPcCard -Window $window -Inventory $script:detuned
+            $window.Height = 600
+            $window.Show()
+            $window.UpdateLayout()
+            $scroll = $window.FindName('NavScroll')
+            $scroll.ScrollableHeight | Should -BeGreaterThan 0
+            $scroll.ScrollToBottom()
+            $window.UpdateLayout()
+            $button = $window.Tag.Nav['ok'].Button
+            $point = $button.TranslatePoint((New-Object System.Windows.Point(0, $button.ActualHeight)), $scroll)
+            $point.Y | Should -BeLessOrEqual ($scroll.ViewportHeight + 1)
         } finally { $window.Close() }
     }
 }

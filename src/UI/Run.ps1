@@ -39,6 +39,7 @@ function Start-AfScan {
     $s.Results = New-Object System.Collections.ArrayList
     $s.Filter = 'all'
     $s.StartedAt = Get-Date
+    $s.Celebrated = $false
     Set-AfNavActive -Window $Window -Filter 'all' -Motion $false
     $Window.FindName('Groups').Children.Clear()
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
@@ -71,7 +72,7 @@ function Update-AfAsyncResult {
             $result = [pscustomobject]@{ Check = $old.Check; Detection = $Detection; Weight = $old.Weight; Preselected = $false }
             $index = $Window.Tag.Results.IndexOf($old)
             if ($index -ge 0) { $Window.Tag.Results[$index] = $result }
-            if ($Detection.State -notin 'Improvable', 'Manual', 'Info', 'Error') {
+            if ($Detection.State -notin 'Improvable', 'Manual', 'Info', 'Error' -and -not ($Detection.State -eq 'Ok' -and $old.Check.Reading)) {
                 $group.Children.RemoveAt($i)
                 # Un grupo sin filas no queda como un encabezado suelto.
                 if (-not @($group.Children | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag }).Count) { $Window.FindName('Groups').Children.Remove($group) }
@@ -85,6 +86,8 @@ function Update-AfAsyncResult {
             Update-AfNavCounts -Window $Window -Results @($Window.Tag.Results) -Only @($old.Check.Category)
             Update-AfPrimary -Window $Window
             Update-AfEmptyState -Window $Window
+            # Una lectura tardía puede cambiar el veredicto, pero no mientras se aplica.
+            if ($Window.Tag.Phase -in 'ready', 'done') { Update-AfVerdict -Window $Window -Celebrate }
             return
         }
     }
@@ -102,12 +105,12 @@ function Complete-AfScan {
     Update-AfNavCounts -Window $Window -Results $results -Only @('ok') -Motion $s.Motion
     $summary = Get-AfSummary -Results $results
     $score = Get-AfScore -Results $results
-    Set-AfTextAnimated -Block $Window.FindName('Title') -Text $(if ($summary.Ready -eq 0 -and $score -ge 0.999) { (T 'Afinada') } else { (T 'Afinación') }) -Motion $s.Motion
+    Update-AfVerdict -Window $Window -Motion $s.Motion
     Set-AfSummary -Window $Window -Summary $summary -Motion $s.Motion
     $needle = $Window.FindName('Needle')
     Start-AfAnimation -Target $needle -Property ([System.Windows.UIElement]::OpacityProperty) -To 1 -DurationMs 200 -Ease Out -Enabled $s.Motion | Out-Null
     Set-AfNeedle -Window $Window -Fraction $score -Motion $s.Motion -DurationMs 700 -Ease Out
-    if ($score -ge 0.999) { Start-AfCelebration -Window $Window -Motion $s.Motion }
+    Update-AfVerdict -Window $Window -Celebrate
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize
     Set-AfActionsVisible -Window $Window -Visible $true -Motion $s.Motion
     Update-AfEmptyState -Window $Window

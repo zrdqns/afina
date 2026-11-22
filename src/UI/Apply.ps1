@@ -136,8 +136,7 @@ function Set-AfReadyView {
     Stop-AfFollow -Window $Window
     $effective = @(Get-AfEffectiveResults -Window $Window)
     $summary = Get-AfSummary -Results $effective
-    $score = Get-AfScore -Results $effective
-    $Window.FindName('Title').Text = if ($summary.Ready -eq 0 -and $score -ge 0.999) { (T 'Afinada') } else { (T 'Afinación') }
+    Update-AfVerdict -Window $Window
     Set-AfSummary -Window $Window -Summary $summary -Motion $s.Motion
     Set-AfProgress -Window $Window -Fraction 0 -Motion $s.Motion
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize -Motion $s.Motion
@@ -155,9 +154,8 @@ function Set-AfDoneView {
     $reboot = @($applied | Where-Object { $_.NeedsReboot }).Count
     $effective = @(Get-AfEffectiveResults -Window $Window)
     $summary = Get-AfSummary -Results $effective
-    $score = Get-AfScore -Results $effective
     $text = Get-AfDoneText -Applied $applied.Count -Failed $notApplied -Reboot $reboot -Manual $summary.Manual
-    $Window.FindName('Title').Text = if ($summary.Ready -eq 0 -and $score -ge 0.999) { (T 'Afinada') } else { (T 'Afinación') }
+    Update-AfVerdict -Window $Window
     Set-AfLeadSummary -Window $Window -Lead $text.Lead -Rest $text.Rest -Motion $s.Motion
     Set-AfProgress -Window $Window -Fraction 0 -Motion $s.Motion
     $extra = if (@($changes | Where-Object { Test-AfChangeUndoable -Change $_ }).Count) { (T 'Deshacer') } else { $null }
@@ -427,10 +425,11 @@ function Receive-AfApplyEvent {
             $s.SessionPath = $Item.SessionPath
             # Siguiendo, la vista vuelve a Todo; si la persona eligió otra, se queda ahí.
             if ($s.Follow) { Set-AfFilter -Window $Window -Filter 'all' }
+            $s.Celebrated = $false
             Set-AfDoneView -Window $Window
             $score = Get-AfScore -Results @(Get-AfEffectiveResults -Window $Window)
             Set-AfNeedle -Window $Window -Fraction $score -Motion $s.Motion -DurationMs 700 -Ease Out
-            if ($score -ge 0.999) { Start-AfCelebration -Window $Window -Motion $s.Motion }
+            Update-AfVerdict -Window $Window -Celebrate
             Write-AfLog -Level Info -Message "Sesión guardada en $($Item.SessionPath)"
         }
         'UndoStart' {

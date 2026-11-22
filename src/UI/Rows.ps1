@@ -132,7 +132,7 @@ function New-AfRowElement {
         $arrow.Margin = '7,0,7,0'
         [void]$sub.Children.Add($arrow)
         [void]$sub.Children.Add((New-AfText -Text $d.Target -Brush 'Text' -Display:$numeric))
-    } elseif ($d.Current -and $d.State -ne 'Ok') {
+    } elseif ($d.Current -and ($d.State -ne 'Ok' -or $check.Reading)) {
         [void]$sub.Children.Add((New-AfText -Text $d.Current))
     } else {
         $sub.Visibility = 'Collapsed'
