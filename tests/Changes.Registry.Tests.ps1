@@ -77,6 +77,41 @@ Describe 'Set-AfRegistryValue y Restore-AfRegistryValue' {
         Test-Path -LiteralPath $sub | Should -BeFalse
     }
 
+    It 'escribe y deshace el valor por defecto, y borra las claves padres que creó' {
+        $leaf = "$script:key\Nueva\InprocServer32"
+        Set-AfRegistryValue -Tx $script:tx -Path $leaf -Name '' -Type String -Value '' | Should -BeTrue
+        (Get-AfRegistryState -Path $leaf -Name '').Exists | Should -BeTrue
+        Undo-AfRecord -Record $script:tx.Records[0] -User $script:me
+        Test-Path "$script:key\Nueva" | Should -BeFalse
+        Test-Path $script:key | Should -BeTrue
+    }
+
+    It 'no borra una clave padre que ganó contenido' {
+        $leaf = "$script:key\Nueva\InprocServer32"
+        Set-AfRegistryValue -Tx $script:tx -Path $leaf -Name '' -Type String -Value '' | Out-Null
+        New-ItemProperty -LiteralPath "$script:key\Nueva" -Name 'Otro' -PropertyType DWord -Value 1 | Out-Null
+        Undo-AfRecord -Record $script:tx.Records[0] -User $script:me
+        Test-Path $leaf | Should -BeFalse
+        Test-Path "$script:key\Nueva" | Should -BeTrue
+    }
+
+    It 'un registro guardado sin CreatedKeys se sigue deshaciendo' {
+        $leaf = "$script:key\Vieja"
+        Set-AfRegistryValue -Tx $script:tx -Path $leaf -Name 'V' -Type DWord -Value 1 | Out-Null
+        $old = $script:tx.Records[0] | Select-Object * -ExcludeProperty CreatedKeys
+        Undo-AfRecord -Record $old -User $script:me
+        Test-Path $leaf | Should -BeFalse
+    }
+
+    It 'CreatedKeys sobrevive a JSON aunque sea una sola clave' {
+        $leaf = "$script:key\Sola"
+        Set-AfRegistryValue -Tx $script:tx -Path $leaf -Name 'V' -Type DWord -Value 1 | Out-Null
+        $json = ConvertTo-Json -InputObject @($script:tx.Records) -Depth 6
+        $records = @(ConvertFrom-Json -InputObject $json | ForEach-Object { $_ })
+        Undo-AfRecord -Record $records[0] -User $script:me
+        Test-Path $leaf | Should -BeFalse
+    }
+
     It 'Test-AfRecordRestored da $true tras deshacer y $false antes' {
         New-ItemProperty -LiteralPath $script:key -Name 'Valor' -PropertyType DWord -Value 1 | Out-Null
         Set-AfRegistryValue -Tx $script:tx -Path $script:key -Name 'Valor' -Type DWord -Value 2 | Out-Null
