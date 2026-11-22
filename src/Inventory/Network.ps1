@@ -36,7 +36,7 @@
 }
 
 function Get-AfWlanInfo {
-    $result = Invoke-AfProcess -FilePath 'netsh.exe' -Arguments 'wlan show interfaces' -TimeoutMs 15000 -Encoding ([System.Text.Encoding]::UTF8)
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\netsh.exe') -Arguments 'wlan show interfaces' -TimeoutMs 15000 -Encoding ([System.Text.Encoding]::UTF8)
     if ($result.TimedOut) { return [pscustomobject]@{ Connected = $false; BandGHz = $null; Channel = $null; Ssid = $null } }
     ConvertFrom-AfNetshWlan -Text $result.Output
 }

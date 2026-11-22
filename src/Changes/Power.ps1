@@ -5,7 +5,7 @@
 
 function Invoke-AfPowercfg {
     param([Parameter(Mandatory)][string]$Arguments)
-    $result = Invoke-AfProcess -FilePath 'powercfg.exe' -Arguments $Arguments -TimeoutMs 15000
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\powercfg.exe') -Arguments $Arguments -TimeoutMs 15000
     if ($result.TimedOut -or $result.ExitCode -ne 0) {
         Write-AfLog -Level Warn -Message ('powercfg {0}: código {1}. {2} {3}' -f $Arguments, $result.ExitCode, $result.Output, $result.Error)
         throw (New-AfApplyError -Reason (T 'Windows no aceptó el ajuste de energía'))

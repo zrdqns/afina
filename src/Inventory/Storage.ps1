@@ -43,7 +43,7 @@ function Get-AfStorageInfo {
         DeliveryOptimization = Get-AfFolderBytes -Path (Join-Path $windows 'ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache')
         ErrorReports = (Get-AfFolderBytes -Path (Join-Path $wer 'ReportArchive')) + (Get-AfFolderBytes -Path (Join-Path $wer 'ReportQueue'))
     }
-    $trim = Invoke-AfProcess -FilePath 'fsutil.exe' -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
+    $trim = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\fsutil.exe') -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
     [pscustomobject]@{
         SystemDrive = $drive
         FreeGB = [math]::Round([double]$logical.FreeSpace / 1GB)

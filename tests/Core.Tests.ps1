@@ -54,6 +54,15 @@ Describe 'Invoke-AfProcess' {
     }
 }
 
+Describe 'Programas de Windows' {
+    It 'se llaman por su ruta completa, no por el nombre suelto' {
+        $bare = foreach ($file in Get-ChildItem "$PSScriptRoot\..\src" -Recurse -Filter *.ps1) {
+            Select-String -LiteralPath $file.FullName -Pattern "Invoke-AfProcess -FilePath '[^'\\]+'" -Encoding UTF8 | ForEach-Object { '{0}:{1}' -f $file.Name, $_.LineNumber }
+        }
+        @($bare) | Should -BeNullOrEmpty
+    }
+}
+
 Describe 'Registro de actividad' {
     It 'Write-AfLog guarda el nivel y el mensaje' {
         Write-AfLog -Level Info -Message 'prueba de registro'

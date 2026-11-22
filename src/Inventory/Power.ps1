@@ -2,7 +2,7 @@
     $active = Get-AfRegistryValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes' -Name 'ActivePowerScheme'
     $wifiAc = $null
     # Adaptador inalámbrico > Modo de ahorro de energía (0 = rendimiento máximo).
-    $query = Invoke-AfProcess -FilePath 'powercfg.exe' -Arguments '/q SCHEME_CURRENT 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 12bbebe6-58d6-4636-95bb-3217ef867c1a' -TimeoutMs 15000
+    $query = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\powercfg.exe') -Arguments '/q SCHEME_CURRENT 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 12bbebe6-58d6-4636-95bb-3217ef867c1a' -TimeoutMs 15000
     if (-not $query.TimedOut -and $query.ExitCode -eq 0) {
         $values = ConvertFrom-AfPowercfgQuery -Text $query.Output
         if ($values) { $wifiAc = $values.Ac }

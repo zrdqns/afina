@@ -50,6 +50,15 @@ Describe 'Textos de aplicar' {
         (Get-AfDoneText -Applied 1 -Manual 1).Text | Should -Be '1 cambio aplicado. Queda 1 para hacer a mano.'
         (Get-AfDoneText -Applied 0 -Failed 2).Text | Should -Be 'Ningún cambio aplicado y 2 no se pudieron.'
         (Get-AfDoneText -Applied 7 -Reboot 1).Lead | Should -Be '7 cambios aplicados'
+        (Get-AfDoneText -Applied 7 -Reboot 2).Text | Should -Be '7 cambios aplicados. Reinicia para terminar 2.'
+    }
+
+    It 'Get-AfDoneText en inglés dice cuántos piden reiniciar' {
+        Set-AfLanguage -Language en
+        try {
+            (Get-AfDoneText -Applied 3 -Reboot 1 -Manual 2).Text | Should -Be '3 changes applied. 1 needs a restart to finish. 2 left to do by hand.'
+            (Get-AfDoneText -Applied 3 -Reboot 2).Text | Should -Be '3 changes applied. 2 need a restart to finish.'
+        } finally { Set-AfLanguage -Language es }
     }
 
     It 'Get-AfDisplayPrompt cuenta los segundos' {

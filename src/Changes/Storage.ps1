@@ -1,5 +1,5 @@
 ﻿function Get-AfTrimEnabled {
-    $result = Invoke-AfProcess -FilePath 'fsutil.exe' -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\fsutil.exe') -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
     if ($result.TimedOut -or $result.ExitCode -ne 0) { throw (New-AfApplyError -Reason (T 'fsutil no respondió')) }
     -not (ConvertFrom-AfFsutilTrim -Text $result.Output).NtfsDisabled
 }
@@ -7,7 +7,7 @@
 function Invoke-AfTrimChange {
     param([bool]$Enabled)
     $flag = if ($Enabled) { 0 } else { 1 }
-    $result = Invoke-AfProcess -FilePath 'fsutil.exe' -Arguments "behavior set DisableDeleteNotify NTFS $flag" -TimeoutMs 15000
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\fsutil.exe') -Arguments "behavior set DisableDeleteNotify NTFS $flag" -TimeoutMs 15000
     if ($result.TimedOut -or $result.ExitCode -ne 0) {
         Write-AfLog -Level Warn -Message ('fsutil DisableDeleteNotify {0}: código {1}. {2}' -f $flag, $result.ExitCode, $result.Output)
         throw (New-AfApplyError -Reason (T 'fsutil no aceptó el cambio'))

@@ -78,7 +78,7 @@ function Get-AfDoneText {
     $rest = ''
     if ($Failed -eq 1) { $rest += ' ' + (T 'y 1 no se pudo') } elseif ($Failed -gt 1) { $rest += ' ' + ((T 'y {0} no se pudieron') -f $Failed) }
     $rest += '.'
-    if ($Reboot -gt 0) { $rest += ' ' + ((T 'Reinicia para terminar {0}.') -f $Reboot) }
+    if ($Reboot -eq 1) { $rest += ' ' + (T 'Reinicia para terminar 1.') } elseif ($Reboot -gt 1) { $rest += ' ' + ((T 'Reinicia para terminar {0}.') -f $Reboot) }
     if ($Manual -eq 1) { $rest += ' ' + (T 'Queda 1 para hacer a mano.') } elseif ($Manual -gt 1) { $rest += ' ' + ((T 'Quedan {0} para hacer a mano.') -f $Manual) }
     [pscustomobject]@{ Lead = $lead; Rest = $rest; Text = $lead + $rest }
 }
@@ -409,5 +409,5 @@ function Set-AfNote {
 
 function Restart-AfComputer {
     Write-AfLog -Level Info -Message 'Reinicio pedido desde Afina.'
-    Invoke-AfProcess -FilePath 'shutdown.exe' -Arguments '/r /t 0' -TimeoutMs 15000 | Out-Null
+    Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\shutdown.exe') -Arguments '/r /t 0' -TimeoutMs 15000 | Out-Null
 }

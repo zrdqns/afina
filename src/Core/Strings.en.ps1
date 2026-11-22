@@ -472,7 +472,8 @@ Punto de restauración creado a las {0}.==>Restore point created at {0}.
 Qué cambia==>What changes
 Queda 1 para hacer a mano.==>1 left to do by hand.
 Quedan {0} para hacer a mano.==>{0} left to do by hand.
-Reinicia para terminar {0}.==>Restart to finish {0}.
+Reinicia para terminar 1.==>1 needs a restart to finish.
+Reinicia para terminar {0}.==>{0} need a restart to finish.
 Reiniciar ahora==>Restart now
 Restaurar sistema está bloqueado en esta PC; los valores originales igual se guardan.==>System Restore is blocked on this PC; the original values are still saved.
 Revisando el almacenamiento…==>Checking storage…

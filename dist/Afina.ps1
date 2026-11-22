@@ -496,7 +496,8 @@ Punto de restauración creado a las {0}.==>Restore point created at {0}.
 Qué cambia==>What changes
 Queda 1 para hacer a mano.==>1 left to do by hand.
 Quedan {0} para hacer a mano.==>{0} left to do by hand.
-Reinicia para terminar {0}.==>Restart to finish {0}.
+Reinicia para terminar 1.==>1 needs a restart to finish.
+Reinicia para terminar {0}.==>{0} need a restart to finish.
 Reiniciar ahora==>Restart now
 Restaurar sistema está bloqueado en esta PC; los valores originales igual se guardan.==>System Restore is blocked on this PC; the original values are still saved.
 Revisando el almacenamiento…==>Checking storage…
@@ -1353,7 +1354,7 @@ function Get-AfActivePowerScheme {
 
 function Invoke-AfPowercfg {
     param([Parameter(Mandatory)][string]$Arguments)
-    $result = Invoke-AfProcess -FilePath 'powercfg.exe' -Arguments $Arguments -TimeoutMs 15000
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\powercfg.exe') -Arguments $Arguments -TimeoutMs 15000
     if ($result.TimedOut -or $result.ExitCode -ne 0) {
         Write-AfLog -Level Warn -Message ('powercfg {0}: código {1}. {2} {3}' -f $Arguments, $result.ExitCode, $result.Output, $result.Error)
         throw (New-AfApplyError -Reason (T 'Windows no aceptó el ajuste de energía'))
@@ -1665,7 +1666,7 @@ function Get-AfFirewallProfileState {
 }
 
 function Get-AfTrimEnabled {
-    $result = Invoke-AfProcess -FilePath 'fsutil.exe' -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\fsutil.exe') -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
     if ($result.TimedOut -or $result.ExitCode -ne 0) { throw (New-AfApplyError -Reason (T 'fsutil no respondió')) }
     -not (ConvertFrom-AfFsutilTrim -Text $result.Output).NtfsDisabled
 }
@@ -1673,7 +1674,7 @@ function Get-AfTrimEnabled {
 function Invoke-AfTrimChange {
     param([bool]$Enabled)
     $flag = if ($Enabled) { 0 } else { 1 }
-    $result = Invoke-AfProcess -FilePath 'fsutil.exe' -Arguments "behavior set DisableDeleteNotify NTFS $flag" -TimeoutMs 15000
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\fsutil.exe') -Arguments "behavior set DisableDeleteNotify NTFS $flag" -TimeoutMs 15000
     if ($result.TimedOut -or $result.ExitCode -ne 0) {
         Write-AfLog -Level Warn -Message ('fsutil DisableDeleteNotify {0}: código {1}. {2}' -f $flag, $result.ExitCode, $result.Output)
         throw (New-AfApplyError -Reason (T 'fsutil no aceptó el cambio'))
@@ -2301,7 +2302,7 @@ function Get-AfPowerInfo {
     $active = Get-AfRegistryValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes' -Name 'ActivePowerScheme'
     $wifiAc = $null
     # Adaptador inalámbrico > Modo de ahorro de energía (0 = rendimiento máximo).
-    $query = Invoke-AfProcess -FilePath 'powercfg.exe' -Arguments '/q SCHEME_CURRENT 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 12bbebe6-58d6-4636-95bb-3217ef867c1a' -TimeoutMs 15000
+    $query = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\powercfg.exe') -Arguments '/q SCHEME_CURRENT 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 12bbebe6-58d6-4636-95bb-3217ef867c1a' -TimeoutMs 15000
     if (-not $query.TimedOut -and $query.ExitCode -eq 0) {
         $values = ConvertFrom-AfPowercfgQuery -Text $query.Output
         if ($values) { $wifiAc = $values.Ac }
@@ -2374,7 +2375,7 @@ function Get-AfNetworkInfo {
 }
 
 function Get-AfWlanInfo {
-    $result = Invoke-AfProcess -FilePath 'netsh.exe' -Arguments 'wlan show interfaces' -TimeoutMs 15000 -Encoding ([System.Text.Encoding]::UTF8)
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\netsh.exe') -Arguments 'wlan show interfaces' -TimeoutMs 15000 -Encoding ([System.Text.Encoding]::UTF8)
     if ($result.TimedOut) { return [pscustomobject]@{ Connected = $false; BandGHz = $null; Channel = $null; Ssid = $null } }
     ConvertFrom-AfNetshWlan -Text $result.Output
 }
@@ -2652,7 +2653,7 @@ function Get-AfStorageInfo {
         DeliveryOptimization = Get-AfFolderBytes -Path (Join-Path $windows 'ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache')
         ErrorReports = (Get-AfFolderBytes -Path (Join-Path $wer 'ReportArchive')) + (Get-AfFolderBytes -Path (Join-Path $wer 'ReportQueue'))
     }
-    $trim = Invoke-AfProcess -FilePath 'fsutil.exe' -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
+    $trim = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\fsutil.exe') -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
     [pscustomobject]@{
         SystemDrive = $drive
         FreeGB = [math]::Round([double]$logical.FreeSpace / 1GB)
@@ -5731,7 +5732,7 @@ function Get-AfDoneText {
     $rest = ''
     if ($Failed -eq 1) { $rest += ' ' + (T 'y 1 no se pudo') } elseif ($Failed -gt 1) { $rest += ' ' + ((T 'y {0} no se pudieron') -f $Failed) }
     $rest += '.'
-    if ($Reboot -gt 0) { $rest += ' ' + ((T 'Reinicia para terminar {0}.') -f $Reboot) }
+    if ($Reboot -eq 1) { $rest += ' ' + (T 'Reinicia para terminar 1.') } elseif ($Reboot -gt 1) { $rest += ' ' + ((T 'Reinicia para terminar {0}.') -f $Reboot) }
     if ($Manual -eq 1) { $rest += ' ' + (T 'Queda 1 para hacer a mano.') } elseif ($Manual -gt 1) { $rest += ' ' + ((T 'Quedan {0} para hacer a mano.') -f $Manual) }
     [pscustomobject]@{ Lead = $lead; Rest = $rest; Text = $lead + $rest }
 }
@@ -6062,7 +6063,7 @@ function Set-AfNote {
 
 function Restart-AfComputer {
     Write-AfLog -Level Info -Message 'Reinicio pedido desde Afina.'
-    Invoke-AfProcess -FilePath 'shutdown.exe' -Arguments '/r /t 0' -TimeoutMs 15000 | Out-Null
+    Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\shutdown.exe') -Arguments '/r /t 0' -TimeoutMs 15000 | Out-Null
 }
 
 # Historial: sesiones guardadas en esta PC; se deshacen completas o cambio por cambio (diseño, sección 8, paso 7).
