@@ -405,7 +405,9 @@ function Update-AfEmptyState {
     # Una lectura sana no cuenta como algo por hacer: con solo lecturas, Todo sigue mostrando "afinada".
     $pending = @($visible | Where-Object { $_.Tag -ne 'ok' } | ForEach-Object { $_.Children } | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag -and $_.Tag.Check -and (Test-AfRowPending $_.Tag) }).Count -gt 0
     $card = $null
-    if ($s.Filter -eq 'all' -and -not $pending -and $results.Count) {
+    # Con el disco sin leer o en riesgo el veredicto no es "afinada": la tarjeta espera igual que la celebración.
+    $tuned = (Get-AfVerdict -Results @(Get-AfEffectiveResults -Window $Window)).Celebrate
+    if ($s.Filter -eq 'all' -and -not $pending -and $tuned -and $results.Count) {
         $card = New-AfStateCard -Icon 'check-circle' -Title (T 'Esta PC está afinada')
         foreach ($category in Get-AfCategories) {
             $count = @($results | Where-Object { $_.Check.Category -eq $category.Id }).Count
@@ -588,6 +590,9 @@ function Update-AfVerdict {
     $s = $Window.Tag
     $verdict = Get-AfVerdict -Results @(Get-AfEffectiveResults -Window $Window)
     Set-AfTextAnimated -Block $Window.FindName('Title') -Text $verdict.Title -Motion $Motion
+    # El resumen sigue al título: si no, "Revisa el disco" convive con "ya está en orden".
+    if ($s.Phase -eq 'ready') { Set-AfSummary -Window $Window -Summary (Get-AfSummary -Results @(Get-AfEffectiveResults -Window $Window)) -Motion $s.Motion }
+    elseif ($s.Phase -eq 'done') { Set-AfDoneSummary -Window $Window }
     if ($Celebrate -and $verdict.Celebrate -and -not $s.Celebrated) {
         $s.Celebrated = $true
         Start-AfCelebration -Window $Window -Motion $s.Motion

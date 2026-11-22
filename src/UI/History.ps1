@@ -181,4 +181,6 @@ function Hide-AfHistory {
     }
     if ($s.PhaseBeforeHistory -eq 'done') { Set-AfDoneView -Window $Window } else { Set-AfReadyView -Window $Window }
     Update-AfEmptyState -Window $Window
+    # Lo que llegó mientras se veía el Historial se evalúa ahora.
+    Update-AfVerdict -Window $Window -Celebrate
 }

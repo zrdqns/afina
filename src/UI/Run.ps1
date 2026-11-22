@@ -35,6 +35,7 @@ function Start-AfScan {
     $Window.FindName('PrimaryProgressScale').BeginAnimation([System.Windows.Media.ScaleTransform]::ScaleXProperty, $null)
     $Window.FindName('PrimaryProgressScale').ScaleX = 0
     $s.Pending = New-Object System.Collections.Queue
+    $s.AsyncHold = New-Object System.Collections.Queue
     $s.LastReveal = [datetime]::MinValue
     $s.Results = New-Object System.Collections.ArrayList
     $s.Filter = 'all'
@@ -140,7 +141,13 @@ function Receive-AfEvents {
             'Inventory' { $s.Inventory = $item.Inventory; Set-AfPcCard -Window $Window -Inventory $item.Inventory -Animate $s.Motion }
             'Category' { $s.Pending.Enqueue($item) }
             'Done' { $s.ScanDone = $true }
-            'Async' { Update-AfAsyncResult -Window $Window -Id $item.Id -Detection $item.Detection }
+            'Async' {
+                # Un resultado que llega antes de revelar las categorías espera: su fila aún no existe.
+                if ($s.Pending.Count -gt 0) {
+                    if (-not $s.AsyncHold) { $s.AsyncHold = New-Object System.Collections.Queue }
+                    $s.AsyncHold.Enqueue($item)
+                } else { Update-AfAsyncResult -Window $Window -Id $item.Id -Detection $item.Detection }
+            }
             'Error' {
                 $s.ScanDone = $true
                 Write-AfLog -Level Error -Message "El análisis falló: $($item.Message)"
@@ -148,6 +155,7 @@ function Receive-AfEvents {
             }
         }
     }
+    $revealed = $false
     if ($s.Pending.Count -gt 0) {
         $gap = if ($s.Motion) { 260 } else { 0 }
         if (((Get-Date) - $s.LastReveal).TotalMilliseconds -ge $gap) {
@@ -157,9 +165,15 @@ function Receive-AfEvents {
             Add-AfCategoryGroup -Window $Window -Category $category -Results $next.Results -Motion $s.Motion
             Update-AfNavCounts -Window $Window -Results @($s.Results) -Only @($next.Category) -Motion $s.Motion
             $s.LastReveal = Get-Date
+            $revealed = $true
         }
-    } elseif ($s.ScanDone -and $s.Phase -eq 'scanning') {
-        Complete-AfScan -Window $Window
+    }
+    if ($s.Pending.Count -eq 0) {
+        while ($s.AsyncHold -and $s.AsyncHold.Count -gt 0) {
+            $held = $s.AsyncHold.Dequeue()
+            Update-AfAsyncResult -Window $Window -Id $held.Id -Detection $held.Detection
+        }
+        if ($s.ScanDone -and $s.Phase -eq 'scanning' -and -not $revealed) { Complete-AfScan -Window $Window }
     }
 }
 

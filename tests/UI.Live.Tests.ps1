@@ -600,4 +600,99 @@ Describe 'Ajustes de Windows y lecturas' {
             $point.Y | Should -BeLessOrEqual ($scroll.ViewportHeight + 1)
         } finally { $window.Close() }
     }
+
+Describe 'Lecturas tardías y veredicto (ronda 1)' {
+    BeforeEach { Mock Start-AfScanWorker { [pscustomobject]@{ PowerShell = $null; Runspace = $null; Handle = $null } } }
+    BeforeAll {
+        function New-DiskResult([string]$State = 'Info') {
+            $r = New-FakeResult 'hardware' 'hardware.disk-health' $State -Reading $true -Current 'Leyendo'
+            if ($State -eq 'Info') { $r.Detection = New-AfDetection -State Info -Current 'Leyendo' -Data @{ Async = $true } }
+            $r
+        }
+    }
+
+    It 'un resultado async que llega antes de revelar su categoría no se pierde' {
+        $window = New-AfWindow -Theme Black
+        try {
+            Start-AfScan -Window $window
+            $s = $window.Tag
+            $s.Queue.Enqueue([pscustomobject]@{ Type = 'Category'; Category = 'gaming'; Results = @() })
+            $s.Queue.Enqueue([pscustomobject]@{ Type = 'Category'; Category = 'hardware'; Results = @(New-DiskResult) })
+            $s.Queue.Enqueue([pscustomobject]@{ Type = 'Done' })
+            $s.Queue.Enqueue([pscustomobject]@{ Type = 'Async'; Id = 'hardware.disk-health'; Detection = (New-AfDetection -State Manual -Current 'En riesgo') })
+            for ($i = 0; $i -lt 6; $i++) { Receive-AfEvents -Window $window }
+            $s.Phase | Should -Be 'ready'
+            (Get-AfRowById -Window $window -Id 'hardware.disk-health').Tag.Detection.State | Should -Be 'Manual'
+            $window.FindName('Title').Text | Should -Be 'Revisa el disco'
+        } finally { $window.Close() }
+    }
+
+    It 'al volver de la confirmación se evalúa lo que llegó entretanto' {
+        $window = New-FakeWindow @(New-DiskResult)
+        try {
+            $s = $window.Tag
+            $s.Phase = 'confirm'
+            $s.Results[0] = New-DiskResult 'Manual'
+            Exit-AfConfirm -Window $window
+            $window.FindName('Title').Text | Should -Be 'Revisa el disco'
+        } finally { $window.Close() }
+    }
+
+    It 'al volver del Historial se evalúa lo que llegó entretanto' {
+        Mock Start-AfCelebration {}
+        $window = New-FakeWindow @(New-DiskResult)
+        try {
+            $s = $window.Tag
+            $s.Phase = 'history'
+            $s.PhaseBeforeHistory = 'ready'
+            $s.Celebrated = $false
+            $s.Results[0] = New-DiskResult 'Ok'
+            Hide-AfHistory -Window $window
+            $window.FindName('Title').Text | Should -Be 'Afinada'
+            Should -Invoke Start-AfCelebration -Times 1 -Exactly
+        } finally { $window.Close() }
+    }
+
+    It 'el resumen sigue al título cuando el disco llega en riesgo' {
+        $window = New-FakeWindow @(New-DiskResult)
+        try {
+            Update-AfAsyncResult -Window $window -Id 'hardware.disk-health' -Detection (New-AfDetection -State Manual -Current 'En riesgo')
+            $window.FindName('Title').Text | Should -Be 'Revisa el disco'
+            (Get-SummaryText $window) | Should -Match '1 para hacer a mano'
+        } finally { $window.Close() }
+    }
+
+    It 'la tarjeta afinada espera a que se lea el disco' {
+        $window = New-FakeWindow @(New-DiskResult)
+        try {
+            Set-AfFilter -Window $window -Filter 'all'
+            $window.FindName('EmptyState').Visibility | Should -Be 'Collapsed'
+            Update-AfAsyncResult -Window $window -Id 'hardware.disk-health' -Detection (New-AfDetection -State Ok -Current 'Sano')
+            $window.FindName('EmptyState').Visibility | Should -Be 'Visible'
+        } finally { $window.Close() }
+    }
+}
+}
+Describe 'Trabajo de análisis con AppliesTo que falla' {
+    It 'una excepción en AppliesTo no corta las demás lecturas ni el análisis' {
+        $fake = @'
+function Get-AfCatalog {
+    @(
+        @{ Id = 'x.ok'; Category = 'hardware'; Title = 'x'; Kind = 'Manual'; Detect = { param($inv) New-AfDetection -State Ok } }
+        @{ Id = 'x.bad'; Category = 'hardware'; Title = 'x'; Kind = 'Manual'; Async = $true; AppliesTo = { param($inv) throw 'boom' }; Detect = { param($inv) New-AfDetection -State Info }; AsyncDetect = { param($inv) New-AfDetection -State Ok } }
+        @{ Id = 'x.after'; Category = 'hardware'; Title = 'x'; Kind = 'Manual'; Async = $true; Detect = { param($inv) New-AfDetection -State Info }; AsyncDetect = { param($inv) New-AfDetection -State Ok } }
+    )
+}
+function Get-AfCatalogReads { param($Catalog) @() }
+'@
+        $queue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
+        $worker = Start-AfScanWorker -Code ($Global:AfCode + "`r`n" + $fake) -Queue $queue -Language es
+        try {
+            $deadline = (Get-Date).AddSeconds(60)
+            while (-not $worker.Handle.IsCompleted -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200 }
+            $items = @($queue.ToArray())
+            @($items | Where-Object Type -eq 'Error').Count | Should -Be 0
+            @($items | Where-Object { $_.Type -eq 'Async' -and $_.Id -eq 'x.after' }).Count | Should -Be 1
+        } finally { $worker.PowerShell.Dispose(); $worker.Runspace.Dispose() }
+    }
 }

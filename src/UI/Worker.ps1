@@ -24,8 +24,10 @@ function Start-AfScanWorker {
                 }
                 $AfQueue.Enqueue([pscustomobject]@{ Type = 'Done' })
                 foreach ($check in @($catalog | Where-Object { $_.Async })) {
-                    if ($check.AppliesTo -and -not (& $check.AppliesTo $inventory)) { continue }
-                    try { $detection = & $check.AsyncDetect $inventory } catch { $detection = New-AfDetection -State Error -Note $_.Exception.Message }
+                    try {
+                        if ($check.AppliesTo -and -not (& $check.AppliesTo $inventory)) { continue }
+                        $detection = & $check.AsyncDetect $inventory
+                    } catch { $detection = New-AfDetection -State Error -Note $_.Exception.Message }
                     $AfQueue.Enqueue([pscustomobject]@{ Type = 'Async'; Id = $check.Id; Detection = $detection })
                 }
             } catch {

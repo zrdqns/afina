@@ -142,6 +142,18 @@ function Set-AfReadyView {
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize -Motion $s.Motion
 }
 
+function Set-AfDoneSummary {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $changes = @($s.Applied.Values)
+    $applied = @($changes | Where-Object { $_.Status -eq 'Applied' })
+    $notApplied = @($changes | Where-Object { $_.Status -in 'Failed', 'Reverted' }).Count
+    $reboot = @($applied | Where-Object { $_.NeedsReboot }).Count
+    $summary = Get-AfSummary -Results @(Get-AfEffectiveResults -Window $Window)
+    $text = Get-AfDoneText -Applied $applied.Count -Failed $notApplied -Reboot $reboot -Manual $summary.Manual
+    Set-AfLeadSummary -Window $Window -Lead $text.Lead -Rest $text.Rest -Motion $s.Motion
+}
+
 function Set-AfDoneView {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
@@ -149,14 +161,7 @@ function Set-AfDoneView {
     $Window.FindName('Groups').IsHitTestVisible = $true
     Stop-AfFollow -Window $Window
     $changes = @($s.Applied.Values)
-    $applied = @($changes | Where-Object { $_.Status -eq 'Applied' })
-    $notApplied = @($changes | Where-Object { $_.Status -in 'Failed', 'Reverted' }).Count
-    $reboot = @($applied | Where-Object { $_.NeedsReboot }).Count
-    $effective = @(Get-AfEffectiveResults -Window $Window)
-    $summary = Get-AfSummary -Results $effective
-    $text = Get-AfDoneText -Applied $applied.Count -Failed $notApplied -Reboot $reboot -Manual $summary.Manual
     Update-AfVerdict -Window $Window
-    Set-AfLeadSummary -Window $Window -Lead $text.Lead -Rest $text.Rest -Motion $s.Motion
     Set-AfProgress -Window $Window -Fraction 0 -Motion $s.Motion
     $extra = if (@($changes | Where-Object { Test-AfChangeUndoable -Change $_ }).Count) { (T 'Deshacer') } else { $null }
     $note = (T 'Valores originales guardados. Se puede deshacer desde Historial.')
@@ -209,6 +214,8 @@ function Exit-AfConfirm {
     $s.Phase = 'ready'
     $Window.FindName('Groups').IsHitTestVisible = $true
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize -Motion $s.Motion
+    # Lo que llegó mientras se confirmaba se evalúa ahora.
+    Update-AfVerdict -Window $Window -Celebrate
 }
 
 function Get-AfWorkerCode {
