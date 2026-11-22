@@ -1,4 +1,4 @@
-﻿# Afina 0.3.0: análisis y optimización de Windows. Generado por build.ps1; no editar a mano.
+# Afina 0.3.0: análisis y optimización de Windows. Generado por build.ps1; no editar a mano.
 # Iconos: Phosphor Icons (https://phosphoricons.com), licencia MIT.
 param(
     [switch]$Scan,
@@ -7,8 +7,6 @@ param(
     [switch]$NoElevate
 )
 $ErrorActionPreference = 'Stop'
-# Dirección para relanzar elevado cuando Afina se abrió con "irm … | iex": el archivo crudo de GitHub (llega como UTF-8).
-$AfOneLinerUrl = 'https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1'
 
 # Antes de cargar nada: con PowerShell limitado (Smart App Control o App Control) el código de Afina no llega a cargar.
 # Todavía no hay T ni configuración: el aviso sale en el idioma de Windows.
@@ -498,6 +496,7 @@ Queda 1 para hacer a mano.==>1 left to do by hand.
 Quedan {0} para hacer a mano.==>{0} left to do by hand.
 Reinicia para terminar 1.==>1 needs a restart to finish.
 Reinicia para terminar {0}.==>{0} need a restart to finish.
+Afina necesita permisos de administrador. Abre PowerShell como administrador (clic derecho en Inicio) y vuelve a pegar la línea.==>Afina needs administrator rights. Open PowerShell as administrator (right-click Start) and paste the line again.
 Reiniciar ahora==>Restart now
 Restaurar sistema está bloqueado en esta PC; los valores originales igual se guardan.==>System Restore is blocked on this PC; the original values are still saved.
 Revisando el almacenamiento…==>Checking storage…
@@ -766,15 +765,10 @@ function Test-AfAdmin {
     [bool]$principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# Solo desde un archivo (USB): con "irm … | iex" no se relanza (ver Main.ps1).
 function Get-AfRelaunchArguments {
-    param([string]$ScriptPath, [Parameter(Mandatory)][string]$OneLinerUrl, [string[]]$Extra = @())
-    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass')
-    if ($ScriptPath) {
-        $arguments += @('-File', ('"{0}"' -f $ScriptPath))
-    } else {
-        $arguments += @('-Command', ('"irm {0} | iex"' -f $OneLinerUrl))
-    }
-    $arguments + $Extra
+    param([Parameter(Mandatory)][string]$ScriptPath, [string[]]$Extra = @())
+    @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f $ScriptPath)) + $Extra
 }
 
 function Restart-AfElevated {
@@ -6621,23 +6615,28 @@ $Global:AfCode = $Global:AfCodeBlock.ToString()
 . $Global:AfCodeBlock
 
 $scriptPath = if ($PSCommandPath) { $PSCommandPath } else { $null }
+$configPath = Get-AfConfigPath -ScriptRoot $(if ($scriptPath) { Split-Path $scriptPath -Parent } else { $null })
+$config = Get-AfConfig -Path $configPath
+# Los avisos de la consola, -Scan y la ventana salen en el idioma guardado.
+Set-AfStartLanguage -Config $config
+
 $extra = @()
 if ($Scan) { $extra += '-Scan' }
 if ($Json) { $extra += '-Json' }
 if ($Snapshot) { $extra += @('-Snapshot', ('"{0}"' -f $Snapshot)) }
 $needsSta = [System.Threading.Thread]::CurrentThread.ApartmentState -ne 'STA' -and -not $Scan
 if ((-not $NoElevate -and -not (Test-AfAdmin)) -or $needsSta) {
-    Restart-AfElevated -Arguments (@('-STA') + (Get-AfRelaunchArguments -ScriptPath $scriptPath -OneLinerUrl $AfOneLinerUrl -Extra $extra))
+    # Abierto con "irm … | iex" no se relanza: un PowerShell elevado que descarga y ejecuta código es lo que Defender bloquea como malware.
+    if (-not $scriptPath) {
+        Write-Host (T 'Afina necesita permisos de administrador. Abre PowerShell como administrador (clic derecho en Inicio) y vuelve a pegar la línea.')
+        return
+    }
+    Restart-AfElevated -Arguments (@('-STA') + (Get-AfRelaunchArguments -ScriptPath $scriptPath -Extra $extra))
     exit
 }
 
 [void](Start-AfLog -Directory (Join-Path $env:ProgramData 'Afina\registros'))
 Write-AfLog -Level Info -Message ('Afina {0} en {1}' -f (Get-AfVersion), $env:COMPUTERNAME)
-
-$configPath = Get-AfConfigPath -ScriptRoot $(if ($scriptPath) { Split-Path $scriptPath -Parent } else { $null })
-$config = Get-AfConfig -Path $configPath
-# La consola (-Scan) y la ventana salen en el idioma guardado.
-Set-AfStartLanguage -Config $config
 
 if ($Scan) {
     $catalog = @(Get-AfCatalog)

@@ -86,7 +86,8 @@ Describe 'Revisiones en inglés' {
     }
 
     It 'ningún T corre al cargar el código (el idioma todavía no está fijado)' {
-        $loose = foreach ($file in Get-AfSourceFiles) {
+        # Main.ps1 no se carga: corre después de Set-AfStartLanguage.
+        $loose = foreach ($file in @(Get-AfSourceFiles | Where-Object { $_.Name -ne 'Main.ps1' })) {
             $ast = Get-AfAst $file.FullName
             $calls = $ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -in 'T', 'Get-AfText' }, $true)
             foreach ($call in $calls) {

@@ -34,8 +34,25 @@ Describe 'Línea de internet (irm | iex)' {
         { [scriptblock]::Create($text) } | Should -Not -Throw
     }
 
-    It 'la URL de la línea es la del archivo crudo de GitHub' {
-        $main = [System.IO.File]::ReadAllText((Join-Path $script:root 'src\Main.ps1'))
-        $main | Should -Match ([regex]::Escape("`$AfOneLinerUrl = 'https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1'"))
+    # Con BOM, irm deja U+FEFF pegado al primer "#": el comentario y el bloque param se leen como comandos.
+    It 'el archivo de la línea no lleva BOM y su bloque param se reconoce' {
+        $text = Get-AfServedText -ContentType 'text/plain; charset=utf-8'
+        [int]$text[0] | Should -Not -Be 0xFEFF
+        [scriptblock]::Create($text).Ast.ParamBlock | Should -Not -BeNullOrEmpty
+    }
+
+    # Corre en un runspace aparte, como iex en una consola sin administrador: sin ruta de script y sin relanzar.
+    It 'sin administrador, la línea dice cómo abrirla, sin errores y sin relanzar' {
+        if (Test-AfAdmin) { Set-ItResult -Skipped -Because 'como administrador abriría la ventana'; return }
+        $text = Get-AfServedText -ContentType 'text/plain; charset=utf-8'
+        $ps = [powershell]::Create()
+        try {
+            [void]$ps.AddScript('param($t) Invoke-Expression $t; "siguio"').AddArgument($text)
+            $output = @($ps.Invoke())
+            @($ps.Streams.Error | ForEach-Object { $_.ToString() }) | Should -BeNullOrEmpty
+            (@($ps.Streams.Information | ForEach-Object { [string]$_.MessageData }) -join ' ') | Should -Match 'PowerShell (como administrador|as administrator)'
+            # return deja la consola abierta: el código de después de iex sigue.
+            $output | Should -Contain 'siguio'
+        } finally { $ps.Dispose() }
     }
 }

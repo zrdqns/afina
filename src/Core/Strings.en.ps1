@@ -474,6 +474,7 @@ Queda 1 para hacer a mano.==>1 left to do by hand.
 Quedan {0} para hacer a mano.==>{0} left to do by hand.
 Reinicia para terminar 1.==>1 needs a restart to finish.
 Reinicia para terminar {0}.==>{0} need a restart to finish.
+Afina necesita permisos de administrador. Abre PowerShell como administrador (clic derecho en Inicio) y vuelve a pegar la línea.==>Afina needs administrator rights. Open PowerShell as administrator (right-click Start) and paste the line again.
 Reiniciar ahora==>Restart now
 Restaurar sistema está bloqueado en esta PC; los valores originales igual se guardan.==>System Restore is blocked on this PC; the original values are still saved.
 Revisando el almacenamiento…==>Checking storage…

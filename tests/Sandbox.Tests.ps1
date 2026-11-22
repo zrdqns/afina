@@ -8,7 +8,7 @@ Describe 'Arnés del Sandbox (en la PC, sin Sandbox)' {
     It 'Get-AfBuiltCode carga Get-AfVersion de un build sin correr Main' {
         $out = Join-Path $TestDrive 'dist'
         & powershell -NoProfile -ExecutionPolicy Bypass -File "$script:root\build.ps1" -OutDir $out | Out-Null
-        $built = Join-Path $out 'Afina.ps1'
+        $built = Join-Path $out 'usb\Afina.ps1'
         $command = ". '$script:root\sandbox\SandboxLib.ps1'; . (Get-AfBuiltCode -Path '$built'); Get-AfVersion; [bool](Get-Command Invoke-AfChange -ErrorAction SilentlyContinue)"
         $lines = @(& powershell -NoProfile -ExecutionPolicy Bypass -Command $command)
         $lines[0] | Should -Be (Get-AfVersion)
@@ -27,7 +27,7 @@ Describe 'Arnés del Sandbox (en la PC, sin Sandbox)' {
         $shares = @(Get-AfSandboxShares -Root 'C:\Proyectos\afina' -OutDir 'C:\Proyectos\afina\.dev\sandbox-out')
         $shares.Count | Should -Be 3
         @($shares | Where-Object Write | ForEach-Object SandboxPath) | Should -Be @('C:\resultados')
-        @($shares | ForEach-Object HostPath) | Should -Contain 'C:\Proyectos\afina\dist'
+        @($shares | ForEach-Object HostPath) | Should -Contain 'C:\Proyectos\afina\dist\usb'
     }
 
     It 'Get-AfSandboxId saca el id de la salida de wsb, con o sin JSON' {

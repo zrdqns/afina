@@ -5,8 +5,6 @@
     [switch]$NoElevate
 )
 $ErrorActionPreference = 'Stop'
-# Dirección para relanzar elevado cuando Afina se abrió con "irm … | iex": el archivo crudo de GitHub (llega como UTF-8).
-$AfOneLinerUrl = 'https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1'
 
 # Antes de cargar nada: con PowerShell limitado (Smart App Control o App Control) el código de Afina no llega a cargar.
 # Todavía no hay T ni configuración: el aviso sale en el idioma de Windows.
@@ -22,23 +20,28 @@ if ([string]$ExecutionContext.SessionState.LanguageMode -ne 'FullLanguage') {
 # </afina:code>
 
 $scriptPath = if ($PSCommandPath) { $PSCommandPath } else { $null }
+$configPath = Get-AfConfigPath -ScriptRoot $(if ($scriptPath) { Split-Path $scriptPath -Parent } else { $null })
+$config = Get-AfConfig -Path $configPath
+# Los avisos de la consola, -Scan y la ventana salen en el idioma guardado.
+Set-AfStartLanguage -Config $config
+
 $extra = @()
 if ($Scan) { $extra += '-Scan' }
 if ($Json) { $extra += '-Json' }
 if ($Snapshot) { $extra += @('-Snapshot', ('"{0}"' -f $Snapshot)) }
 $needsSta = [System.Threading.Thread]::CurrentThread.ApartmentState -ne 'STA' -and -not $Scan
 if ((-not $NoElevate -and -not (Test-AfAdmin)) -or $needsSta) {
-    Restart-AfElevated -Arguments (@('-STA') + (Get-AfRelaunchArguments -ScriptPath $scriptPath -OneLinerUrl $AfOneLinerUrl -Extra $extra))
+    # Abierto con "irm … | iex" no se relanza: un PowerShell elevado que descarga y ejecuta código es lo que Defender bloquea como malware.
+    if (-not $scriptPath) {
+        Write-Host (T 'Afina necesita permisos de administrador. Abre PowerShell como administrador (clic derecho en Inicio) y vuelve a pegar la línea.')
+        return
+    }
+    Restart-AfElevated -Arguments (@('-STA') + (Get-AfRelaunchArguments -ScriptPath $scriptPath -Extra $extra))
     exit
 }
 
 [void](Start-AfLog -Directory (Join-Path $env:ProgramData 'Afina\registros'))
 Write-AfLog -Level Info -Message ('Afina {0} en {1}' -f (Get-AfVersion), $env:COMPUTERNAME)
-
-$configPath = Get-AfConfigPath -ScriptRoot $(if ($scriptPath) { Split-Path $scriptPath -Parent } else { $null })
-$config = Get-AfConfig -Path $configPath
-# La consola (-Scan) y la ventana salen en el idioma guardado.
-Set-AfStartLanguage -Config $config
 
 if ($Scan) {
     $catalog = @(Get-AfCatalog)

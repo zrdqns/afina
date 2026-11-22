@@ -4,18 +4,16 @@
 
 Describe 'Get-AfRelaunchArguments' {
     It 'con ruta usa -File y Bypass' {
-        $a = Get-AfRelaunchArguments -ScriptPath 'D:\Mis herramientas\Afina.ps1' -OneLinerUrl 'https://example.test/afina.ps1'
+        $a = Get-AfRelaunchArguments -ScriptPath 'D:\Mis herramientas\Afina.ps1'
         $a[0..4] | Should -Be @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '"D:\Mis herramientas\Afina.ps1"')
     }
 
-    It 'sin ruta usa -Command con irm' {
-        $a = Get-AfRelaunchArguments -ScriptPath $null -OneLinerUrl 'https://example.test/afina.ps1'
-        $a | Should -Contain '-Command'
-        ($a -join ' ') | Should -Match ([regex]::Escape('"irm https://example.test/afina.ps1 | iex"'))
+    It 'nunca arma una línea que descargue código (Defender la bloquea como malware)' {
+        (Get-AfRelaunchArguments -ScriptPath 'C:\A.ps1') -join ' ' | Should -Not -Match 'irm|iex|-Command'
     }
 
     It 'pasa los parámetros extra al final' {
-        $a = Get-AfRelaunchArguments -ScriptPath 'C:\A.ps1' -OneLinerUrl 'https://x.test' -Extra @('-Scan')
+        $a = Get-AfRelaunchArguments -ScriptPath 'C:\A.ps1' -Extra @('-Scan')
         $a[-1] | Should -Be '-Scan'
     }
 }

@@ -8,7 +8,7 @@ Analiza Windows y lo deja afinado para juegos y rendimiento. Cada cambio se pued
 
 ## Cómo abrirlo
 
-**Desde internet.** En PowerShell:
+**Desde internet.** En PowerShell abierto como administrador (clic derecho en Inicio > Terminal o Windows PowerShell, como administrador):
 
 ```powershell
 irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex
@@ -16,7 +16,7 @@ irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex
 
 **Desde una USB.** Descarga `Afina.cmd` y `Afina.ps1` del [último release](https://github.com/zrdqns/afina/releases/latest), déjalos en la misma carpeta y abre `Afina.cmd`.
 
-Afina no se instala: pide permisos de administrador y se abre.
+Afina no se instala. Desde la USB pide permisos de administrador por su cuenta.
 
 ## Qué hace
 
@@ -52,7 +52,7 @@ Scans Windows and tunes it for gaming and performance. Every change can be undon
 
 ## How to open it
 
-**From the internet.** In PowerShell:
+**From the internet.** In PowerShell opened as administrator (right-click Start > Terminal or Windows PowerShell, as administrator):
 
 ```powershell
 irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex
@@ -60,7 +60,7 @@ irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex
 
 **From a USB drive.** Download `Afina.cmd` and `Afina.ps1` from the [latest release](https://github.com/zrdqns/afina/releases/latest), keep them in the same folder and open `Afina.cmd`.
 
-Afina doesn't install: it asks for administrator rights and opens.
+Afina doesn't install. From the USB drive it asks for administrator rights on its own.
 
 ## What it does
 

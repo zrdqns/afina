@@ -14,10 +14,14 @@ $block = "`$Global:AfCodeBlock = {`r`n" + $Global:AfCode + "`r`n}`r`n`$Global:Af
 $body = [regex]::Replace($main, $pattern, [System.Text.RegularExpressions.MatchEvaluator] { param($m) $block })
 $header = "# Afina $(Get-AfVersion): análisis y optimización de Windows. Generado por build.ps1; no editar a mano.`r`n# Iconos: Phosphor Icons (https://phosphoricons.com), licencia MIT.`r`n"
 
-New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-$ps1 = Join-Path $OutDir 'Afina.ps1'
+$usb = Join-Path $OutDir 'usb'
+New-Item -ItemType Directory -Force -Path $usb | Out-Null
+# USB: con BOM, porque powershell -File lee sin BOM como ANSI y rompe los acentos.
+$ps1 = Join-Path $usb 'Afina.ps1'
 [System.IO.File]::WriteAllText($ps1, $header + $body, (New-Object System.Text.UTF8Encoding($true)))
 # Si Afina sale con error (o con PowerShell limitado), la ventana espera para que se lea el aviso.
 $cmd = "@echo off`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File `"%~dp0Afina.ps1`" %*`r`nif errorlevel 1 pause`r`n"
-[System.IO.File]::WriteAllText((Join-Path $OutDir 'Afina.cmd'), $cmd, [System.Text.Encoding]::ASCII)
-'dist\Afina.ps1: {0:N0} KB' -f ((Get-Item $ps1).Length / 1KB)
+[System.IO.File]::WriteAllText((Join-Path $usb 'Afina.cmd'), $cmd, [System.Text.Encoding]::ASCII)
+# Línea de internet: sin BOM (GitHub lo sirve como UTF-8 y irm dejaría el BOM pegado al primer comentario).
+[System.IO.File]::WriteAllText((Join-Path $OutDir 'Afina.ps1'), $header + $body, (New-Object System.Text.UTF8Encoding($false)))
+'dist\usb\Afina.ps1: {0:N0} KB' -f ((Get-Item $ps1).Length / 1KB)

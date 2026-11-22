@@ -50,7 +50,7 @@ function Get-AfSandboxId {
 function Get-AfSandboxShares {
     param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$OutDir)
     @(
-        [pscustomobject]@{ HostPath = Join-Path $Root 'dist'; SandboxPath = 'C:\afina'; Write = $false }
+        [pscustomobject]@{ HostPath = Join-Path $Root 'dist\usb'; SandboxPath = 'C:\afina'; Write = $false }
         [pscustomobject]@{ HostPath = Join-Path $Root 'sandbox'; SandboxPath = 'C:\prueba'; Write = $false }
         [pscustomobject]@{ HostPath = $OutDir; SandboxPath = 'C:\resultados'; Write = $true }
     )

@@ -2,17 +2,26 @@
     $script:root = Split-Path $PSScriptRoot -Parent
     $script:out = Join-Path $TestDrive 'dist'
     & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $script:root 'build.ps1') -OutDir $script:out | Out-Null
-    $script:built = Join-Path $script:out 'Afina.ps1'
+    # La USB (y el release) usan dist\usb; la línea de internet lee dist\Afina.ps1.
+    $script:built = Join-Path $script:out 'usb\Afina.ps1'
+    $script:web = Join-Path $script:out 'Afina.ps1'
 }
 
 Describe 'Build' {
-    It 'genera Afina.ps1 y Afina.cmd' {
+    It 'genera Afina.ps1 para la línea y Afina.ps1 con Afina.cmd para la USB' {
         Test-Path $script:built | Should -BeTrue
-        Test-Path (Join-Path $script:out 'Afina.cmd') | Should -BeTrue
+        Test-Path (Join-Path $script:out 'usb\Afina.cmd') | Should -BeTrue
+        Test-Path $script:web | Should -BeTrue
     }
 
     It 'Afina.cmd deja la ventana abierta si Afina sale con error (el aviso se puede leer)' {
-        Get-Content (Join-Path $script:out 'Afina.cmd') | Should -Contain 'if errorlevel 1 pause'
+        Get-Content (Join-Path $script:out 'usb\Afina.cmd') | Should -Contain 'if errorlevel 1 pause'
+    }
+
+    It 'el de la línea es el mismo texto sin BOM (irm lo dejaría pegado al primer comentario)' {
+        $web = [System.IO.File]::ReadAllBytes($script:web)
+        $web[0] | Should -Not -Be 0xEF
+        [System.IO.File]::ReadAllText($script:web) | Should -BeExactly ([System.IO.File]::ReadAllText($script:built))
     }
 
     It 'con PowerShell limitado, el Afina.ps1 armado avisa y sale con 2 antes de cargar el código' {

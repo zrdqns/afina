@@ -3,15 +3,10 @@
     [bool]$principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# Solo desde un archivo (USB): con "irm … | iex" no se relanza (ver Main.ps1).
 function Get-AfRelaunchArguments {
-    param([string]$ScriptPath, [Parameter(Mandatory)][string]$OneLinerUrl, [string[]]$Extra = @())
-    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass')
-    if ($ScriptPath) {
-        $arguments += @('-File', ('"{0}"' -f $ScriptPath))
-    } else {
-        $arguments += @('-Command', ('"irm {0} | iex"' -f $OneLinerUrl))
-    }
-    $arguments + $Extra
+    param([Parameter(Mandatory)][string]$ScriptPath, [string[]]$Extra = @())
+    @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f $ScriptPath)) + $Extra
 }
 
 function Restart-AfElevated {
