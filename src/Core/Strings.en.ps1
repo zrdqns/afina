@@ -533,6 +533,18 @@ Deshacer todo==>Undo all
 Idioma==>Language
 Automático sigue el idioma de Windows.==>Automatic follows the Windows display language.
 Disponible al terminar==>Available when it finishes
+Windows no dejó leer ese ajuste==>Windows wouldn't let it read that setting
+Windows no aceptó el ajuste==>Windows didn't accept the setting
+abre Afina con la cuenta del dueño para este ajuste==>open Afina with the owner's account for this setting
+abre Afina con la cuenta del dueño para deshacerlo==>open Afina with the owner's account to undo it
+Windows no aceptó el modo de Optimización de entrega==>Windows didn't accept the Delivery Optimization mode
+una directiva fija el modo de Optimización de entrega; quítala para deshacerlo==>a policy sets the Delivery Optimization mode; remove it to undo this
+Windows no activó el archivo de paginación automático==>Windows didn't turn on the automatic page file
+la hibernación está desactivada==>hibernation is turned off
+la hibernación tiene un tamaño personalizado==>hibernation has a custom size
+Windows no aceptó el tipo de hibernación==>Windows didn't accept the hibernation type
+falta espacio en el disco para volver a la hibernación completa==>not enough disk space to go back to full hibernation
+Escrito, comprueba que se vea el cambio==>Written, check that the change shows
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }

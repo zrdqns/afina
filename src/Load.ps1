@@ -24,6 +24,7 @@ $Global:AfFiles = @(
     'Changes\Updates.ps1'
     'Changes\Feature.ps1'
     'Changes\Appx.ps1'
+    'Changes\System.ps1'
     'Inventory\Parsers.ps1'
     'Inventory\System.ps1'
     'Inventory\Hardware.ps1'

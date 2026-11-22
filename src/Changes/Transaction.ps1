@@ -41,6 +41,15 @@ function Add-AfTxRecord {
     Send-AfTxStep -Tx $Tx -Name 'apply'
 }
 
+# Build de Windows en la que se probó Afina de verdad.
+function Get-AfTestedBuild { 26300 }
+
+# En otra build el cambio se escribe igual, pero no se pudo ver en pantalla: la fila lo avisa.
+function Add-AfUnverifiedNote {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)]$Os)
+    if ([int]$Os.Build -ne (Get-AfTestedBuild)) { [void]$Tx.Notes.Add((T 'Escrito, comprueba que se vea el cambio')) }
+}
+
 # Error con un motivo que se puede mostrar en la fila. Uso: throw (New-AfApplyError -Reason '…').
 function New-AfApplyError {
     param([Parameter(Mandatory)][string]$Reason, [switch]$Reverted)

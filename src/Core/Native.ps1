@@ -82,6 +82,53 @@ namespace Afina {
             return result;
         }
 
+        // Ratón y animaciones del área de cliente (SystemParametersInfo). Los Set guardan en el perfil y avisan a las ventanas.
+        const uint SPI_GETMOUSE = 0x0003, SPI_SETMOUSE = 0x0004, SPI_GETCLIENTAREAANIMATION = 0x1042, SPI_SETCLIENTAREAANIMATION = 0x1043;
+        const uint SPIF_UPDATEINIFILE = 0x01, SPIF_SENDCHANGE = 0x02;
+
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+        static extern bool SpiArray(uint action, uint param, int[] values, uint flags);
+
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+        static extern bool SpiGetInt(uint action, uint param, out int value, uint flags);
+
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+        static extern bool SpiSetPtr(uint action, uint param, IntPtr value, uint flags);
+
+        // { umbral 1, umbral 2, aceleración }
+        public static int[] GetMouseParams() {
+            int[] values = new int[3];
+            if (!SpiArray(SPI_GETMOUSE, 0, values, 0)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            return values;
+        }
+
+        public static bool SetMouseParams(int t1, int t2, int accel) {
+            return SpiArray(SPI_SETMOUSE, 0, new int[] { t1, t2, accel }, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+        }
+
+        public static bool GetClientAreaAnimation() {
+            int value;
+            if (!SpiGetInt(SPI_GETCLIENTAREAANIMATION, 0, out value, 0)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            return value != 0;
+        }
+
+        public static bool SetClientAreaAnimation(bool on) {
+            return SpiSetPtr(SPI_SETCLIENTAREAANIMATION, 0, new IntPtr(on ? 1 : 0), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+        }
+
+        [DllImport("shell32.dll")]
+        static extern void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, UIntPtr wParam, string lParam, uint flags, uint timeout, out UIntPtr result);
+
+        // Avisa al shell (asociaciones) y a todas las ventanas (WM_SETTINGCHANGE con el área), máximo 2 s por ventana.
+        public static void NotifyShell(string area) {
+            SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);
+            UIntPtr result;
+            SendMessageTimeout(new IntPtr(0xFFFF), 0x001A, UIntPtr.Zero, area, 0x0002, 2000, out result);
+        }
+
         public class DisplayMode { public int Width; public int Height; public int Hz; }
 
         public class DisplayInfo {
