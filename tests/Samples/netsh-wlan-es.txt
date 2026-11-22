@@ -1,0 +1,22 @@
+
+Hay 1 interfaz en el sistema:
+
+    Nombre                   : Wi-Fi
+    Descripción            : Realtek 8852BE Wireless LAN WiFi 6 PCI-E NIC
+    GUID                   : 0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+    Dirección       : aa:bb:cc:dd:ee:01
+    Tipo de interfaz         : Principal
+    Estado                  : conectado
+    SSID                   : CasaNet
+    BSSID de AP               : 11:22:33:44:55:66
+    Banda                   : 5 GHz
+    Canal                : 44
+    Tipo de red             : Infraestructura
+    Tipo de radio            : 802.11ax
+    Autenticación         : WPA2-Personal
+    Cifrado                 : CCMP
+    Modo de conexión      : Conectar automáticamente
+    Velocidad de recepción (Mbps)  : 573.5
+    Velocidad de transmisión (Mbps) : 573.5
+    Señal                 : 88%
+    Perfil                 : CasaNet

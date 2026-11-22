@@ -1,0 +1,60 @@
+﻿function Join-AfNames {
+    param([string[]]$Names)
+    $unique = @($Names | Where-Object { $_ } | Select-Object -Unique)
+    switch ($unique.Count) {
+        0 { '' }
+        1 { $unique[0] }
+        default { ($unique[0..($unique.Count - 2)] -join ', ') + ' ' + (T 'y') + ' ' + $unique[-1] }
+    }
+}
+
+# Programas que no hace falta arrancar con Windows (lista cerrada; Steam, Discord y el resto se muestran sin marcar).
+function Get-AfStartupBloatName {
+    param($Entry)
+    $text = '{0} {1}' -f $Entry.Name, [System.IO.Path]::GetFileNameWithoutExtension([string]$Entry.Path)
+    switch -Regex ($text) {
+        'EpicGamesLauncher' { 'Epic Games'; break }
+        'EADesktop' { 'EA app'; break }
+        '\bOrigin\b' { 'Origin'; break }
+        'UbisoftConnect|\bupc\b' { 'Ubisoft Connect'; break }
+        'AdobeGCInvoker|CCXProcess|AdobeARM|Adobe Creative Cloud' { (T 'el actualizador de Adobe'); break }
+        'Spotify' { 'Spotify'; break }
+        'Skype' { 'Skype'; break }
+        default { $null }
+    }
+}
+
+function Get-AfStartupChecks {
+    @{
+        Id = 'startup.apps'; Category = 'startup'
+        Title = (T 'Programas que arrancan con Windows')
+        Why = (T 'Cada programa que arranca solo alarga el encendido y ocupa memoria mientras juegas.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $false
+        Source = (T 'Microsoft: apps de inicio'); SourceUrl = 'https://support.microsoft.com/en-us/windows/experience/startup-boot/configure-startup-applications-in-windows'; Undo = (T 'Se puede deshacer')
+        AppliesTo = { param($inv) @($inv.Startup).Count -gt 0 }
+        Detect = {
+            param($inv)
+            # Cada entrada es también una opción del detalle: Selected empieza igual que Preselected y la interfaz lo cambia.
+            $entries = @($inv.Startup | Where-Object Enabled | ForEach-Object {
+                    $bloat = Get-AfStartupBloatName -Entry $_
+                    [pscustomobject]@{
+                        Name = $_.Name; Label = $_.Name; Path = $_.Path; Friendly = $bloat; Preselected = [bool]$bloat; Selected = [bool]$bloat
+                        ApprovedKey = $_.ApprovedKey; ApprovedName = $_.ApprovedName
+                    }
+                })
+            $bloat = @($entries | Where-Object Preselected)
+            if (-not $bloat.Count) {
+                $note = if ($entries.Count) { (T '{0} programas arrancan con Windows; ninguno sobra') -f $entries.Count } else { $null }
+                return New-AfDetection -State Ok -Note $note -Data @{ Entries = $entries }
+            }
+            $title = if ($bloat.Count -eq 1) { (T '1 programa menos al arrancar') } else { (T '{0} programas menos al arrancar') -f $bloat.Count }
+            $names = Join-AfNames @($bloat.Friendly)
+            New-AfDetection -State Improvable -Title $title -Current $names -Data @{ Entries = $entries; Choices = $entries } `
+                -What (T 'Se desactivan igual que en el Administrador de tareas los programas marcados abajo. Los demás siguen arrancando.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            foreach ($choice in @($detected.Data.Choices | Where-Object Selected)) { Disable-AfStartupEntry -Tx $tx -Entry $choice | Out-Null }
+        }
+    }
+}

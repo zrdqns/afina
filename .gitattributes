@@ -1,0 +1,2 @@
+# Los archivos se guardan tal cual (CRLF y BOM): la línea de internet lee dist\Afina.ps1 igual al que se probó, y Afina.cmd necesita CRLF.
+* -text

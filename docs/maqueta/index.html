@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="es" data-theme="negro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Afina, maqueta de la interfaz</title>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/light/style.css">
+<style>
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-icon: cubic-bezier(0.2, 0, 0, 1);
+  --font-display: "Bahnschrift", "DIN Alternate", system-ui, sans-serif;
+  --font-text: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+html[data-theme="negro"] {
+  --bg: #0A0A0B; --rail: #0E0E10; --panel: #131315; --raised: #19191C;
+  --line: rgba(255,255,255,.07); --line-2: rgba(255,255,255,.13);
+  --text: #F5F5F4; --text-2: #A1A1A6; --text-3: #7A7A80;
+  --red: #FF3B47; --red-text: #EF3340; --red-fill: #D11F2C; --on-red: #FFFFFF;
+  --check-bg: #F5F5F4; --check-fg: #0A0A0B;
+  --tick: rgba(255,255,255,.17); --tick-major: rgba(255,255,255,.45);
+  --panel-shadow: 0 0 0 1px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.035);
+  --thumb-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 1px 2px rgba(0,0,0,.5);
+  --glow: rgba(255,59,71,.55);
+  color-scheme: dark;
+}
+html[data-theme="blanco"] {
+  --bg: #F5F5F3; --rail: #EDEDEA; --panel: #FFFFFF; --raised: #F8F8F6;
+  --line: rgba(0,0,0,.07); --line-2: rgba(0,0,0,.14);
+  --text: #111113; --text-2: #5C5C63; --text-3: #6B6B72;
+  --red: #E0202E; --red-text: #C8102E; --red-fill: #D11F2C; --on-red: #FFFFFF;
+  --check-bg: #111113; --check-fg: #FFFFFF;
+  --tick: rgba(0,0,0,.17); --tick-major: rgba(0,0,0,.5);
+  --panel-shadow: 0 0 0 1px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04), 0 10px 28px -6px rgba(0,0,0,.07);
+  --thumb-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.1);
+  --glow: rgba(224,32,46,.22);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 400 13px/1.45 var(--font-text); -webkit-font-smoothing: antialiased; overflow: hidden; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--red-text); outline-offset: 2px; border-radius: 6px; }
+html.notransition *, html.notransition *::before, html.notransition *::after { transition: none !important; }
+
+.app { display: grid; grid-template-rows: 40px minmax(0, 1fr) auto; height: 100vh; min-width: 960px; min-height: 600px; }
+
+.titlebar { display: flex; align-items: center; justify-content: space-between; padding-left: 18px; background: var(--rail); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; font: 500 15px/1 var(--font-display); letter-spacing: .01em; }
+.mark { width: 2px; height: 16px; border-radius: 1px; background: var(--red); }
+.caption { display: flex; height: 100%; }
+.caption button { width: 46px; height: 100%; display: grid; place-items: center; color: var(--text-2); font-size: 15px; transition: background-color 150ms ease, color 150ms ease; }
+
+.body { display: grid; grid-template-columns: 244px minmax(0, 1fr); min-height: 0; }
+.rail { background: var(--rail); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 24px; padding: 22px 14px 12px; min-height: 0; }
+.pc { padding: 0 8px; }
+.pc-name { margin: 0; font: 500 17px/1.2 var(--font-display); letter-spacing: .01em; }
+.pc-kind { margin: 3px 0 0; color: var(--text-3); font-size: 12px; }
+.specs { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 9px; }
+.specs li { display: grid; grid-template-columns: 18px 1fr; align-items: center; gap: 9px; color: var(--text-2); font-size: 12.5px; }
+.specs i { font-size: 15px; color: var(--text-3); }
+
+.nav { position: relative; display: grid; gap: 2px; }
+.nav-ind { position: absolute; left: 0; top: 0; width: 2px; height: 32px; border-radius: 2px; background: var(--red); transition: transform 200ms var(--ease-in-out); }
+.nav-item { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 10px; height: 32px; padding: 0 10px 0 12px; border-radius: 8px; color: var(--text-2); text-align: left; transition: background-color 150ms ease, color 150ms ease; }
+.nav-item .ic { font-size: 16px; }
+.nav-item .ic-on { display: none; }
+.nav-item.on { background: var(--line); color: var(--text); }
+.nav-item.on .ic-off { display: none; }
+.nav-item.on .ic-on { display: inline-block; }
+.nav-count { display: grid; justify-items: end; align-items: center; min-width: 18px; font: 500 12px/1 var(--font-display); font-variant-numeric: tabular-nums; color: var(--text-3); }
+.nav-count > * { grid-area: 1 / 1; }
+.nav-count .n-pend { color: var(--text); }
+.nav-count i { font-size: 13px; color: var(--text-3); }
+.rail-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 8px; color: var(--text-3); font-size: 12px; transition: background-color 150ms ease, color 150ms ease; }
+.rail-foot span:first-child { display: inline-flex; align-items: center; gap: 8px; }
+.rail-foot i { font-size: 15px; }
+.ver { font-family: var(--font-display); }
+
+.spin { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--line-2); border-top-color: var(--text-2); animation: spin 700ms linear infinite; }
+.lead .spin { width: 16px; height: 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.main { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+.head { padding: 26px 32px 14px; }
+.head-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+h1 { margin: 0; font: 300 28px/1.1 var(--font-display); letter-spacing: .005em; }
+.seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 10px; background: var(--line); }
+.seg button { position: relative; z-index: 1; height: 26px; padding: 0 14px; border-radius: 7px; font-size: 12px; color: var(--text-2); transition: color 150ms ease; }
+.seg button[aria-checked="true"] { color: var(--text); }
+.seg-thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 7px; background: var(--panel); box-shadow: var(--thumb-shadow); transition: transform 200ms var(--ease-in-out); }
+.seg[data-v="blanco"] .seg-thumb { transform: translateX(100%); }
+
+.gauge { position: relative; height: 46px; margin-top: 22px; }
+.ticks { position: absolute; left: 0; right: 0; bottom: 8px; height: 20px; }
+.tick { position: absolute; bottom: 0; width: 1px; height: 7px; border-radius: 1px; background: var(--tick); opacity: 0; }
+.tick.major { height: 13px; background: var(--tick-major); }
+.tick.end { width: 2px; height: 20px; background: var(--red); }
+.ticks.lit { pointer-events: none; }
+.ticks.lit .tick { background: var(--red); opacity: 0; }
+.needle { position: absolute; left: 0; bottom: 2px; width: 2px; height: 38px; border-radius: 1px; background: var(--red); transition: opacity 300ms ease; will-change: transform; }
+.needle::before { content: ""; position: absolute; left: -3px; top: -6px; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 6px solid var(--red); }
+.needle .halo { position: absolute; left: -72px; top: -16px; width: 146px; height: 72px; border-radius: 50%; background: radial-gradient(closest-side, var(--glow), transparent); opacity: .26; pointer-events: none; }
+.needle.parked { opacity: .4; }
+.gauge-labels { display: flex; justify-content: space-between; margin-top: 6px; color: var(--text-3); font-size: 11.5px; }
+.summary { margin: 14px 0 0; min-height: 20px; color: var(--text-2); font-size: 13.5px; }
+.summary b { color: var(--text); font-weight: 500; }
+
+.list { overflow: auto; padding: 4px 32px 28px; overscroll-behavior: contain; }
+.list::-webkit-scrollbar { width: 12px; }
+.list::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 12px; border: 4px solid transparent; background-clip: content-box; }
+.panel { background: var(--panel); border-radius: 14px; border: 1px solid transparent; box-shadow: var(--panel-shadow); overflow: hidden; }
+.group { display: none; }
+.group.shown { display: block; }
+.group.shown ~ .group.shown { border-top: 1px solid var(--line); }
+.group-h { display: flex; align-items: center; gap: 8px; padding: 14px 18px 4px; color: var(--text-3); font-size: 12px; }
+.group-h i { font-size: 14px; }
+.row { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; column-gap: 14px; align-items: start; padding: 11px 18px; transition: background-color 150ms ease; }
+.row + .row::before { content: ""; position: absolute; top: 0; left: 50px; right: 18px; height: 1px; background: var(--line); }
+.lead { display: grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; }
+.lead > * { grid-area: 1 / 1; }
+.lead > i { font-size: 17px; color: var(--text-3); }
+.slot { display: grid; place-items: center; transition: opacity 300ms var(--ease-icon), transform 300ms var(--ease-icon), filter 300ms var(--ease-icon); }
+.slot.hide { opacity: 0; transform: scale(.25); filter: blur(4px); pointer-events: none; }
+.slot-done i { font-size: 19px; color: var(--text); }
+.cb { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--line-2); display: grid; place-items: center; transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out); }
+.cb i { font-size: 12px; color: var(--check-fg); opacity: 0; transform: scale(.25); filter: blur(4px); transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out), filter 160ms var(--ease-out); }
+.cb.on { background: var(--check-bg); border-color: var(--check-bg); }
+.cb.on i { opacity: 1; transform: none; filter: none; }
+.cb:active { transform: scale(.97); }
+.row-main { min-width: 0; cursor: pointer; }
+.row-title { margin: 0; font-size: 13.5px; font-weight: 500; color: var(--text); transition: color 300ms ease; }
+.row.done .row-title { color: var(--text-2); }
+.row-sub { margin: 3px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--text-2); font-size: 12.5px; }
+.row-sub .to { color: var(--text); }
+.row-sub .arrow { font-size: 12px; color: var(--text-3); }
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.row-note { margin: 2px 0 0; color: var(--text-3); font-size: 12px; }
+.risk { color: var(--red-text); display: inline-flex; align-items: center; gap: 6px; }
+.meta { display: flex; align-items: center; gap: 14px; margin-top: 1px; }
+.tag { display: inline-flex; align-items: center; gap: 5px; color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.tag i { font-size: 13px; }
+.bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+.bars i { display: block; width: 3px; border-radius: 1px; background: var(--line-2); }
+.bars i:nth-child(1) { height: 5px; } .bars i:nth-child(2) { height: 8px; } .bars i:nth-child(3) { height: 12px; }
+.bars[data-l="1"] i:nth-child(-n+1), .bars[data-l="2"] i:nth-child(-n+2), .bars[data-l="3"] i { background: var(--text); }
+.caret { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--text-3); font-size: 13px; transition: transform 200ms var(--ease-out), background-color 150ms ease, color 150ms ease; }
+.row.open .caret { transform: rotate(180deg); }
+.detail { grid-column: 2 / -1; display: grid; grid-template-rows: 0fr; transition: grid-template-rows 250ms var(--ease-out); }
+.detail > div { overflow: hidden; }
+.detail-in { padding-top: 10px; color: var(--text-2); font-size: 12.5px; opacity: 0; transition: opacity 200ms ease; }
+.row.open .detail { grid-template-rows: 1fr; }
+.row.open .detail-in { opacity: 1; }
+.detail dl { display: grid; grid-template-columns: 92px 1fr; gap: 6px 12px; margin: 0; }
+.detail dt { color: var(--text-3); }
+.detail dd { margin: 0; }
+.detail a { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.steps { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.ok-list { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 250ms var(--ease-out); }
+.ok-list > div { overflow: hidden; }
+.group.open .ok-list { grid-template-rows: 1fr; }
+.ok-item { display: grid; grid-template-columns: 18px 1fr; column-gap: 14px; align-items: center; padding: 7px 18px; color: var(--text-2); font-size: 12.5px; }
+.ok-item i { font-size: 16px; color: var(--text-3); justify-self: center; }
+.ok-head { width: 100%; display: grid; grid-template-columns: 18px 1fr auto auto; column-gap: 14px; align-items: center; padding: 12px 18px; text-align: left; color: var(--text-2); transition: background-color 150ms ease; }
+.ok-head > i:first-child { font-size: 17px; color: var(--text-3); justify-self: center; }
+.ok-head .caret { transition: transform 200ms var(--ease-out); }
+.group.open .ok-head .caret { transform: rotate(180deg); }
+
+.foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 32px; background: var(--rail); border-top: 1px solid var(--line); }
+.note { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 12.5px; }
+.note i { font-size: 16px; color: var(--text-3); }
+.actions { display: flex; gap: 10px; }
+.btn { position: relative; height: 36px; padding: 0 16px; border-radius: 9px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; transition: transform 160ms var(--ease-out), background-color 150ms ease, box-shadow 150ms ease, color 150ms ease; }
+.btn:active { transform: scale(.97); }
+.btn i { font-size: 15px; }
+.btn.primary { background: var(--red-fill); color: var(--on-red); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 1px 2px rgba(0,0,0,.3); }
+.btn.ghost { color: var(--text); box-shadow: inset 0 0 0 1px var(--line-2); }
+.btn .num { display: inline-block; }
+.btn-progress { position: absolute; left: 0; bottom: 0; width: 100%; height: 2px; background: rgba(255,255,255,.9); transform: scaleX(0); transform-origin: left; transition: transform 300ms var(--ease-out); }
+.hidden-actions .actions { opacity: 0; pointer-events: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .caption button:hover { background: var(--line); color: var(--text); }
+  .caption .close:hover { background: #C42B1C; color: #FFFFFF; }
+  .nav-item:hover { background: var(--line); color: var(--text); }
+  .rail-foot:hover { background: var(--line); color: var(--text-2); }
+  .row:hover, .ok-head:hover { background: var(--raised); }
+  .caret:hover { background: var(--line); color: var(--text); }
+  .btn.primary:hover { background: color-mix(in srgb, var(--red-fill) 88%, #FFFFFF); }
+  .btn.ghost:hover { background: var(--line); }
+  .seg button:hover { color: var(--text); }
+}
+html.reduce .slot, html.reduce .slot.hide, html.reduce .cb i { transform: none !important; filter: none !important; }
+html.reduce .nav-ind, html.reduce .seg-thumb, html.reduce .caret, html.reduce .detail, html.reduce .ok-list { transition-duration: 0ms; }
+html.reduce .spin { animation-duration: 1.6s; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 260ms; animation-timing-function: ease; }
+</style>
+</head>
+<body>
+<div class="app hidden-actions" id="app">
+  <header class="titlebar">
+    <div class="brand"><span class="mark" aria-hidden="true"></span><span>Afina</span></div>
+    <div class="caption">
+      <button aria-label="Minimizar"><i class="ph-light ph-minus"></i></button>
+      <button aria-label="Maximizar"><i class="ph-light ph-square"></i></button>
+      <button class="close" aria-label="Cerrar"><i class="ph-light ph-x"></i></button>
+    </div>
+  </header>
+
+  <div class="body">
+    <aside class="rail">
+      <section class="pc" id="pc" style="opacity:0">
+        <p class="pc-name">Lenovo LOQ 15</p>
+        <p class="pc-kind">Laptop gamer</p>
+        <ul class="specs">
+          <li><i class="ph-bold ph-cpu"></i><span>Ryzen 7 7435HS</span></li>
+          <li><i class="ph-bold ph-graphics-card"></i><span>RTX 4060 Laptop</span></li>
+          <li><i class="ph-bold ph-memory"></i><span>16 GB DDR5, un canal</span></li>
+          <li><i class="ph-bold ph-hard-drives"></i><span>SSD 512 GB, 61 GB libres</span></li>
+          <li><i class="ph-bold ph-windows-logo"></i><span>Windows 11 Home</span></li>
+          <li><i class="ph-bold ph-plug-charging"></i><span>Con cargador</span></li>
+        </ul>
+      </section>
+      <nav class="nav" id="nav" aria-label="Categorías"></nav>
+      <button class="rail-foot"><span><i class="ph-bold ph-clock-counter-clockwise"></i>Historial</span><span class="ver">v0.1</span></button>
+    </aside>
+
+    <main class="main">
+      <div class="head">
+        <div class="head-top">
+          <h1 id="title">Analizando esta PC</h1>
+          <div class="seg" id="seg" data-v="negro" role="radiogroup" aria-label="Tema">
+            <span class="seg-thumb" aria-hidden="true"></span>
+            <button role="radio" aria-checked="true" data-t="negro">Negro</button>
+            <button role="radio" aria-checked="false" data-t="blanco">Blanco</button>
+          </div>
+        </div>
+        <div class="gauge" id="gauge" aria-hidden="true">
+          <div class="ticks" id="ticks"></div>
+          <div class="ticks lit" id="lit"></div>
+          <div class="needle parked" id="needle"><span class="halo"></span></div>
+        </div>
+        <div class="gauge-labels"><span>Desafinado</span><span>Afinado</span></div>
+        <p class="summary" id="summary" aria-live="polite">Revisando energía, gráficos, red, inicio y almacenamiento…</p>
+      </div>
+      <div class="list" id="list"><div class="panel" id="panel"></div></div>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <span class="note" id="note"><i class="ph-bold ph-shield-check"></i><span>Se crea un punto de restauración antes de aplicar</span></span>
+    <div class="actions">
+      <button class="btn ghost" id="ghost"><i class="ph-bold ph-arrow-clockwise"></i><span>Volver a analizar</span></button>
+      <button class="btn primary" id="go"><span id="goLabel">Optimizar <span class="num" id="goNum">7</span> cambios</span><span class="btn-progress" id="goBar"></span></button>
+    </div>
+  </footer>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+// La app real sigue a Windows ("Efectos de animación") salvo que el usuario elija "Siempre" en Afina.
+// La maqueta muestra el movimiento siempre; ?reducir=1 enseña la versión reducida.
+const reduce = params.get('reducir') === '1';
+document.documentElement.classList.toggle('reduce', reduce);
+const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+const EASE_IO = 'cubic-bezier(0.77, 0, 0.175, 1)';
+const $ = s => document.querySelector(s);
+let frozen = false;
+const wait = ms => new Promise(r => setTimeout(() => { if (!frozen) r(); }, reduce ? Math.min(ms, 40) : ms));
+if (+params.get('congelar')) setTimeout(() => { frozen = true; document.getAnimations().forEach(a => a.pause()); }, +params.get('congelar'));
+
+const CATS = [
+  { id: 'energia', name: 'Energía', icon: 'lightning', t: 420 },
+  { id: 'juegos', name: 'Juegos y gráficos', icon: 'game-controller', t: 380 },
+  { id: 'red', name: 'Red', icon: 'wifi-high', t: 300 },
+  { id: 'inicio', name: 'Inicio', icon: 'rocket-launch', t: 280 },
+  { id: 'disco', name: 'Almacenamiento', icon: 'hard-drives', t: 280 },
+  { id: 'hardware', name: 'Hardware', icon: 'wrench', t: 260 },
+  { id: 'opcional', name: 'Opcional', icon: 'sliders-horizontal', t: 240 },
+  { id: 'orden', name: 'En orden', icon: 'check-circle', t: 200 },
+];
+
+const ITEMS = [
+  { id: 'e1', cat: 'energia', kind: 'auto', sel: true, w: 3, title: 'Modo de energía en Mejor rendimiento', from: 'Equilibrado', to: 'Mejor rendimiento', note: 'Solo con el cargador puesto',
+    what: 'Modo de energía con cargador, de Equilibrado a Mejor rendimiento. Con batería no cambia nada.', undo: 'Se puede deshacer', src: 'Microsoft: modos de energía' },
+  { id: 'e2', cat: 'energia', kind: 'manual', w: 3, title: 'Modo Rendimiento en Lenovo Vantage', sub: 'Los límites de potencia y los ventiladores los maneja Vantage',
+    steps: ['Abre Lenovo Vantage.', 'Ve a Dispositivo y luego a Energía.', 'Elige Rendimiento con el cargador puesto.'] },
+  { id: 'g1', cat: 'juegos', kind: 'auto', sel: true, w: 3, title: 'Pantalla a su frecuencia máxima', from: '60 Hz', to: '165 Hz', num: true,
+    what: 'Pantalla integrada a 2560 × 1440, de 60 a 165 Hz. Pregunta si se ve bien y vuelve sola a los 15 s si nadie responde.', undo: 'Se puede deshacer', src: 'Microsoft: frecuencia de actualización' },
+  { id: 'g2', cat: 'juegos', kind: 'auto', sel: true, w: 2, title: 'Grabación en segundo plano apagada', from: 'Activa', to: 'Apagada', note: 'Xbox Game Bar graba todo el tiempo',
+    what: 'Se apaga "Grabar lo que pasó" de Xbox Game Bar. Las capturas manuales siguen funcionando.', undo: 'Se puede deshacer', src: 'Microsoft: Xbox Game Bar' },
+  { id: 'g3', cat: 'juegos', kind: 'auto', sel: true, w: 2, title: 'Programación de GPU por hardware', from: 'Apagada', to: 'Activada', tag: 'Pide reiniciar',
+    what: 'HwSchMode pasa de 1 a 2. DLSS Frame Generation la necesita.', undo: 'Se puede deshacer', src: 'Microsoft DirectX' },
+  { id: 'g4', cat: 'juegos', kind: 'manual', w: 2, title: 'Driver de NVIDIA de hace 9 meses', sub: 'Actualízalo desde NVIDIA App',
+    steps: ['Abre NVIDIA App.', 'Entra a Controladores.', 'Instala el Game Ready más reciente sin instalación limpia.'] },
+  { id: 'r1', cat: 'red', kind: 'auto', sel: true, w: 1, title: 'Ethernet sin ahorro de energía', from: '3 opciones activas', to: 'Apagadas', note: 'La conexión se corta unos segundos al aplicar',
+    what: 'Energy-Efficient Ethernet, Green Ethernet y Power Saving Mode del adaptador Realtek pasan a apagado.', undo: 'Se puede deshacer', src: 'djdallmann, investigación de red' },
+  { id: 'i1', cat: 'inicio', kind: 'auto', sel: true, w: 2, title: '3 programas menos al arrancar', sub: 'Epic Games, EA app y el actualizador de Adobe',
+    what: 'Se desactivan igual que en el Administrador de tareas. Steam y Discord siguen arrancando.', undo: 'Se puede deshacer', src: 'Microsoft: apps de inicio' },
+  { id: 'd1', cat: 'disco', kind: 'auto', sel: true, w: 1, title: 'Borrar archivos temporales', sub: '6,2 GB', subNum: true, tag: 'No se puede deshacer',
+    what: 'Temporales de Windows y del usuario, y cachés de Windows Update y de Optimización de distribución.', undo: 'No se puede deshacer: solo borra temporales', src: 'Microsoft: liberar espacio' },
+  { id: 'h1', cat: 'hardware', kind: 'manual', w: 3, title: 'RAM en un solo canal', sub: 'Agrega un módulo igual de 8 GB',
+    steps: ['Compra un módulo DDR5-5600 SODIMM de 8 GB.', 'Instálalo en la ranura libre.', 'Con dos módulos la RAM trabaja en doble canal.'] },
+  { id: 'o1', cat: 'opcional', kind: 'auto', sel: false, w: 3, async: true, title: 'Actualizaciones de Windows', sub: '2 disponibles. Puede tardar unos minutos',
+    what: 'Descarga e instala las actualizaciones pendientes con su progreso.', undo: 'No se deshace desde Afina', src: 'Windows Update' },
+  { id: 'o2', cat: 'opcional', kind: 'auto', sel: false, w: 2, risk: 'Puede dar más FPS, pero baja la seguridad', title: 'Integridad de memoria apagada', from: 'Activa', to: 'Apagada', tag: 'Pide reiniciar',
+    what: 'Apaga la protección de Windows contra drivers maliciosos. Microsoft reconoce que en algunos equipos baja el rendimiento en juegos.', undo: 'Se puede deshacer', src: 'Microsoft: virtualización y juegos' },
+  { id: 'o3', cat: 'opcional', kind: 'auto', sel: false, w: 1, title: 'Sin anuncios ni sugerencias de Windows', sub: 'Inicio, pantalla de bloqueo y Configuración',
+    what: 'Apaga sugerencias, apps promocionadas que se instalan solas y el ID de publicidad.', undo: 'Se puede deshacer', src: 'Microsoft: privacidad' },
+];
+const OK_ITEMS = ['Modo de juego activado', 'Optimizaciones para juegos en ventana', 'Wi-Fi sin ahorro de energía', 'TRIM del SSD activado', 'Espacio libre suficiente', 'Plan de energía Equilibrado'];
+const OK_COUNT = 18, OK_W = 30;
+const BASE = ITEMS.filter(i => i.kind === 'auto' && i.cat !== 'opcional');
+const TOTAL_W = OK_W + BASE.reduce((s, i) => s + i.w, 0);
+const applied = new Set();
+
+let state = 'scanning', filter = 'todo', needleF = 0, needleAnim = null, asyncTimer = null, scanId = 0;
+const needle = $('#needle'), gauge = $('#gauge');
+
+function score() { return (OK_W + BASE.filter(i => applied.has(i.id)).reduce((s, i) => s + i.w, 0)) / TOTAL_W; }
+function pendingIn(cat) {
+  if (cat === 'orden') return OK_COUNT;
+  return ITEMS.filter(i => i.cat === cat && !applied.has(i.id)).length;
+}
+function selectedCount() { return [...document.querySelectorAll('.row:not(.done) .cb.on')].length; }
+
+function bars(l) { return `<span class="bars" data-l="${l}" title="Impacto ${['', 'bajo', 'medio', 'alto'][l]}" aria-label="Impacto ${['', 'bajo', 'medio', 'alto'][l]}"><i></i><i></i><i></i></span>`; }
+
+function rowHTML(it) {
+  const lead = it.kind === 'manual'
+    ? `<span class="lead"><i class="ph-bold ph-wrench"></i></span>`
+    : `<span class="lead">
+        <span class="slot slot-cb${it.async ? ' hide' : ''}"><button class="cb${it.sel ? ' on' : ''}" role="checkbox" aria-checked="${!!it.sel}" aria-label="Incluir ${it.title}"><i class="ph-bold ph-check"></i></button></span>
+        <span class="slot slot-spin${it.async ? '' : ' hide'}"><span class="spin"></span></span>
+        <span class="slot slot-done hide"><i class="ph-fill ph-check-circle"></i></span>
+      </span>`;
+  let sub;
+  if (it.risk) sub = `<span class="risk"><i class="ph-bold ph-shield-warning"></i>${it.risk}</span>`;
+  else if (it.from) sub = `<span class="${it.num ? 'num' : ''}">${it.from}</span><i class="arrow ph-bold ph-arrow-right"></i><span class="to ${it.num ? 'num' : ''}">${it.to}</span>`;
+  else sub = `<span class="sub-text ${it.subNum ? 'num' : ''}">${it.async ? 'Buscando actualizaciones…' : it.sub}</span>`;
+  const detail = it.kind === 'manual'
+    ? `<ol class="steps">${it.steps.map(s => `<li>${s}</li>`).join('')}</ol>`
+    : `<dl><dt>Qué cambia</dt><dd>${it.what}</dd><dt>Deshacer</dt><dd>${it.undo}</dd><dt>Fuente</dt><dd><a href="#" onclick="return false">${it.src}</a></dd></dl>`;
+  return `<div class="row ${it.kind}" data-id="${it.id}">
+    ${lead}
+    <div class="row-main"><p class="row-title">${it.title}</p><p class="row-sub">${sub}</p>${it.note ? `<p class="row-note">${it.note}</p>` : ''}</div>
+    <div class="meta">${it.tag ? `<span class="tag"><i class="ph-bold ${it.tag.startsWith('Pide') ? 'ph-arrow-clockwise' : 'ph-warning-circle'}"></i>${it.tag}</span>` : ''}${bars(it.w)}<button class="caret" aria-label="Ver detalle"><i class="ph-bold ph-caret-down"></i></button></div>
+    <div class="detail"><div><div class="detail-in">${detail}</div></div></div>
+  </div>`;
+}
+
+function renderPanel() {
+  const groups = CATS.filter(c => c.id !== 'orden').map(c => `
+    <section class="group" data-cat="${c.id}">
+      <header class="group-h"><i class="ph-bold ph-${c.icon}"></i><span>${c.name}</span></header>
+      ${ITEMS.filter(i => i.cat === c.id).map(rowHTML).join('')}
+    </section>`).join('');
+  const ok = `<section class="group" data-cat="orden">
+      <button class="ok-head" id="okHead"><i class="ph-bold ph-check-circle"></i><span>En orden</span><span class="num" style="color:var(--text-3)">${OK_COUNT}</span><span class="caret"><i class="ph-bold ph-caret-down"></i></span></button>
+      <div class="ok-list"><div>${OK_ITEMS.map(t => `<div class="ok-item"><i class="ph-bold ph-check"></i><span>${t}</span></div>`).join('')}<div class="ok-item"><i></i><span style="color:var(--text-3)">Y 12 más</span></div></div></div>
+    </section>`;
+  $('#panel').innerHTML = groups + ok;
+}
+
+function renderNav() {
+  const entries = [{ id: 'todo', name: 'Todo', icon: 'squares-four' }, ...CATS];
+  $('#nav').innerHTML = '<span class="nav-ind" id="navInd"></span>' + entries.map(c => `
+    <button class="nav-item${c.id === filter ? ' on' : ''}" data-f="${c.id}">
+      <span style="display:grid"><i class="ic ic-off ph-bold ph-${c.icon}"></i><i class="ic ic-on ph-fill ph-${c.icon}"></i></span>
+      <span>${c.name}</span>
+      <span class="nav-count" id="nc-${c.id}">${c.id === 'todo' ? '' : '<span class="spin"></span>'}</span>
+    </button>`).join('');
+}
+
+function setNavCount(id, animate = true) {
+  const el = document.getElementById('nc-' + id);
+  if (!el) return;
+  const n = pendingIn(id);
+  const html = id === 'orden' ? `<span>${n}</span>` : (n ? `<span class="n-pend">${n}</span>` : `<i class="ph-bold ph-check"></i>`);
+  el.innerHTML = html;
+  if (animate && !reduce) el.firstElementChild.animate([{ opacity: 0, transform: 'scale(.25)', filter: 'blur(4px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 300, easing: 'cubic-bezier(0.2, 0, 0, 1)' });
+}
+
+function placeNavInd(instant) {
+  const on = document.querySelector('.nav-item.on'), ind = $('#navInd');
+  if (!on || !ind) return;
+  if (instant) { ind.style.transition = 'none'; requestAnimationFrame(() => ind.style.transition = ''); }
+  ind.style.transform = `translateY(${on.offsetTop}px)`;
+}
+
+function applyFilter() {
+  document.querySelectorAll('.group').forEach(g => {
+    if (!g.dataset.revealed) return;
+    const show = filter === 'todo' || g.dataset.cat === filter;
+    g.classList.toggle('shown', show);
+    if (filter === 'orden' && g.dataset.cat === 'orden') g.classList.add('open');
+  });
+}
+
+function buildTicks() {
+  for (const t of [$('#ticks'), $('#lit')]) {
+    t.innerHTML = '';
+    for (let i = 0; i <= 60; i++) {
+      const s = document.createElement('span');
+      s.className = 'tick' + (i === 60 ? ' end' : i % 10 === 0 ? ' major' : '');
+      t.appendChild(s);
+    }
+  }
+  placeTicks();
+}
+function placeTicks() {
+  const w = gauge.clientWidth;
+  for (const t of [$('#ticks'), $('#lit')]) {
+    [...t.children].forEach((s, i) => { s.style.left = (i === 60 ? w - 2 : Math.round(i * (w - 2) / 60)) + 'px'; });
+  }
+}
+function celebrate() {
+  if (reduce) return;
+  [...$('#lit').children].forEach((t, i) => t.animate([{ opacity: 0 }, { opacity: 1, offset: .35 }, { opacity: 0 }], { duration: 560, delay: i * 9, easing: 'ease-out' }));
+}
+function revealTicks() {
+  document.querySelectorAll('#ticks .tick').forEach((t, i) => {
+    if (reduce) { t.style.opacity = 1; return; }
+    t.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: 120 + i * 9, easing: 'ease', fill: 'forwards' });
+  });
+}
+
+const W = () => gauge.clientWidth - 2;
+const nx = () => new DOMMatrixReadOnly(getComputedStyle(needle).transform).m41 || 0;
+function needleTo(f, { duration = 700, easing = EASE_OUT, frames = null } = {}) {
+  const from = nx(), x = f * W();
+  if (needleAnim) needleAnim.cancel();
+  needle.style.transform = `translateX(${from}px)`;
+  needleF = f;
+  if (reduce) { needle.style.transform = `translateX(${x}px)`; return Promise.resolve(); }
+  const kf = frames ? frames(from, x) : [{ transform: `translateX(${from}px)` }, { transform: `translateX(${x}px)` }];
+  needleAnim = needle.animate(kf, { duration, easing: frames ? 'linear' : easing, fill: 'forwards' });
+  const a = needleAnim;
+  return a.finished.then(() => { if (needleAnim === a) { needle.style.transform = `translateX(${x}px)`; a.cancel(); needleAnim = null; } }).catch(() => {});
+}
+function sweep() {
+  if (reduce) return Promise.resolve();
+  const end = W();
+  return needleTo(0, { duration: 1500, frames: () => [
+    { transform: 'translateX(0px)', easing: EASE_IO },
+    { transform: `translateX(${end}px)`, offset: .52, easing: EASE_IO },
+    { transform: 'translateX(0px)' }] });
+}
+function settle(f) {
+  return needleTo(f, { duration: 700, easing: EASE_OUT });
+}
+
+async function swapText(el, html) {
+  if (reduce) { el.innerHTML = html; return; }
+  await el.animate([{ opacity: 1, filter: 'blur(0)' }, { opacity: 0, filter: 'blur(2px)' }], { duration: 120, easing: 'ease', fill: 'forwards' }).finished;
+  el.innerHTML = html;
+  el.getAnimations().forEach(a => a.cancel());
+  el.animate([{ opacity: 0, filter: 'blur(2px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: 220, easing: EASE_OUT });
+}
+
+function enter(el, delay = 0) {
+  if (reduce) { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay, fill: 'backwards' }); return; }
+  el.animate([{ opacity: 0, transform: 'translateY(8px)', filter: 'blur(4px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 300, delay, easing: EASE_OUT, fill: 'backwards' });
+}
+
+function revealGroup(id) {
+  const g = document.querySelector(`.group[data-cat="${id}"]`);
+  g.dataset.revealed = '1';
+  applyFilter();
+  if (!g.classList.contains('shown')) return;
+  [...g.children].forEach((c, k) => enter(c, k * 50));
+}
+
+function setGo(mode, a, b) {
+  const label = $('#goLabel');
+  if (mode === 'optimize') {
+    const n = selectedCount();
+    label.innerHTML = n ? `Optimizar <span class="num" id="goNum">${n}</span> ${n === 1 ? 'cambio' : 'cambios'}` : 'Elige qué optimizar';
+  } else if (mode === 'applying') label.innerHTML = `Aplicando <span class="num">${a}</span> de <span class="num">${b}</span>`;
+  else if (mode === 'restart') label.innerHTML = 'Reiniciar ahora';
+}
+function rollGoNum() {
+  const el = $('#goNum');
+  if (el && !reduce) el.animate([{ transform: 'translateY(55%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 180, easing: EASE_OUT });
+}
+function setGhost(mode) {
+  const g = $('#ghost');
+  g.innerHTML = mode === 'undo'
+    ? '<i class="ph-bold ph-arrow-counter-clockwise"></i><span>Deshacer</span>'
+    : '<i class="ph-bold ph-arrow-clockwise"></i><span>Volver a analizar</span>';
+}
+function setNote(text, icon = 'shield-check') {
+  return swapText($('#note'), `<i class="ph-bold ph-${icon}"></i><span>${text}</span>`);
+}
+
+const READY_TEXT = '<b><span class="num">7</span> cambios listos</b>, <span class="num">3</span> para hacer a mano y <span class="num">18</span> en orden.';
+
+async function scan() {
+  state = 'scanning';
+  clearTimeout(asyncTimer);
+  applied.clear();
+  $('#app').classList.add('hidden-actions');
+  renderPanel(); renderNav(); buildTicks(); placeNavInd(true);
+  $('#title').textContent = 'Analizando esta PC';
+  $('#summary').textContent = 'Revisando energía, gráficos, red, inicio y almacenamiento…';
+  $('#goBar').style.transform = 'scaleX(0)';
+  setGo('optimize'); setGhost('rescan');
+  $('#note').innerHTML = '<i class="ph-bold ph-shield-check"></i><span>Se crea un punto de restauración antes de aplicar</span>';
+  needle.classList.remove('parked');
+  if (needleAnim) needleAnim.cancel();
+  needle.style.transform = 'translateX(0px)'; needleF = 0;
+  const pc = $('#pc'); pc.style.opacity = 0;
+  revealTicks();
+  const id = ++scanId;
+  const sw = sweep();
+  sw.then(() => { if (state === 'scanning' && id === scanId) needle.classList.add('parked'); });
+  await wait(380);
+  pc.style.opacity = ''; enter(pc);
+  for (const c of CATS) {
+    await wait(c.t);
+    revealGroup(c.id);
+    setNavCount(c.id);
+  }
+  await sw;
+  await wait(120);
+  state = 'ready';
+  needle.classList.remove('parked');
+  swapText($('#title'), 'Afinación');
+  swapText($('#summary'), READY_TEXT);
+  settle(score());
+  $('#app').classList.remove('hidden-actions');
+  enter(document.querySelector('.actions'), 120);
+  asyncTimer = setTimeout(resolveUpdates, reduce ? 300 : 2600);
+}
+
+function resolveUpdates() {
+  const row = document.querySelector('.row[data-id="o1"]');
+  if (!row) return;
+  row.querySelector('.slot-spin').classList.add('hide');
+  row.querySelector('.slot-cb').classList.remove('hide');
+  swapText(row.querySelector('.sub-text'), ITEMS.find(i => i.id === 'o1').sub);
+}
+
+async function apply() {
+  const rows = [...document.querySelectorAll('.row:not(.done)')].filter(r => r.querySelector('.cb.on'));
+  if (state !== 'ready' || !rows.length) return;
+  state = 'applying';
+  const total = rows.length;
+  $('#goLabel').textContent = 'Preparando…';
+  await setNote('Creando punto de restauración…', 'shield');
+  await wait(700);
+  setNote('Punto de restauración creado hoy a las 16:42');
+  let done = 0, reboot = false;
+  for (const r of rows) {
+    setGo('applying', done + 1, total);
+    r.querySelector('.slot-cb').classList.add('hide');
+    r.querySelector('.slot-spin').classList.remove('hide');
+    await wait(460);
+    r.querySelector('.slot-spin').classList.add('hide');
+    r.querySelector('.slot-done').classList.remove('hide');
+    r.classList.add('done');
+    const it = ITEMS.find(i => i.id === r.dataset.id);
+    applied.add(it.id);
+    if (it.tag === 'Pide reiniciar') reboot = true;
+    done++;
+    $('#goBar').style.transform = `scaleX(${done / total})`;
+    setNavCount(it.cat);
+    needleTo(score(), { duration: 460, easing: EASE_IO });
+    await wait(150);
+  }
+  const f = score();
+  await settle(f);
+  if (f >= .999 && !reduce) {
+    celebrate();
+  }
+  swapText($('#title'), f >= .999 ? 'Afinada' : 'Afinación');
+  swapText($('#summary'), `<b><span class="num">${done}</span> ${done === 1 ? 'cambio aplicado' : 'cambios aplicados'}</b>.${reboot ? ' Reinicia para terminar <span class="num">1</span>.' : ''} Quedan <span class="num">3</span> para hacer a mano.`);
+  $('#goBar').style.transform = 'scaleX(0)';
+  setGo(reboot ? 'restart' : 'optimize');
+  setGhost('undo');
+  state = 'done';
+}
+
+async function undo() {
+  if (state !== 'done') return;
+  state = 'applying';
+  const rows = [...document.querySelectorAll('.row.done')].reverse();
+  for (const r of rows) {
+    r.querySelector('.slot-done').classList.add('hide');
+    r.querySelector('.slot-cb').classList.remove('hide');
+    r.classList.remove('done');
+    applied.delete(r.dataset.id);
+    await wait(60);
+  }
+  CATS.forEach(c => setNavCount(c.id, false));
+  needleTo(score(), { duration: 520, easing: EASE_IO });
+  swapText($('#title'), 'Afinación');
+  swapText($('#summary'), READY_TEXT);
+  setNote('Se crea un punto de restauración antes de aplicar');
+  setGo('optimize'); setGhost('rescan');
+  state = 'ready';
+}
+
+function setTheme(t) {
+  const seg = $('#seg');
+  const swap = () => {
+    const root = document.documentElement;
+    root.classList.add('notransition');
+    root.dataset.theme = t;
+    seg.dataset.v = t;
+    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.t === t));
+    getComputedStyle(root).opacity;
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('notransition')));
+  };
+  if (document.startViewTransition && !reduce) document.startViewTransition(swap); else swap();
+}
+
+document.addEventListener('click', e => {
+  const cb = e.target.closest('.cb');
+  if (cb) {
+    if (state !== 'ready' || cb.closest('.row.done')) return;
+    cb.classList.toggle('on');
+    cb.setAttribute('aria-checked', cb.classList.contains('on'));
+    setGo('optimize'); rollGoNum();
+    return;
+  }
+  const open = e.target.closest('.caret, .row-main');
+  if (open && !e.target.closest('.ok-head')) { open.closest('.row').classList.toggle('open'); return; }
+  if (e.target.closest('#okHead')) { e.target.closest('.group').classList.toggle('open'); return; }
+  const nav = e.target.closest('.nav-item');
+  if (nav) {
+    filter = nav.dataset.f;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('on', n === nav));
+    placeNavInd();
+    applyFilter();
+    $('#list').scrollTop = 0;
+    return;
+  }
+  const seg = e.target.closest('.seg button');
+  if (seg) { setTheme(seg.dataset.t); return; }
+  if (e.target.closest('#go')) { if (state === 'ready') apply(); return; }
+  if (e.target.closest('#ghost')) { if (state === 'done') undo(); else if (state === 'ready') scan(); return; }
+});
+addEventListener('resize', () => { if (needleAnim) needleAnim.cancel(); needleAnim = null; needle.style.transform = `translateX(${needleF * W()}px)`; placeTicks(); placeNavInd(true); });
+
+if (params.get('tema') === 'blanco') {
+  document.documentElement.dataset.theme = 'blanco';
+  $('#seg').dataset.v = 'blanco';
+  $('#seg').querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.t === 'blanco'));
+}
+scan().then(() => {
+  const abrir = params.get('abrir');
+  if (abrir) document.querySelector(`.row[data-id="${abrir}"]`)?.classList.add('open');
+  if (params.get('estado') === 'listo') setTimeout(apply, 300);
+});
+</script>
+</body>
+</html>

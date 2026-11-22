@@ -1,0 +1,15 @@
+﻿GUID de plan de energía: 381b4222-f694-41f0-9685-ff5bb260df2e  (Equilibrado)
+  Alias de GUID: SCHEME_BALANCED
+  GUID de subgrupo: 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1  (Configuración de adaptador inalámbrico)
+    GUID de configuración de energía: 12bbebe6-58d6-4636-95bb-3217ef867c1a  (Modo de ahorro de energía)
+      Índice de configuración posible: 000
+      Nombre descriptivo de configuración posible: Rendimiento máximo
+      Índice de configuración posible: 001
+      Nombre descriptivo de configuración posible: Ahorro de energía bajo
+      Índice de configuración posible: 002
+      Nombre descriptivo de configuración posible: Ahorro de energía medio
+      Índice de configuración posible: 003
+      Nombre descriptivo de configuración posible: Ahorro de energía máximo
+    Índice de configuración de corriente alterna actual: 0x00000000
+    Índice de configuración de corriente continua actual: 0x00000002
+

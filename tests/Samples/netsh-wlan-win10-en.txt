@@ -1,0 +1,20 @@
+
+There is 1 interface on the system:
+
+    Name                   : Wi-Fi
+    Description            : Qualcomm Atheros QCA9377 Wireless Network Adapter
+    GUID                   : 7d1e2f30-4a5b-6c7d-8e9f-0a1b2c3d4e5f
+    Physical address       : 10:20:30:40:50:60
+    State                  : connected
+    SSID                   : Oficina
+    BSSID                  : 66:55:44:33:22:11
+    Network type           : Infrastructure
+    Radio type             : 802.11n
+    Authentication         : WPA2-Personal
+    Cipher                 : CCMP
+    Connection mode        : Auto Connect
+    Channel                : 6
+    Receive rate (Mbps)    : 72.2
+    Transmit rate (Mbps)   : 72.2
+    Signal                 : 70%
+    Profile                : Oficina

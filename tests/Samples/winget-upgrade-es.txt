@@ -1,0 +1,6 @@
+   -    \    |    /    -
+Nombre                         Id                          Versión        Disponible     Origen
+------------------------------------------------------------------------------------------------
+Google Chrome                  Google.Chrome               131.0.6778.86  131.0.6778.109 winget
+Discord                        Discord.Discord             1.0.9172       1.0.9173       winget
+2 actualizaciones disponibles.

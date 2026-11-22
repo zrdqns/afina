@@ -1,0 +1,2 @@
+﻿NTFS DisableDeleteNotify = 0  (Permite que se envíen operaciones de recorte al dispositivo de almacenamiento)
+ReFS DisableDeleteNotify = 0  (Permite que se envíen operaciones de recorte al dispositivo de almacenamiento)
