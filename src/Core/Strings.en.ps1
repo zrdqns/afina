@@ -547,7 +547,9 @@ falta espacio en el disco para volver a la hibernación completa==>not enough di
 Escrito, comprueba que se vea el cambio==>Written, check that the change shows
 Windows tiene un modo de Optimización de entrega que Afina no sabe volver a poner==>Windows uses a Delivery Optimization mode that Afina can't set back
 Windows no desactivó el archivo de paginación automático==>Windows didn't turn off the automatic page file
-{0}: estado {1}==>{0}: status {1}
+{0}: Windows lo marca en mal estado==>{0}: Windows marks it as unhealthy
+{0}: Windows lo marca con advertencia==>{0}: Windows marks it with a warning
+{0}: Windows reporta un problema de salud==>{0}: Windows reports a health problem
 {0}: desgaste {1} %==>{0}: wear {1} %
 {0}: errores sin corregir ({1})==>{0}: uncorrected errors ({1})
 {0}: temperatura en su máximo ({1} °C)==>{0}: temperature at its maximum ({1} °C)

@@ -36,7 +36,7 @@ function New-AfFakeInventory {
         Startup = @()
         Autostart = @()
         Storage = [pscustomobject]@{
-            SystemDrive = 'C:'; FreeGB = 200; SizeGB = 476; MediaType = 'SSD'; BusType = 'NVMe'; TrimEnabled = $true
+            SystemDrive = 'C:'; FreeBytes = [long]214748364800; FreeGB = 200; SizeGB = 476; MediaType = 'SSD'; BusType = 'NVMe'; TrimEnabled = $true
             TempBytes = [pscustomobject]@{ User = 0; Windows = 0; UpdateCache = 0; DeliveryOptimization = 0; ErrorReports = 0 }
         }
         Registry = @{}

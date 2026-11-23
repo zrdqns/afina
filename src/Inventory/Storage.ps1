@@ -46,6 +46,7 @@ function Get-AfStorageInfo {
     $trim = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\fsutil.exe') -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
     [pscustomobject]@{
         SystemDrive = $drive
+        FreeBytes = [long]$logical.FreeSpace
         FreeGB = [math]::Round([double]$logical.FreeSpace / 1GB)
         SizeGB = [math]::Round([double]$logical.Size / 1GB)
         MediaType = $type.MediaType

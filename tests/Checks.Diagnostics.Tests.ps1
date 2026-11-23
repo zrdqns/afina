@@ -8,8 +8,8 @@
     function New-Battery([int]$Design, [int]$Full, [int]$Cycles = 100) { @{ DesignMWh = $Design; FullMWh = $Full; Cycles = $Cycles } }
     function New-Boots([int[]]$Ms) { $i = 0; @($Ms | ForEach-Object { $i++; @{ Time = ([datetime]'2026-11-20 08:00:00').AddDays(-$i); MainPathMs = $_ } }) }
     function Get-Check([string]$Id) { @(Get-AfCatalog) | Where-Object { $_.Id -eq $Id } }
-    function Invoke-Pagefile($Pagefile, [double]$FreeGB = 200) {
-        $inv = New-AfFakeInventory -Override @{ Pagefile = $Pagefile; Storage = [pscustomobject]@{ FreeGB = $FreeGB } }
+    function Invoke-Pagefile($Pagefile, [long]$FreeBytes = 200GB) {
+        $inv = New-AfFakeInventory -Override @{ Pagefile = $Pagefile; Storage = [pscustomobject]@{ FreeBytes = $FreeBytes; FreeGB = [math]::Round($FreeBytes / 1GB) } }
         (Invoke-AfCheck -Check (Get-Check 'hardware.pagefile') -Inventory $inv).Detection
     }
 }
@@ -52,16 +52,100 @@ Describe 'Get-AfDiskDetection' {
 }
 
 Describe 'Get-AfDiskHealth' {
+    BeforeAll {
+        # Formas reales de MSFT_PhysicalDisk: HealthStatus y BusType son números (UInt16).
+        # Un CimInstance real (solo cliente): Get-CimAssociatedInstance no acepta otra cosa.
+        function New-CimDisk([string]$Name, [uint16]$Health = 0, [uint16]$Bus = 17) {
+            New-CimInstance -ClassName 'MSFT_PhysicalDisk' -Namespace 'root/Microsoft/Windows/Storage' -ClientOnly -Property @{ FriendlyName = $Name; HealthStatus = $Health; BusType = $Bus }
+        }
+    }
     It 'si fallan los contadores el disco conserva su salud y lo demás queda en null' {
-        # Funciones de prueba en lugar de Mock: el módulo Storage no se deja simular.
-        function Get-PhysicalDisk { @([pscustomobject]@{ FriendlyName = 'NVMe'; BusType = 'NVMe'; HealthStatus = 'Healthy' }, [pscustomobject]@{ FriendlyName = 'Pendrive'; BusType = 'USB'; HealthStatus = 'Healthy' }) }
-        function Get-StorageReliabilityCounter { param([Parameter(ValueFromPipeline)]$InputObject) process { throw 'sin permiso' } }
-        Mock Get-CimInstance { throw 'sin permiso' }
+        Mock Get-CimInstance { if ($ClassName -eq 'MSFT_PhysicalDisk') { @((New-CimDisk 'NVMe'), (New-CimDisk 'Pendrive' 0 7)) } else { throw 'sin permiso' } }
+        Mock Get-CimAssociatedInstance { throw 'sin permiso' }
         $h = Get-AfDiskHealth
         @($h.Disks).Count | Should -Be 1
         $h.Disks[0].Health | Should -Be 'Healthy'
+        $h.Disks[0].BusType | Should -Not -Be 'USB'
         $h.Disks[0].Wear | Should -BeNullOrEmpty
         $h.PredictFailure | Should -BeFalse
+    }
+    It 'un contador fuera de rango en un disco no borra el diagnóstico de los demás' {
+        Mock Get-CimInstance { if ($ClassName -eq 'MSFT_PhysicalDisk') { @((New-CimDisk 'Malo' 2), (New-CimDisk 'RAID')) } else { throw 'x' } }
+        Mock Get-CimAssociatedInstance {
+            if ($InputObject.FriendlyName -eq 'RAID') { [pscustomobject]@{ Wear = [uint16]5; Temperature = [uint16]40; TemperatureMax = [uint16]70; ReadErrorsUncorrected = [uint64]::MaxValue; WriteErrorsUncorrected = [uint64]3 } }
+        }
+        $h = Get-AfDiskHealth
+        @($h.Disks).Count | Should -Be 2
+        $h.Disks[1].ReadErrors | Should -BeNullOrEmpty
+        $h.Disks[1].WriteErrors | Should -Be 3
+        (Get-AfDiskDetection -Health $h).State | Should -Be 'Manual'
+    }
+    It 'lee los discos y contadores con tiempo límite' {
+        Mock Get-CimInstance { if ($ClassName -eq 'MSFT_PhysicalDisk') { @(New-CimDisk 'NVMe') } else { throw 'x' } }
+        Mock Get-CimAssociatedInstance { $null }
+        Get-AfDiskHealth | Out-Null
+        Should -Invoke Get-CimInstance -ParameterFilter { $ClassName -eq 'MSFT_PhysicalDisk' -and $OperationTimeoutSec -gt 0 }
+        Should -Invoke Get-CimAssociatedInstance -ParameterFilter { $ResultClassName -eq 'MSFT_StorageReliabilityCounter' -and $OperationTimeoutSec -gt 0 }
+    }
+    It 'la predicción de falla se lee aunque falle la lectura de discos' {
+        Mock Get-CimInstance { if ($ClassName -eq 'MSStorageDriver_FailurePredictStatus') { @([pscustomobject]@{ PredictFailure = $true }) } else { throw 'colgado' } }
+        $h = Get-AfDiskHealth
+        $h.PredictFailure | Should -BeTrue
+        @($h.Disks).Count | Should -Be 0
+        (Get-AfDiskDetection -Health $h).State | Should -Be 'Manual'
+    }
+}
+
+Describe 'Get-AfDiskDetection: casos de la revisión' {
+    It 'sin discos pero con falla predicha: Manual' { (Get-Disk @() $true).State | Should -Be 'Manual' }
+    It 'el estado del disco sale en el idioma de la interfaz, no en crudo' {
+        (Get-Disk @(New-Disk -Health 'Unhealthy' -Name 'E:')).Current | Should -Not -Match 'Unhealthy'
+        (Get-Disk @(New-Disk -Health 'Warning' -Name 'E:')).Current | Should -Not -Match 'Warning'
+        $d = Get-Disk @(New-Disk -Health 'Raro' -Name 'E:')
+        $d.State | Should -Be 'Manual'
+        $d.Current | Should -Not -Match 'Raro'
+    }
+}
+
+Describe 'Get-AfBatteryHealth' {
+    BeforeAll {
+        function New-Static([string]$Name, $Design) { [pscustomobject]@{ InstanceName = $Name; DesignedCapacity = [uint32]$Design } }
+        function New-Full([string]$Name, $Full) { [pscustomobject]@{ InstanceName = $Name; FullChargedCapacity = [uint32]$Full } }
+        function Set-BatteryMocks($Static, $Full, $Cycles = @()) {
+            $script:bat = @{ BatteryStaticData = $Static; BatteryFullChargedCapacity = $Full; BatteryCycleCount = $Cycles }
+            Mock Get-CimInstance { $script:bat[$ClassName] }
+        }
+    }
+    It 'una batería' {
+        Set-BatteryMocks @(New-Static 'A' 50000) @(New-Full 'A' 48000) @([pscustomobject]@{ InstanceName = 'A'; CycleCount = [uint32]120 })
+        $h = Get-AfBatteryHealth
+        $h.DesignMWh | Should -Be 50000
+        $h.FullMWh | Should -Be 48000
+        $h.Cycles | Should -Be 120
+    }
+    It 'dos de diseño y una con carga: se empareja por InstanceName (no 48 %)' {
+        Set-BatteryMocks @((New-Static 'A' 50000), (New-Static 'B' 50000)) @(New-Full 'A' 48000)
+        $h = Get-AfBatteryHealth
+        $h.DesignMWh | Should -Be 50000
+        $h.FullMWh | Should -Be 48000
+    }
+    It 'una segunda batería con carga 0 o desconocida se descarta' {
+        Set-BatteryMocks @((New-Static 'A' 50000), (New-Static 'B' 50000)) @((New-Full 'A' 48000), (New-Full 'B' 0))
+        (Get-AfBatteryHealth).DesignMWh | Should -Be 50000
+        Set-BatteryMocks @((New-Static 'A' 50000), (New-Static 'B' 50000)) @((New-Full 'A' 48000), (New-Full 'B' 4294967295))
+        (Get-AfBatteryHealth).FullMWh | Should -Be 48000
+    }
+    It 'la carga de cada batería se limita a su diseño antes de sumar' {
+        Set-BatteryMocks @((New-Static 'A' 50000), (New-Static 'B' 50000)) @((New-Full 'A' 20000), (New-Full 'B' 80000))
+        $h = Get-AfBatteryHealth
+        $h.DesignMWh | Should -Be 100000
+        $h.FullMWh | Should -Be 70000
+    }
+    It 'diseño desconocido o sin pareja: null' {
+        Set-BatteryMocks @(New-Static 'A' 4294967295) @(New-Full 'A' 48000)
+        Get-AfBatteryHealth | Should -BeNullOrEmpty
+        Set-BatteryMocks @() @()
+        Get-AfBatteryHealth | Should -BeNullOrEmpty
     }
 }
 
@@ -90,6 +174,11 @@ Describe 'Get-AfBootDetection' {
     }
     It 'mediana de 60 s es Ok' { (Get-AfBootDetection -Boots (New-Boots 60000)).State | Should -Be 'Ok' }
     It 'mediana de 61 s es Info, nunca Manual' { (Get-AfBootDetection -Boots (New-Boots 61000)).State | Should -Be 'Info' }
+    It 'sin salida del lector ($null, como lo entrega la tubería): Info con Sin datos recientes' {
+        $d = Get-AfBootDetection -Boots $null
+        $d.State | Should -Be 'Info'
+        $d.Current | Should -Be 'Sin datos recientes'
+    }
     It 'sin eventos: Info con Sin datos recientes' {
         $d = Get-AfBootDetection -Boots @()
         $d.State | Should -Be 'Info'
@@ -176,8 +265,20 @@ Describe 'hardware.pagefile' {
     }
     It 'MaximumSize 0 (del sistema): Ok' { (Invoke-Pagefile @{ Automatic = $false; Files = @(@{ Name = 'C:\pagefile.sys'; MaxMB = 0 }) }).State | Should -Be 'Ok' }
     It 'apagado con menos de 4 GB libres: Manual; con 4 GB, Improvable' {
-        (Invoke-Pagefile @{ Automatic = $false; Files = @() } 3.9).State | Should -Be 'Manual'
-        (Invoke-Pagefile @{ Automatic = $false; Files = @() } 4).State | Should -Be 'Improvable'
+        (Invoke-Pagefile @{ Automatic = $false; Files = @() } (4GB - 1)).State | Should -Be 'Manual'
+        (Invoke-Pagefile @{ Automatic = $false; Files = @() } 4GB).State | Should -Be 'Improvable'
+    }
+    It 'el umbral usa los bytes reales: 3,6 GB llegan como FreeGB 4 y siguen siendo Manual' {
+        $inv = New-AfFakeInventory -Override @{ Pagefile = @{ Automatic = $false; Files = @() }; Storage = [pscustomobject]@{ FreeGB = 4; FreeBytes = [long](3.6GB) } }
+        (Invoke-AfCheck -Check (Get-Check 'hardware.pagefile') -Inventory $inv).Detection.State | Should -Be 'Manual'
+    }
+    It 'sin dato de espacio: Improvable, sin marcar y sin decir nada del disco' {
+        $inv = New-AfFakeInventory -Override @{ Pagefile = @{ Automatic = $false; Files = @() }; Storage = $null }
+        $r = Invoke-AfCheck -Check (Get-Check 'hardware.pagefile') -Inventory $inv
+        $r.Detection.State | Should -Be 'Improvable'
+        $r.Preselected | Should -BeFalse
+        $inv2 = New-AfFakeInventory -Override @{ Pagefile = @{ Automatic = $false; Files = @() }; Storage = [pscustomobject]@{ FreeGB = $null } }
+        (Invoke-AfCheck -Check (Get-Check 'hardware.pagefile') -Inventory $inv2).Detection.State | Should -Be 'Improvable'
     }
     It 'lectura fallida (null): NotApplicable, nunca apagado' {
         $inv = New-AfFakeInventory -Override @{ Pagefile = $null }

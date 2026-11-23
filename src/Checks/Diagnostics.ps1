@@ -13,7 +13,12 @@ function Get-AfDiskState {
     $line = $null
     $health = [string]$Disk.Health
     if ($health -and $health -notin 'Healthy', 'Unknown') {
-        return @{ Rank = 2; Wear = -1; Line = ((T '{0}: estado {1}') -f $name, $health) }
+        $text = switch ($health) {
+            'Unhealthy' { T '{0}: Windows lo marca en mal estado' }
+            'Warning' { T '{0}: Windows lo marca con advertencia' }
+            default { T '{0}: Windows reporta un problema de salud' }
+        }
+        return @{ Rank = 2; Wear = -1; Line = ($text -f $name) }
     }
     $wear = $Disk.Wear
     if ($null -ne $wear) {
@@ -38,7 +43,12 @@ function Get-AfDiskState {
 function Get-AfDiskDetection {
     param($Health)
     $disks = @($Health.Disks | Where-Object { $_ })
-    if (-not $disks.Count) { return New-AfDetection -State NotApplicable }
+    $steps = @((T 'Respalda tus archivos ya.'), (T 'Cambia el disco cuanto antes.'))
+    if (-not $disks.Count) {
+        # Sin lista de discos, una falla predicha sigue contando.
+        if ($Health.PredictFailure) { return New-AfDetection -State Manual -Current (T 'Windows predice una falla de disco') -Steps $steps }
+        return New-AfDetection -State NotApplicable
+    }
     $states = @($disks | ForEach-Object {
             $state = Get-AfDiskState -Disk $_
             # Con varios discos, cada línea dice de cuál habla.
@@ -52,7 +62,7 @@ function Get-AfDiskDetection {
     $details = if ($states.Count -gt 1) { ($states | ForEach-Object { $_.Line }) -join '; ' }
     $data = @{ Lines = @($states | ForEach-Object { $_.Line }) }
     switch ($rank) {
-        2 { New-AfDetection -State Manual -Current $current -Note $details -Data $data -Steps @((T 'Respalda tus archivos ya.'), (T 'Cambia el disco cuanto antes.')) }
+        2 { New-AfDetection -State Manual -Current $current -Note $details -Data $data -Steps $steps }
         1 { New-AfDetection -State Info -Current $current -Note $details -Data $data -Steps @((T 'Mantén un respaldo al día y vigila el disco.')) }
         default { New-AfDetection -State Ok -Current $current -Note $details -Data $data }
     }
@@ -74,7 +84,8 @@ function Get-AfBatteryDetection {
 
 function Get-AfBootDetection {
     param($Boots)
-    $boots = @($Boots)
+    # Un lector sin salida entrega $null, y @($null) cuenta como un elemento.
+    $boots = @($Boots | Where-Object { $_ })
     if (-not $boots.Count) { return New-AfDetection -State Info -Current (T 'Sin datos recientes') }
     $seconds = [int][math]::Round((Get-AfMedian -Values @($boots | ForEach-Object { [double]$_.MainPathMs })) / 1000, [MidpointRounding]::AwayFromZero)
     $last = ($boots | Sort-Object { $_.Time } -Descending | Select-Object -First 1).Time
@@ -147,7 +158,11 @@ function Get-AfDiagnosticsChecks {
             foreach ($file in $files) { $totalMB += [int]$file.MaxMB }
             if ($files.Count -and $totalMB -ge 4096) { return New-AfDetection -State Ok -Current ((T '{0} MB fijos') -f $totalMB) }
             $current = if ($files.Count) { (T '{0} MB fijos') -f $totalMB } else { (T 'Apagado') }
-            if ([double]$inv.Storage.FreeGB -lt 4) {
+            # Sin dato de espacio no se afirma nada del disco: el arreglo se ofrece, pero sin marcar.
+            if ($null -eq $inv.Storage -or $null -eq $inv.Storage.FreeBytes) {
+                return New-AfDetection -State Improvable -Current $current -Target (T 'Automático') -Preselect $false -What (T 'Deja que Windows maneje el archivo de paginación. Pide reiniciar.')
+            }
+            if ([long]$inv.Storage.FreeBytes -lt 4GB) {
                 return New-AfDetection -State Manual -Current $current -Target (T 'Automático') -Steps @((T 'Libera espacio primero: hacen falta al menos 4 GB libres.'))
             }
             New-AfDetection -State Improvable -Current $current -Target (T 'Automático') -What (T 'Deja que Windows maneje el archivo de paginación. Pide reiniciar.')
