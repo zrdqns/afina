@@ -160,3 +160,186 @@ Describe 'advanced.vm-platform' {
         $d.Current | Should -Be 'Se apaga al reiniciar'
     }
 }
+
+Describe 'cleanup.widgets' {
+    BeforeAll {
+        $script:dsh = 'HKLM:\SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests'
+        $script:taskbarDa = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|TaskbarDa'
+        $script:feeds = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds|ShellFeedsTaskbarViewMode'
+        function New-WidgetOs([string]$Edition, [int]$Build = 26100) {
+            [pscustomobject]@{ Caption = 'Windows'; Build = $Build; Edition = $Edition; IsWin11 = ($Build -ge 22000); IsInsider = $false; Ubr = 7019 }
+        }
+        $script:withWidgets = [pscustomobject]@{ Promo = @(); Copilot = $null; HasWidgets = $true }
+    }
+
+    It 'Windows 11 Pro se ofrece, sin marcar y con reinicio' {
+        $inv = New-AfFakeInventory -Override @{ Os = (New-WidgetOs 'Professional'); Apps = $script:withWidgets }
+        $r = Invoke-AfCheck -Check (Get-Check 'cleanup.widgets') -Inventory $inv
+        $r.Detection.State | Should -Be 'Improvable'
+        $r.Preselected | Should -BeFalse
+        $r.Check.NeedsReboot | Should -BeTrue
+    }
+
+    It 'Windows 11 Home da pasos' {
+        $d = Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Core'); Apps = $script:withWidgets; Registry = @{ $script:taskbarDa = 1 } }
+        $d.State | Should -Be 'Info'
+        @($d.Steps).Count | Should -BeGreaterThan 0
+    }
+
+    It 'Windows 11 Home con los widgets ya ocultos queda en orden' {
+        (Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Core'); Apps = $script:withWidgets; Registry = @{ $script:taskbarDa = 0 } }).State | Should -Be 'Ok'
+    }
+
+    It 'Windows 10 da pasos' {
+        $d = Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional' 19045); Apps = $script:withWidgets }
+        $d.State | Should -Be 'Info'
+        @($d.Steps).Count | Should -BeGreaterThan 0
+    }
+
+    It 'Windows 10 con Noticias e intereses apagadas queda en orden' {
+        (Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional' 19045); Apps = $script:withWidgets; Registry = @{ $script:feeds = 2 } }).State | Should -Be 'Ok'
+    }
+
+    It 'con la directiva puesta queda en orden' {
+        (Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional'); Apps = $script:withWidgets; Registry = @{ $script:dsh = 0 } }).State | Should -Be 'Ok'
+    }
+
+    It 'sin el paquete de Widgets en Windows 11 no aplica' {
+        $d = Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional'); Apps = [pscustomobject]@{ Promo = @(); Copilot = $null; HasWidgets = $false } }
+        $d.State | Should -Be 'NotApplicable'
+    }
+
+    It 'sin lectura de apps no aplica' {
+        (Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional'); Apps = $null }).State | Should -Be 'NotApplicable'
+    }
+
+    It 'Apply escribe solo la directiva de Widgets' {
+        Mock Set-AfRegistryValue { $true }
+        $inv = New-AfFakeInventory -Override @{ Os = (New-WidgetOs 'Professional'); Apps = $script:withWidgets }
+        $check = Get-Check 'cleanup.widgets'
+        $result = Invoke-AfCheck -Check $check -Inventory $inv
+        & $check.Apply $inv $result.Detection (New-AfTransaction -User $inv.User)
+        Should -Invoke Set-AfRegistryValue -Times 1 -Exactly
+        Should -Invoke Set-AfRegistryValue -Times 1 -Exactly -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Dsh' -and $Name -eq 'AllowNewsAndInterests' -and $Type -eq 'DWord' -and $Value -eq 0 }
+    }
+}
+
+Describe 'cleanup.copilot' {
+    BeforeAll {
+        $script:copilot = [pscustomobject]@{ Name = 'Copilot'; PackageName = 'Microsoft.Copilot'; PackageFullName = 'Microsoft.Copilot_1'; PackageFamilyName = 'Microsoft.Copilot_8wekyb3d8bbwe'; StoreId = '9NHT9RB2F4HD'; Provisioned = $false }
+    }
+
+    It 'instalado se ofrece sin marcar y Apply lo quita' {
+        Mock Remove-AfAppxPackage { $true }
+        $inv = New-AfFakeInventory -Override @{ Apps = [pscustomobject]@{ Promo = @(); Copilot = $script:copilot; HasWidgets = $false } }
+        $check = Get-Check 'cleanup.copilot'
+        $r = Invoke-AfCheck -Check $check -Inventory $inv
+        $r.Detection.State | Should -Be 'Improvable'
+        $r.Preselected | Should -BeFalse
+        & $check.Apply $inv $r.Detection (New-AfTransaction -User $inv.User)
+        Should -Invoke Remove-AfAppxPackage -Times 1 -Exactly -ParameterFilter { $App.PackageName -eq 'Microsoft.Copilot' }
+    }
+
+    It 'sin Copilot no aplica' {
+        (Invoke-Detect 'cleanup.copilot' @{ Apps = [pscustomobject]@{ Promo = @(); Copilot = $null; HasWidgets = $false } }).State | Should -Be 'NotApplicable'
+    }
+
+    It 'con otra cuenta elevada no aplica' {
+        $other = [pscustomobject]@{ Name = 'PC\Dueño'; Sid = 'S-1-5-21-9'; ProfilePath = 'C:\Users\Dueño'; IsSameAsProcess = $false; HkcuRoot = 'Registry::HKEY_USERS\S-1-5-21-9' }
+        (Invoke-Detect 'cleanup.copilot' @{ Apps = [pscustomobject]@{ Promo = @(); Copilot = $script:copilot; HasWidgets = $false }; User = $other }).State | Should -Be 'NotApplicable'
+    }
+}
+
+Describe 'cleanup.recall' {
+    BeforeAll {
+        $script:aiPolicy = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI|DisableAIDataAnalysis'
+        function New-RecallInv([string]$Edition = 'Professional', [int]$Build = 26100, [int]$Ubr = 3915, $Gb = 16, [hashtable]$Registry = @{}) {
+            New-AfFakeInventory -Override @{
+                Os = [pscustomobject]@{ Caption = 'Windows'; Build = $Build; Edition = $Edition; IsWin11 = $true; IsInsider = $false; Ubr = $Ubr }
+                Memory = [pscustomobject]@{ TotalGB = $Gb; Socketed = $true; Modules = @() }
+                Registry = $Registry
+            }
+        }
+        function Invoke-Recall($Inv) { & (Get-Check 'cleanup.recall').AsyncDetect $Inv }
+    }
+
+    It 'va primero en la lista y es asíncrona' {
+        @(Get-AfOptionalChecks)[0].Id | Should -Be 'cleanup.recall'
+        $r = Invoke-AfCheck -Check (Get-Check 'cleanup.recall') -Inventory (New-RecallInv)
+        $r.Detection.State | Should -Be 'Info'
+        $r.Detection.Data.Async | Should -BeTrue
+    }
+
+    It 'activo en Pro se ofrece con el aviso en rojo' {
+        Mock Get-AfRecallState { 'Enabled' }
+        $d = Invoke-Recall (New-RecallInv)
+        $d.State | Should -Be 'Improvable'
+        $d.Note | Should -Be 'Borra las capturas guardadas y no se recuperan'
+        (Get-Check 'cleanup.recall').Risk | Should -Be 'Advanced'
+        (Get-Check 'cleanup.recall').Preselect | Should -BeFalse
+    }
+
+    It 'activo en Home da pasos' {
+        Mock Get-AfRecallState { 'Enabled' }
+        $d = Invoke-Recall (New-RecallInv -Edition 'Core')
+        $d.State | Should -Be 'Info'
+        @($d.Steps).Count | Should -BeGreaterThan 0
+    }
+
+    It 'ausente no aplica' {
+        Mock Get-AfRecallState { 'Absent' }
+        (Invoke-Recall (New-RecallInv)).State | Should -Be 'NotApplicable'
+    }
+
+    It 'desactivado queda en orden' {
+        Mock Get-AfRecallState { 'Disabled' }
+        (Invoke-Recall (New-RecallInv)).State | Should -Be 'Ok'
+    }
+
+    It 'si la lectura falla no aplica y no dice que está apagado' {
+        Mock Get-AfRecallState { throw 'sin respuesta' }
+        (Invoke-Recall (New-RecallInv)).State | Should -Be 'NotApplicable'
+    }
+
+    It 'con la directiva puesta queda en orden sin leer la característica' {
+        Mock Get-AfRecallState { 'Enabled' }
+        (Invoke-Recall (New-RecallInv -Registry @{ $script:aiPolicy = 1 })).State | Should -Be 'Ok'
+        Should -Invoke Get-AfRecallState -Times 0 -Exactly
+    }
+
+    It 'sin los requisitos no aplica y no lee la característica' {
+        Mock Get-AfRecallState { 'Enabled' }
+        $check = Get-Check 'cleanup.recall'
+        foreach ($inv in (New-RecallInv -Gb 8), (New-RecallInv -Gb 0), (New-RecallInv -Ubr 3914), (New-RecallInv -Build 22631 -Ubr 9999)) {
+            (Invoke-AfCheck -Check $check -Inventory $inv).Detection.State | Should -Be 'NotApplicable'
+        }
+        (Invoke-AfCheck -Check $check -Inventory (New-RecallInv -Build 26200 -Ubr 1)).Detection.State | Should -Be 'Info'
+        Should -Invoke Get-AfRecallState -Times 0 -Exactly
+    }
+
+    It 'Apply escribe DisableAIDataAnalysis y nada de AllowRecallEnablement' {
+        Mock Set-AfRegistryValue { $true }
+        $inv = New-RecallInv
+        $check = Get-Check 'cleanup.recall'
+        & $check.Apply $inv ([pscustomobject]@{ Data = @{} }) (New-AfTransaction -User $inv.User)
+        Should -Invoke Set-AfRegistryValue -Times 1 -Exactly
+        Should -Invoke Set-AfRegistryValue -Times 1 -Exactly -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI' -and $Name -eq 'DisableAIDataAnalysis' -and $Type -eq 'DWord' -and $Value -eq 1 }
+        Should -Not -Invoke Set-AfRegistryValue -ParameterFilter { $Name -eq 'AllowRecallEnablement' }
+    }
+}
+
+Describe 'Get-AfRecallState' {
+    It 'traduce InstallState de Win32_OptionalFeature' {
+        Mock Get-CimInstance { [pscustomobject]@{ Name = 'Recall'; InstallState = 1 } }
+        Get-AfRecallState | Should -Be 'Enabled'
+        Mock Get-CimInstance { [pscustomobject]@{ Name = 'Recall'; InstallState = 2 } }
+        Get-AfRecallState | Should -Be 'Disabled'
+        Mock Get-CimInstance { $null }
+        Get-AfRecallState | Should -Be 'Absent'
+    }
+
+    It 'si la lectura falla, lanza' {
+        Mock Get-CimInstance { throw 'tiempo agotado' }
+        { Get-AfRecallState } | Should -Throw
+    }
+}

@@ -14,6 +14,47 @@
 }
 
 function Get-AfOptionalChecks {
+    # Recall va primero: su lectura tarda unos 6 s y así corre antes que Windows Update.
+    @{
+        Id = 'cleanup.recall'; Category = 'optional'
+        Title = (T 'Recall apagado')
+        Why = (T 'Recall guarda capturas de lo que haces en pantalla para poder buscarlas después.')
+        Impact = 'Low'; Risk = 'Advanced'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: administrar Recall'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/manage-recall'
+        Undo = (T 'Se deshace el ajuste; las capturas borradas no vuelven')
+        Reads = @('HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI|DisableAIDataAnalysis')
+        Async = $true
+        AppliesTo = {
+            param($inv)
+            $build = [int]$inv.Os.Build
+            $ubr = [int]$inv.Os.Ubr
+            # Sin dato de memoria no se sabe si cumple: no se ofrece.
+            $gb = if ($inv.Memory) { [double]$inv.Memory.TotalGB } else { 0 }
+            [bool]($inv.Os.IsWin11 -and ($build -gt 26100 -or ($build -eq 26100 -and $ubr -ge 3915)) -and $gb -ge 16)
+        }
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Comprobando Recall…') -Data @{ Async = $true } }
+        AsyncDetect = {
+            param($inv)
+            # Con la directiva puesta no hace falta la lectura lenta.
+            if ($inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI|DisableAIDataAnalysis'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Apagado') }
+            try { $state = Get-AfRecallState } catch { return New-AfDetection -State NotApplicable -Note (T 'No se pudo leer el estado de Recall') }
+            if ($state -eq 'Absent') { return New-AfDetection -State NotApplicable }
+            if ($state -eq 'Disabled') { return New-AfDetection -State Ok -Current (T 'Apagado') }
+            if (-not (Test-AfPolicyEdition -Os $inv.Os)) {
+                return New-AfDetection -State Info -Current (T 'Activo') -Steps @(
+                    (T 'Abre Configuración > Privacidad y seguridad > Recall y capturas.')
+                    (T 'Apaga Guardar capturas.')
+                )
+            }
+            New-AfDetection -State Improvable -Current (T 'Activo') -Target (T 'Apagado') -Note (T 'Borra las capturas guardadas y no se recuperan') `
+                -What (T 'Se apaga el análisis de lo que hay en pantalla con la directiva de Windows. Las capturas guardadas se borran y no se recuperan.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI' -Name 'DisableAIDataAnalysis' -Type DWord -Value 1 | Out-Null
+        }
+    }
+
     @{
         Id = 'updates.windows'; Category = 'optional'
         Title = (T 'Actualizaciones de Windows')
@@ -152,6 +193,66 @@ function Get-AfOptionalChecks {
             param($inv, $detected, $tx)
             foreach ($app in @($detected.Data.Choices | Where-Object { $_.Selected })) { Remove-AfAppxPackage -Tx $tx -App $app | Out-Null }
         }
+    }
+
+    @{
+        Id = 'cleanup.widgets'; Category = 'optional'
+        Title = (T 'Widgets apagados')
+        Why = (T 'Los widgets y las noticias de la barra de tareas usan memoria y red en segundo plano.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $true
+        Source = (T 'Microsoft: política NewsAndInterests'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-newsandinterests'
+        Undo = (T 'Se puede deshacer')
+        Reads = @(
+            'HKLM:\SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests'
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|TaskbarDa'
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds|ShellFeedsTaskbarViewMode'
+        )
+        AppliesTo = { param($inv) $null -ne $inv.Apps }
+        Detect = {
+            param($inv)
+            $win11 = [bool]$inv.Os.IsWin11
+            if ($win11 -and -not $inv.Apps.HasWidgets) { return New-AfDetection -State NotApplicable }
+            if ($inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests'] -eq 0) { return New-AfDetection -State Ok -Current (T 'Apagados') }
+            if (-not $win11) {
+                if ($inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds|ShellFeedsTaskbarViewMode'] -eq 2) { return New-AfDetection -State Ok -Current (T 'Apagados') }
+                return New-AfDetection -State Info -Current (T 'Activos') -Steps @(
+                    (T 'Haz clic derecho en la barra de tareas.')
+                    (T 'Abre Noticias e intereses y elige Desactivar.')
+                )
+            }
+            if (Test-AfPolicyEdition -Os $inv.Os) {
+                return New-AfDetection -State Improvable -Current (T 'Activos') -Target (T 'Apagados') -Note (T 'Pide reiniciar') `
+                    -What (T 'Se apagan los widgets con la directiva de Windows. Pide reiniciar.')
+            }
+            if ($inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|TaskbarDa'] -eq 0) { return New-AfDetection -State Ok -Current (T 'Apagados') }
+            New-AfDetection -State Info -Current (T 'Activos') -Steps @(
+                (T 'Abre Configuración > Personalización > Barra de tareas.')
+                (T 'Apaga Widgets.')
+            )
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Dsh' -Name 'AllowNewsAndInterests' -Type DWord -Value 0 | Out-Null
+        }
+    }
+
+    @{
+        Id = 'cleanup.copilot'; Category = 'optional'
+        Title = (T 'Copilot quitado')
+        Why = (T 'La app de Copilot viene con Windows y se ejecuta en segundo plano.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: administrar Copilot'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/manage-windows-copilot'
+        Undo = (T 'Se vuelve a instalar; desde la Microsoft Store, con internet')
+        AppliesTo = { param($inv) $null -ne $inv.Apps }
+        Detect = {
+            param($inv)
+            # Se quita para la cuenta del proceso: con otra cuenta elevada no se podría volver a registrar para el dueño.
+            if ($inv.User -and -not $inv.User.IsSameAsProcess) { return New-AfDetection -State NotApplicable -Note (T 'Abre Afina con la cuenta del dueño para quitarlo') }
+            if (-not $inv.Apps.Copilot) { return New-AfDetection -State NotApplicable }
+            New-AfDetection -State Improvable -Current (T 'Instalado') -Target (T 'Quitado') `
+                -What (T 'Se quita la app de Copilot para esta cuenta con Remove-AppxPackage.')
+        }
+        Apply = { param($inv, $detected, $tx) Remove-AfAppxPackage -Tx $tx -App $inv.Apps.Copilot | Out-Null }
     }
 
     @{

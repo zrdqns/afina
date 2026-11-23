@@ -631,6 +631,32 @@ El archivo baja de 40 % a 20 % de la RAM, cerca de la mitad. Se conserva el inic
 Sensor de almacenamiento activado==>Storage Sense on
 Borra temporales solo cuando queda poco espacio, para que Windows no se quede sin lugar para actualizarse.==>Deletes temporary files only when space is low, so Windows does not run out of room to update.
 Microsoft: Sensor de almacenamiento==>Microsoft: Storage Sense
+Recall apagado==>Recall off
+Recall guarda capturas de lo que haces en pantalla para poder buscarlas después.==>Recall saves snapshots of what you do on screen so you can search them later.
+Microsoft: administrar Recall==>Microsoft: manage Recall
+Se deshace el ajuste; las capturas borradas no vuelven==>The setting is undone; deleted snapshots don't come back
+Comprobando Recall…==>Checking Recall…
+No se pudo leer el estado de Recall==>Couldn't read the Recall state
+Activo==>On
+Abre Configuración > Privacidad y seguridad > Recall y capturas.==>Open Settings > Privacy & security > Recall & snapshots.
+Apaga Guardar capturas.==>Turn off Save snapshots.
+Borra las capturas guardadas y no se recuperan==>Deletes the saved snapshots and they can't be recovered
+Se apaga el análisis de lo que hay en pantalla con la directiva de Windows. Las capturas guardadas se borran y no se recuperan.==>Screen analysis is turned off with the Windows policy. Saved snapshots are deleted and can't be recovered.
+Widgets apagados==>Widgets off
+Los widgets y las noticias de la barra de tareas usan memoria y red en segundo plano.==>Taskbar widgets and news use memory and network in the background.
+Microsoft: política NewsAndInterests==>Microsoft: NewsAndInterests policy
+Haz clic derecho en la barra de tareas.==>Right-click the taskbar.
+Abre Noticias e intereses y elige Desactivar.==>Open News and interests and choose Turn off.
+Se apagan los widgets con la directiva de Windows. Pide reiniciar.==>Widgets are turned off with the Windows policy. Needs a restart.
+Abre Configuración > Personalización > Barra de tareas.==>Open Settings > Personalization > Taskbar.
+Apaga Widgets.==>Turn off Widgets.
+Copilot quitado==>Copilot removed
+La app de Copilot viene con Windows y se ejecuta en segundo plano.==>The Copilot app comes with Windows and runs in the background.
+Microsoft: administrar Copilot==>Microsoft: manage Copilot
+Se vuelve a instalar; desde la Microsoft Store, con internet==>It is reinstalled from the Microsoft Store, with internet
+Abre Afina con la cuenta del dueño para quitarlo==>Open Afina with the owner's account to remove it
+Quitado==>Removed
+Se quita la app de Copilot para esta cuenta con Remove-AppxPackage.==>The Copilot app is removed for this account with Remove-AppxPackage.
 Corre solo con poco espacio libre y solo sobre temporales. No toca la Papelera ni Descargas.==>Runs only when free space is low and only on temporary files. It does not touch the Recycle Bin or Downloads.
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {

@@ -22,6 +22,13 @@ function Get-AfPagefileInfo {
     }
 }
 
+# Recall: 'Enabled', 'Disabled' o 'Absent' (sin fila). Tarda unos 6 s y lanza si la lectura falla.
+function Get-AfRecallState {
+    $feature = Get-CimInstance -ClassName Win32_OptionalFeature -Filter "Name='Recall'" -OperationTimeoutSec 15 -ErrorAction Stop | Select-Object -First 1
+    if (-not $feature) { return 'Absent' }
+    switch ([int]$feature.InstallState) { 1 { 'Enabled' } 2 { 'Disabled' } default { 'Absent' } }
+}
+
 function Get-AfDeliveryOptimizationInfo {
     try {
         $mode = Get-AfDeliveryOptimizationMode
