@@ -55,6 +55,7 @@ function Get-AfCatalogProviders {
         { Get-AfNetworkChecks }
         { Get-AfStartupChecks }
         { Get-AfStorageChecks }
+        { Get-AfDiagnosticsChecks }
         { Get-AfHardwareChecks }
         { Get-AfSecurityChecks }
         { Get-AfOptionalChecks }

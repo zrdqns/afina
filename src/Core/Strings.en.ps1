@@ -547,6 +547,47 @@ falta espacio en el disco para volver a la hibernación completa==>not enough di
 Escrito, comprueba que se vea el cambio==>Written, check that the change shows
 Windows tiene un modo de Optimización de entrega que Afina no sabe volver a poner==>Windows uses a Delivery Optimization mode that Afina can't set back
 Windows no desactivó el archivo de paginación automático==>Windows didn't turn off the automatic page file
+{0}: estado {1}==>{0}: status {1}
+{0}: desgaste {1} %==>{0}: wear {1} %
+{0}: errores sin corregir ({1})==>{0}: uncorrected errors ({1})
+{0}: temperatura en su máximo ({1} °C)==>{0}: temperature at its maximum ({1} °C)
+Buena, sin datos de desgaste==>Good, no wear data
+Buena, desgaste {0} %==>Good, {0} % wear
+Sin datos de desgaste==>No wear data
+Windows predice una falla de disco==>Windows predicts a disk failure
+Respalda tus archivos ya.==>Back up your files now.
+Cambia el disco cuanto antes.==>Replace the disk as soon as possible.
+Mantén un respaldo al día y vigila el disco.==>Keep a backup up to date and watch the disk.
+Conserva el {0} % de su capacidad==>Holds {0} % of its capacity
+{0} ciclos de carga==>{0} charge cycles
+La batería ya dura menos que cuando era nueva.==>The battery now lasts less than when it was new.
+La batería está muy gastada: conviene cambiarla.==>The battery is very worn: it's worth replacing.
+Mientras tanto, usa la laptop con el cargador conectado.==>Meanwhile, use the laptop plugged in.
+Sin datos recientes==>No recent data
+Último arranque medido: {0}==>Last boot measured: {0}
+{0} s hasta el escritorio==>{0} s to the desktop
+Revisa los programas de la categoría Inicio: son lo que más alarga el arranque.==>Check the programs in the Startup category: they add the most to boot time.
+Salud del disco==>Disk health
+Un disco con desgaste alto o fallas puede dejar de funcionar sin aviso y llevarse tus archivos.==>A disk with high wear or faults can stop working without warning and take your files with it.
+Contadores de confiabilidad del almacenamiento de Windows==>Windows storage reliability counters
+No cambia nada==>Changes nothing
+Revisando…==>Checking…
+Salud de la batería==>Battery health
+Una batería gastada dura menos y puede limitar el rendimiento de la laptop.==>A worn battery lasts less and can limit the laptop's performance.
+Capacidad de diseño y de carga completa de la batería==>Battery design and full-charge capacity
+Tiempo de arranque==>Boot time
+Un arranque largo suele venir de programas que se abren con Windows.==>A long boot usually comes from programs that open with Windows.
+Registro de rendimiento del arranque de Windows==>Windows boot performance log
+Archivo de paginación==>Page file
+Si el archivo de paginación está apagado o es muy chico, los juegos y apps pesadas pueden cerrarse por falta de memoria.==>If the page file is off or too small, games and heavy apps can close from lack of memory.
+Configuración del archivo de paginación de Windows==>Windows page file settings
+Vuelve a la configuración anterior==>Goes back to the previous setting
+Automático==>Automatic
+Lo maneja Windows==>Managed by Windows
+{0} MB fijos==>{0} MB fixed
+Apagado==>Off
+Libera espacio primero: hacen falta al menos 4 GB libres.==>Free up space first: at least 4 GB must be free.
+Deja que Windows maneje el archivo de paginación. Pide reiniciar.==>Lets Windows manage the page file. Needs a restart.
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }
