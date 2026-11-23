@@ -590,6 +590,48 @@ Lo maneja Windows==>Managed by Windows
 Apagado==>Off
 Libera espacio primero: hacen falta al menos 4 GB libres.==>Free up space first: at least 4 GB must be free.
 Deja que Windows maneje el archivo de paginación. Pide reiniciar.==>Lets Windows manage the page file. Needs a restart.
+# Optimizaciones de rendimiento
+El código nativo no está disponible==>Native code is not available
+Edge sigue activo en segundo plano==>Edge keeps running in the background
+Edge se queda en memoria aunque cierres todas sus ventanas, y arranca con Windows para abrir más rápido.==>Edge stays in memory even after you close all its windows, and starts with Windows to open faster.
+Microsoft: Aumento de inicio de Edge==>Microsoft: Edge startup boost
+Lo fija una directiva==>Set by a policy
+Cierra Edge para revisarlo==>Close Edge to check it
+Cerrado==>Closed
+Edge corre sin ventanas==>Edge is running with no windows
+Abre Edge y entra a edge://settings/system.==>Open Edge and go to edge://settings/system.
+Apaga "Aumento de inicio".==>Turn off "Startup boost".
+Apaga "Seguir ejecutando extensiones y aplicaciones en segundo plano".==>Turn off "Continue running background extensions and apps when Microsoft Edge is closed".
+Optimización de entrega solo en la red local==>Delivery Optimization on the local network only
+En modo Internet, Windows sube partes de sus actualizaciones a otros equipos y gasta tu conexión.==>In Internet mode, Windows uploads parts of its updates to other PCs and uses your connection.
+Microsoft: Optimización de entrega==>Microsoft: Delivery Optimization
+Solo red local o sin compartir==>Local network only or not sharing
+Internet==>Internet
+Red local==>Local network
+El modo de descarga pasa de Internet a Red local. Se puede cambiar en Configuración, Windows Update, Opciones avanzadas.==>The download mode changes from Internet to Local network. It can be changed in Settings, Windows Update, Advanced options.
+Aceleración del mouse apagada==>Mouse acceleration off
+"Mejorar la precisión del puntero" mueve el cursor según la velocidad del mouse, y apuntar se vuelve menos predecible en los juegos.==>"Enhance pointer precision" moves the cursor based on how fast the mouse moves, so aiming becomes less predictable in games.
+Microsoft: opciones del puntero del mouse==>Microsoft: mouse pointer options
+Cambia cómo se siente el mouse==>Changes how the mouse feels
+Se apaga "Mejorar la precisión del puntero". La velocidad del puntero no cambia.==>"Enhance pointer precision" is turned off. Pointer speed does not change.
+Menos efectos visuales en esta PC==>Fewer visual effects on this PC
+Con poca memoria o con disco HDD, las animaciones y la transparencia le quitan fluidez a Windows.==>With little memory or an HDD, animations and transparency make Windows feel less smooth.
+Microsoft: efectos visuales de Windows==>Microsoft: Windows visual effects
+Activos==>On
+Apagados==>Off
+Se apagan "Efectos de animación" y "Efectos de transparencia" de Accesibilidad. El suavizado de fuentes se queda como está.==>"Animation effects" and "Transparency effects" in Accessibility are turned off. Font smoothing stays as it is.
+Archivo de hibernación más chico==>Smaller hibernation file
+Con poco espacio libre, hiberfil.sys ocupa cerca de la mitad de la memoria RAM en el disco.==>With little free space, hiberfil.sys takes about half of the RAM size on disk.
+Microsoft: powercfg y la hibernación==>Microsoft: powercfg and hibernation
+En laptops no se reduce: sin hibernación completa, el trabajo sin guardar puede perderse al agotarse la batería==>Not reduced on laptops: without full hibernation, unsaved work can be lost when the battery runs out
+Completo, {0}==>Full, {0}
+Reducido==>Reduced
+Si se va la luz mientras duerme, se pierde lo no guardado==>If the power goes out while it sleeps, unsaved work is lost
+El archivo baja de 40 % a 20 % de la RAM, cerca de la mitad. Se conserva el inicio rápido; se pierden hibernar y el sueño híbrido.==>The file goes from 40 % to 20 % of RAM, about half. Fast startup is kept; hibernate and hybrid sleep are lost.
+Sensor de almacenamiento activado==>Storage Sense on
+Borra temporales solo cuando queda poco espacio, para que Windows no se quede sin lugar para actualizarse.==>Deletes temporary files only when space is low, so Windows does not run out of room to update.
+Microsoft: Sensor de almacenamiento==>Microsoft: Storage Sense
+Corre solo con poco espacio libre y solo sobre temporales. No toca la Papelera ni Descargas.==>Runs only when free space is low and only on temporary files. It does not touch the Recycle Bin or Downloads.
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }

@@ -57,4 +57,23 @@ function Get-AfStartupChecks {
             foreach ($choice in @($detected.Data.Choices | Where-Object Selected)) { Disable-AfStartupEntry -Tx $tx -Entry $choice | Out-Null }
         }
     }
+
+    @{
+        Id = 'startup.edge-background'; Category = 'startup'
+        Title = (T 'Edge sigue activo en segundo plano')
+        Why = (T 'Edge se queda en memoria aunque cierres todas sus ventanas, y arranca con Windows para abrir más rápido.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: Aumento de inicio de Edge'); SourceUrl = 'https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies'; Undo = (T 'No cambia nada')
+        Reads = @('HKLM:\SOFTWARE\Policies\Microsoft\Edge|StartupBoostEnabled', 'HKLM:\SOFTWARE\Policies\Microsoft\Edge|BackgroundModeEnabled')
+        AppliesTo = { param($inv) $inv.Edge -and $inv.Edge.Installed }
+        Detect = {
+            param($inv)
+            $policy = $null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Edge|StartupBoostEnabled'] -or $null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Edge|BackgroundModeEnabled']
+            if ($policy) { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
+            if ($inv.Edge.HasWindow) { return New-AfDetection -State NotApplicable -Note (T 'Cierra Edge para revisarlo') }
+            if (-not $inv.Edge.Running) { return New-AfDetection -State Ok -Current (T 'Cerrado') }
+            New-AfDetection -State Manual -Current (T 'Edge corre sin ventanas') -Target (T 'Cerrado') `
+                -Steps @((T 'Abre Edge y entra a edge://settings/system.'), (T 'Apaga "Aumento de inicio".'), (T 'Apaga "Seguir ejecutando extensiones y aplicaciones en segundo plano".'))
+        }
+    }
 }

@@ -23,6 +23,17 @@ function Invoke-AfSetSystemParameter {
     if (-not $ok) { throw (New-AfApplyError -Reason (T 'Windows no aceptó el ajuste')) }
 }
 
+# Avisa al shell y a las ventanas de un cambio de ajustes. Solo corre dentro de Apply (hilo de aplicar, no el de WPF); si falla, el cambio sigue.
+function Send-AfShellNotify {
+    param([Parameter(Mandatory)][string]$Area)
+    try {
+        if (-not (Initialize-AfNative)) { throw (T 'El código nativo no está disponible') }
+        [Afina.Native]::NotifyShell($Area)
+    } catch {
+        Write-AfLog -Level Warn -Message "No se pudo avisar al shell ($Area): $($_.Exception.Message)"
+    }
+}
+
 function ConvertTo-AfSystemParameterValue {
     param([string]$Name, $Value)
     if ($Name -eq 'Mouse') { , [int[]]@($Value) } else { [bool]$Value }

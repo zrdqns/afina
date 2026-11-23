@@ -11,6 +11,13 @@ function Get-AfWindowedOptimizationsValue {
     $base + 'SwapEffectUpgradeEnable=1;'
 }
 
+# PC débil: 8 GB de RAM o menos, o Windows en un disco HDD.
+function Test-AfWeakPc {
+    param([Parameter(Mandatory)]$Inventory)
+    ($Inventory.Memory -and $null -ne $Inventory.Memory.TotalGB -and [double]$Inventory.Memory.TotalGB -le 8) -or
+    ($Inventory.Storage -and $Inventory.Storage.MediaType -eq 'HDD')
+}
+
 function Get-AfGamingChecks {
     @{
         Id = 'display.refresh'; Category = 'gaming'
@@ -128,6 +135,52 @@ function Get-AfGamingChecks {
             $path = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
             $current = [string](Get-AfRegistryValue -Path $path -Name 'DirectXUserGlobalSettings' -User $tx.User)
             Set-AfRegistryValue -Tx $tx -Path $path -Name 'DirectXUserGlobalSettings' -Type String -Value (Get-AfWindowedOptimizationsValue -Current $current) | Out-Null
+        }
+    }
+
+    @{
+        Id = 'gaming.mouse-acceleration'; Category = 'gaming'
+        Title = (T 'Aceleración del mouse apagada')
+        Why = (T '"Mejorar la precisión del puntero" mueve el cursor según la velocidad del mouse, y apuntar se vuelve menos predecible en los juegos.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: opciones del puntero del mouse'); SourceUrl = 'https://support.microsoft.com/en-us/windows/change-mouse-settings-e81356a4-0e74-fe38-7d01-9d79fbf8712b'; Undo = (T 'Se puede deshacer')
+        Reads = @('HKCU:\Control Panel\Mouse|MouseSpeed')
+        AppliesTo = { param($inv) $inv.User -and $inv.User.IsSameAsProcess -and $null -ne $inv.Registry['HKCU:\Control Panel\Mouse|MouseSpeed'] }
+        Detect = {
+            param($inv)
+            if ([string]$inv.Registry['HKCU:\Control Panel\Mouse|MouseSpeed'] -eq '0') { return New-AfDetection -State Ok -Current (T 'Apagada') }
+            New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') -Note (T 'Cambia cómo se siente el mouse') `
+                -What (T 'Se apaga "Mejorar la precisión del puntero". La velocidad del puntero no cambia.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfSystemParameter -Tx $tx -Name Mouse -Value @(0, 0, 0) | Out-Null
+            foreach ($name in 'MouseSpeed', 'MouseThreshold1', 'MouseThreshold2') {
+                Set-AfRegistryValue -Tx $tx -Path 'HKCU:\Control Panel\Mouse' -Name $name -Type String -Value '0' | Out-Null
+            }
+        }
+    }
+
+    @{
+        Id = 'gaming.visual-effects'; Category = 'gaming'
+        Title = (T 'Menos efectos visuales en esta PC')
+        Why = (T 'Con poca memoria o con disco HDD, las animaciones y la transparencia le quitan fluidez a Windows.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $false
+        Source = (T 'Microsoft: efectos visuales de Windows'); SourceUrl = 'https://support.microsoft.com/en-us/windows/windows-accessibility-settings-visual-effects'; Undo = (T 'Se puede deshacer')
+        Reads = @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize|EnableTransparency')
+        AppliesTo = { param($inv) $inv.User -and $inv.User.IsSameAsProcess -and $inv.Effects -and (Test-AfWeakPc -Inventory $inv) }
+        Detect = {
+            param($inv)
+            $transparency = $inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize|EnableTransparency'] -ne 0
+            if (-not $inv.Effects.ClientAreaAnimation -and -not $transparency) { return New-AfDetection -State Ok -Current (T 'Apagados') }
+            New-AfDetection -State Improvable -Current (T 'Activos') -Target (T 'Apagados') `
+                -What (T 'Se apagan "Efectos de animación" y "Efectos de transparencia" de Accesibilidad. El suavizado de fuentes se queda como está.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'EnableTransparency' -Type DWord -Value 0 | Out-Null
+            Set-AfSystemParameter -Tx $tx -Name ClientAreaAnimation -Value $false | Out-Null
+            Send-AfShellNotify -Area 'ImmersiveColorSet'
         }
     }
 

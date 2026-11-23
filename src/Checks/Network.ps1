@@ -86,4 +86,23 @@ function Get-AfNetworkChecks {
             New-AfDetection -State Info -Current (T '2,4 GHz') -Steps @((T 'Si el router tiene una red de 5 GHz, conéctate a esa para jugar.'))
         }
     }
+
+    @{
+        Id = 'network.delivery-optimization'; Category = 'network'
+        Title = (T 'Optimización de entrega solo en la red local')
+        Why = (T 'En modo Internet, Windows sube partes de sus actualizaciones a otros equipos y gasta tu conexión.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $false
+        Source = (T 'Microsoft: Optimización de entrega'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/deployment/do/waas-delivery-optimization'; Undo = (T 'Se puede deshacer')
+        Reads = @('HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization|DODownloadMode')
+        AppliesTo = { param($inv) $inv.DeliveryOptimization -and $inv.DeliveryOptimization.Available }
+        Detect = {
+            param($inv)
+            if ($null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization|DODownloadMode']) { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
+            if (-not $inv.DeliveryOptimization.Mode) { return New-AfDetection -State NotApplicable }
+            if ([string]$inv.DeliveryOptimization.Mode -ne 'Internet') { return New-AfDetection -State Ok -Current (T 'Solo red local o sin compartir') }
+            New-AfDetection -State Improvable -Current (T 'Internet') -Target (T 'Red local') `
+                -What (T 'El modo de descarga pasa de Internet a Red local. Se puede cambiar en Configuración, Windows Update, Opciones avanzadas.')
+        }
+        Apply = { param($inv, $detected, $tx) Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan | Out-Null }
+    }
 }
