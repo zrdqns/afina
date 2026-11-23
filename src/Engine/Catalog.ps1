@@ -59,6 +59,7 @@ function Get-AfCatalogProviders {
         { Get-AfHardwareChecks }
         { Get-AfSecurityChecks }
         { Get-AfOptionalChecks }
+        { Get-AfWindowsChecks }
     )
 }
 

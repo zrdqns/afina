@@ -52,6 +52,7 @@ $Global:AfFiles = @(
     'Checks\Hardware.ps1'
     'Checks\Security.ps1'
     'Checks\Optional.ps1'
+    'Checks\Windows.ps1'
     'UI\Icons.ps1'
     'UI\Theme.ps1'
     'UI\Motion.ps1'

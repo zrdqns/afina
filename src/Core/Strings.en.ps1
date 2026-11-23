@@ -659,6 +659,47 @@ Abre Afina con la cuenta del dueño para quitarlo==>Open Afina with the owner's 
 Quitado==>Removed
 Se quita la app de Copilot para esta cuenta con Remove-AppxPackage.==>The Copilot app is removed for this account with Remove-AppxPackage.
 Corre solo con poco espacio libre y solo sobre temporales. No toca la Papelera ni Descargas.==>Runs only when free space is low and only on temporary files. It does not touch the Recycle Bin or Downloads.
+Extensiones de archivo visibles==>File extensions shown
+Ver la extensión ayuda a notar un archivo disfrazado, como factura.pdf.exe.==>Seeing the extension helps you spot a disguised file, like invoice.pdf.exe.
+Microsoft: Explorador de archivos==>Microsoft: File Explorer
+Visibles==>Shown
+Ocultas==>Hidden
+El Explorador de archivos muestra la extensión de todos los archivos.==>File Explorer shows the extension of every file.
+Finalizar tarea en la barra de tareas==>End task on the taskbar
+Agrega "Finalizar tarea" al menú de cada app de la barra, para cerrar una que no responde sin abrir el Administrador de tareas.==>Adds "End task" to the menu of each taskbar app, to close one that is not responding without opening Task Manager.
+Microsoft: configuración avanzada de Windows==>Microsoft: Windows advanced settings
+Activado==>On
+Apagado==>Off
+Se activa "Finalizar tarea" en Configuración > Sistema > Para programadores.==>"End task" is turned on in Settings > System > For developers.
+Porcentaje de batería en la barra==>Battery percentage on the taskbar
+Muestra el porcentaje junto al icono de la batería, sin pasar el mouse por encima.==>Shows the percentage next to the battery icon, without hovering over it.
+Microsoft: KB5067036==>Microsoft: KB5067036
+Visible==>Shown
+Oculto==>Hidden
+Se activa el porcentaje de batería en la bandeja del sistema.==>The battery percentage is turned on in the system tray.
+Menú contextual clásico==>Classic context menu
+Vuelve el menú de clic derecho completo de Windows 10, sin tener que pulsar "Mostrar más opciones".==>Brings back the full Windows 10 right-click menu, without having to click "Show more options".
+Pureinfotech (sin fuente de Microsoft)==>Pureinfotech (no Microsoft source)
+Una actualización de Windows puede volver a romperlo==>A Windows update can break it again
+Clásico==>Classic
+Nuevo==>New
+Se crean dos claves vacías en tu usuario que devuelven el menú clásico. Pide reiniciar.==>Two empty keys are created for your user that bring back the classic menu. Needs a restart.
+Búsqueda sin resultados de internet==>Search without web results
+El cuadro de búsqueda de Windows manda lo que escribes a Bing y mezcla resultados de la web con los de tu PC.==>The Windows search box sends what you type to Bing and mixes web results with those from your PC.
+Microsoft: política de búsqueda==>Microsoft: search policy
+Activa==>On
+Apagada==>Off
+Abre Configuración > Privacidad y seguridad > Permisos de búsqueda.==>Open Settings > Privacy and security > Search permissions.
+Apaga "Búsqueda de contenido en la nube" y "Mostrar aspectos destacados de la búsqueda".==>Turn off "Cloud content search" and "Show search highlights".
+Esto no quita Bing del todo: Windows Home no tiene un ajuste para eso.==>This does not remove Bing completely: Windows Home has no setting for that.
+Se apaga la búsqueda web con la directiva de Windows. Pide reiniciar.==>Web search is turned off with the Windows policy. Needs a restart.
+Se apagan las sugerencias del cuadro de búsqueda con la directiva de Windows. Microsoft solo documenta que quita las búsquedas recientes del Explorador; su efecto en Inicio viene de la comunidad.==>Search box suggestions are turned off with the Windows policy. Microsoft only documents that it removes recent searches in File Explorer; its effect on Start comes from the community.
+Inicio sin recomendaciones==>Start without recommendations
+El menú Inicio muestra archivos recientes, apps sugeridas y avisos de la cuenta que casi nadie usa.==>The Start menu shows recent files, suggested apps and account notices that almost nobody uses.
+Microsoft: política de Inicio==>Microsoft: Start policy
+Apagadas==>Off
+Activas==>On
+Se apagan los archivos recientes, los programas recomendados y los avisos de la cuenta en Inicio. En Pro y superiores también se oculta la sección Recomendado.==>Recent files, recommended programs and account notices are turned off in Start. On Pro and above the Recommended section is also hidden.
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }

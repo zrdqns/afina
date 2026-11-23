@@ -264,6 +264,13 @@ Describe 'Get-AfRecordNotifyArea' {
         Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'RegistryValue'; Path = 'HKCU:\Software\X'; Name = 'EnableTransparency' }) | Should -BeNullOrEmpty
         Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'SystemParameter'; Name = 'Mouse' }) | Should -BeNullOrEmpty
     }
+
+    It 'da ShellState solo para HideFileExt de Explorer\Advanced' {
+        $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+        Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'RegistryValue'; Path = $adv; Name = 'HideFileExt' }) | Should -Be 'ShellState'
+        Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'RegistryValue'; Path = $adv; Name = 'Otro' }) | Should -BeNullOrEmpty
+        Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'RegistryValue'; Path = 'HKCU:\Software\X'; Name = 'HideFileExt' }) | Should -BeNullOrEmpty
+    }
 }
 
 Describe 'Add-AfUnverifiedNote' {

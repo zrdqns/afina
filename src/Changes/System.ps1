@@ -38,6 +38,7 @@ function Send-AfShellNotify {
 function Get-AfRecordNotifyArea {
     param([Parameter(Mandatory)]$Record)
     if ($Record.Kind -eq 'RegistryValue' -and $Record.Name -eq 'EnableTransparency' -and [string]$Record.Path -like '*\Themes\Personalize') { return 'ImmersiveColorSet' }
+    if ($Record.Kind -eq 'RegistryValue' -and $Record.Name -eq 'HideFileExt' -and [string]$Record.Path -like '*\Explorer\Advanced') { return 'ShellState' }
     $null
 }
 
