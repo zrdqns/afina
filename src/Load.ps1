@@ -36,6 +36,7 @@ $Global:AfFiles = @(
     'Inventory\Storage.ps1'
     'Inventory\Updates.ps1'
     'Inventory\Apps.ps1'
+    'Inventory\Extras.ps1'
     'Inventory\Inventory.ps1'
     'Engine\Catalog.ps1'
     'Engine\Scan.ps1'

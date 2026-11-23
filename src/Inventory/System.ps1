@@ -7,7 +7,26 @@
         Edition = Get-AfRegistryValue -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID'
         IsWin11 = $build -ge 22000
         IsInsider = [bool](Get-AfRegistryValue -Path 'HKLM:\SOFTWARE\Microsoft\WindowsSelfHost\Applicability' -Name 'BranchName')
+        Ubr = [int](Get-AfRegistryValue -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'UBR')
     }
+}
+
+# Las directivas solo se respetan fuera de Home.
+function Test-AfPolicyEdition {
+    param($Os)
+    -not ([string]$Os.Edition).StartsWith('Core')
+}
+
+function Test-AfEnterpriseEdition {
+    param($Os)
+    ([string]$Os.Edition) -match '^(Enterprise|Education|IoTEnterprise)'
+}
+
+# El porcentaje de batería en la bandeja llegó con la 26100.7019.
+function Test-AfBatteryPercentBuild {
+    param($Os)
+    $build = [int]$Os.Build
+    $build -gt 26200 -or ($build -in 26100, 26200 -and [int]$Os.Ubr -ge 7019)
 }
 
 function Get-AfDeviceInfo {

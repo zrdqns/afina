@@ -1,6 +1,7 @@
 ﻿function Get-AfInventoryPartNames {
     'User', 'Os', 'Device', 'Cpu', 'Gpus', 'Memory', 'Displays', 'Power', 'VendorTools', 'Network', 'Wlan',
-    'Security', 'Apps', 'Startup', 'Autostart', 'Storage', 'Registry'
+    'Security', 'Apps', 'Startup', 'Autostart', 'Storage', 'Registry',
+    'Pagefile', 'Hibernation', 'DeliveryOptimization', 'Edge', 'Effects'
 }
 
 # Lee la PC una sola vez. Si una parte falla, queda en $null, se anota en Errors y el resto sigue.
@@ -25,6 +26,11 @@ function Get-AfInventory {
         Autostart = { , @(Get-AfAutostartBinaries -User $user) }
         Storage = { Get-AfStorageInfo -User $user }
         Registry = { Get-AfRegistrySnapshot -Reads $Reads -User $user }
+        Pagefile = { Get-AfPagefileInfo }
+        Hibernation = { Get-AfHibernationInfo }
+        DeliveryOptimization = { Get-AfDeliveryOptimizationInfo }
+        Edge = { Get-AfEdgeInfo }
+        Effects = { Get-AfEffectsInfo }
     }
 
     $inventory = [ordered]@{}

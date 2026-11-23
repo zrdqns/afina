@@ -6,7 +6,7 @@ function New-AfFakeInventory {
 
     $inv = [ordered]@{
         User = [pscustomobject]@{ Name = 'LOQ\Cliente'; Sid = 'S-1-5-21-1'; ProfilePath = 'C:\Users\Cliente'; IsSameAsProcess = $true; HkcuRoot = 'HKCU:' }
-        Os = [pscustomobject]@{ Caption = 'Microsoft Windows 11 Home'; Build = 26100; Edition = 'Core'; IsWin11 = $true; IsInsider = $false }
+        Os = [pscustomobject]@{ Caption = 'Microsoft Windows 11 Home'; Build = 26100; Edition = 'Core'; IsWin11 = $true; IsInsider = $false; Ubr = 7019 }
         Device = [pscustomobject]@{ Manufacturer = 'LENOVO'; Model = 'LOQ 15'; IsLaptop = $true; OnBattery = $false }
         Cpu = [pscustomobject]@{ Name = 'AMD Ryzen 7 7435HS'; Cores = 8; Threads = 16 }
         Gpus = @(
@@ -32,7 +32,7 @@ function New-AfFakeInventory {
             )
             ThirdPartyFirewall = $false; HvciRunning = $false; VmPlatform = [pscustomobject]@{ State = 'Disabled'; Pending = $false }; VmPlatformEnabled = $false; UsesVirtualization = $false
         }
-        Apps = [pscustomobject]@{ Promo = @() }
+        Apps = [pscustomobject]@{ Promo = @(); Copilot = $null; HasWidgets = $false }
         Startup = @()
         Autostart = @()
         Storage = [pscustomobject]@{
@@ -40,6 +40,11 @@ function New-AfFakeInventory {
             TempBytes = [pscustomobject]@{ User = 0; Windows = 0; UpdateCache = 0; DeliveryOptimization = 0; ErrorReports = 0 }
         }
         Registry = @{}
+        Pagefile = @{ Automatic = $true; Files = @() }
+        Hibernation = @{ Enabled = $false; FileBytes = [long]0; RamBytes = [long]17179869184; Type = $null }
+        DeliveryOptimization = @{ Available = $true; Mode = 'Lan' }
+        Edge = @{ Installed = $true; Running = $false; HasWindow = $false }
+        Effects = @{ ClientAreaAnimation = $false }
         Errors = @()
     }
     foreach ($key in $Override.Keys) { $inv[$key] = $Override[$key] }

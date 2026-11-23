@@ -47,5 +47,16 @@ function Get-AfPromoApps {
             Write-AfLog -Level Warn -Message "No se pudieron listar las apps aprovisionadas: $($_.Exception.Message)"
         }
     }
-    [pscustomobject]@{ Promo = $promo }
+    # Copilot no está en la lista cerrada: se ofrece aparte, con su propia revisión.
+    $copilot = $null
+    $found = $packages | Where-Object { $_.Name -eq 'Microsoft.Copilot' } | Select-Object -First 1
+    if ($found) {
+        $copilot = [pscustomobject]@{
+            Name = 'Copilot'; PackageName = $found.Name; PackageFullName = $found.PackageFullName; PackageFamilyName = $found.PackageFamilyName
+            StoreId = if ($found.PackageFamilyName -eq 'Microsoft.Copilot_8wekyb3d8bbwe') { '9NHT9RB2F4HD' } else { $null }
+            Provisioned = $false
+        }
+    }
+    $hasWidgets = [bool]($packages | Where-Object { $_.Name -eq 'MicrosoftWindows.Client.WebExperience' } | Select-Object -First 1)
+    [pscustomobject]@{ Promo = $promo; Copilot = $copilot; HasWidgets = $hasWidgets }
 }

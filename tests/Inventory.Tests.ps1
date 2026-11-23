@@ -21,6 +21,11 @@ Describe 'Get-AfInventory' {
         Mock Get-AfAutostartBinaries { }
         Mock Get-AfStorageInfo { [pscustomobject]@{ FreeGB = 100 } }
         Mock Get-AfRegistrySnapshot { @{ 'HKLM:\X|Y' = 1 } }
+        Mock Get-AfPagefileInfo { @{ Automatic = $true; Files = @() } }
+        Mock Get-AfHibernationInfo { @{ Enabled = $false } }
+        Mock Get-AfDeliveryOptimizationInfo { @{ Available = $true; Mode = 'Lan' } }
+        Mock Get-AfEdgeInfo { @{ Installed = $true; Running = $false; HasWindow = $false } }
+        Mock Get-AfEffectsInfo { @{ ClientAreaAnimation = $false } }
     }
 
     It 'sigue si una parte falla' {
