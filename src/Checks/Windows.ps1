@@ -128,8 +128,10 @@
                 return New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') -Note (T 'Pide reiniciar') `
                     -What (T 'Se apaga la búsqueda web con la directiva de Windows. Pide reiniciar.')
             }
-            if ($inv.Registry['HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|DisableSearchBoxSuggestions'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Apagada') }
-            New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') -Note (T 'Pide reiniciar') `
+            # La nota va siempre a la vista: Microsoft no documenta el efecto en Inicio y no debe darse por seguro.
+            $note = T 'El efecto en Inicio viene de la comunidad, no de Microsoft'
+            if ($inv.Registry['HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|DisableSearchBoxSuggestions'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Apagada') -Note $note }
+            New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') -Note $note `
                 -What (T 'Se apagan las sugerencias del cuadro de búsqueda con la directiva de Windows. Microsoft solo documenta que quita las búsquedas recientes del Explorador; su efecto en Inicio viene de la comunidad.')
         }
         Apply = {
@@ -145,12 +147,11 @@
     @{
         Id = 'windows.start-recommendations'; Category = 'windows'
         Title = (T 'Inicio sin recomendaciones')
-        Why = (T 'El menú Inicio muestra archivos recientes, apps sugeridas y avisos de la cuenta que casi nadie usa.')
+        Why = (T 'El menú Inicio muestra apps sugeridas, sitios recomendados y avisos de la cuenta que casi nadie usa.')
         Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $true
         Source = (T 'Microsoft: política de Inicio'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-start'
         Undo = (T 'Se puede deshacer')
         Reads = @(
-            "$adv|Start_TrackDocs"
             "$adv|Start_TrackProgs"
             "$adv|Start_IrisRecommendations"
             "$adv|Start_RecoPersonalizedSites"
@@ -161,18 +162,20 @@
         Detect = {
             param($inv)
             $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
-            $off =@('Start_TrackDocs', 'Start_TrackProgs', 'Start_IrisRecommendations', 'Start_RecoPersonalizedSites', 'Start_AccountNotifications' | Where-Object { $inv.Registry["$adv|$_"] -ne 0 }).Count -eq 0
+            # Start_TrackDocs no se toca: también vacía los archivos recientes del Explorador y las Jump Lists.
+            $off = @('Start_TrackProgs', 'Start_IrisRecommendations', 'Start_RecoPersonalizedSites', 'Start_AccountNotifications' | Where-Object { $inv.Registry["$adv|$_"] -ne 0 }).Count -eq 0
+            $policyEdition = Test-AfPolicyEdition -Os $inv.Os
             # La directiva solo se respeta fuera de Home.
-            if ($off -and (-not (Test-AfPolicyEdition -Os $inv.Os) -or $inv.Registry['HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|HideRecommendedSection'] -eq 1)) {
-                return New-AfDetection -State Ok -Current (T 'Apagadas')
+            if ($off -and (-not $policyEdition -or $inv.Registry['HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|HideRecommendedSection'] -eq 1)) {
+                return New-AfDetection -State Ok -Current (T 'Apagadas') -Note $(if (-not $policyEdition) { (T 'Inicio puede seguir mostrando archivos recientes') })
             }
-            New-AfDetection -State Improvable -Current (T 'Activas') -Target (T 'Apagadas') -Note (T 'Pide reiniciar') `
-                -What (T 'Se apagan los archivos recientes, los programas recomendados y los avisos de la cuenta en Inicio. En Pro y superiores también se oculta la sección Recomendado.')
+            New-AfDetection -State Improvable -Current (T 'Activas') -Target (T 'Apagadas') -Note $(if ($policyEdition) { (T 'Pide reiniciar') } else { (T 'Inicio puede seguir mostrando archivos recientes') }) `
+                -What (T 'Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio. No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.')
         }
         Apply = {
             param($inv, $detected, $tx)
             $path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
-            foreach ($name in 'Start_TrackDocs', 'Start_TrackProgs', 'Start_IrisRecommendations', 'Start_RecoPersonalizedSites', 'Start_AccountNotifications') {
+            foreach ($name in 'Start_TrackProgs', 'Start_IrisRecommendations', 'Start_RecoPersonalizedSites', 'Start_AccountNotifications') {
                 Set-AfRegistryValue -Tx $tx -Path $path -Name $name -Type DWord -Value 0 | Out-Null
             }
             if (Test-AfPolicyEdition -Os $inv.Os) {

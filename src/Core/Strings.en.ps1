@@ -695,11 +695,13 @@ Esto no quita Bing del todo: Windows Home no tiene un ajuste para eso.==>This do
 Se apaga la búsqueda web con la directiva de Windows. Pide reiniciar.==>Web search is turned off with the Windows policy. Needs a restart.
 Se apagan las sugerencias del cuadro de búsqueda con la directiva de Windows. Microsoft solo documenta que quita las búsquedas recientes del Explorador; su efecto en Inicio viene de la comunidad.==>Search box suggestions are turned off with the Windows policy. Microsoft only documents that it removes recent searches in File Explorer; its effect on Start comes from the community.
 Inicio sin recomendaciones==>Start without recommendations
-El menú Inicio muestra archivos recientes, apps sugeridas y avisos de la cuenta que casi nadie usa.==>The Start menu shows recent files, suggested apps and account notices that almost nobody uses.
+El menú Inicio muestra apps sugeridas, sitios recomendados y avisos de la cuenta que casi nadie usa.==>The Start menu shows suggested apps, recommended sites and account notices that almost nobody uses.
+El efecto en Inicio viene de la comunidad, no de Microsoft==>The effect on Start comes from the community, not from Microsoft
+Inicio puede seguir mostrando archivos recientes==>Start can still show recent files
 Microsoft: política de Inicio==>Microsoft: Start policy
 Apagadas==>Off
 Activas==>On
-Se apagan los archivos recientes, los programas recomendados y los avisos de la cuenta en Inicio. En Pro y superiores también se oculta la sección Recomendado.==>Recent files, recommended programs and account notices are turned off in Start. On Pro and above the Recommended section is also hidden.
+Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio. No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.==>Recommended programs, suggested sites and account notices are turned off in Start. Recent files are not touched. On Pro and above the Recommended section is also hidden.
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }

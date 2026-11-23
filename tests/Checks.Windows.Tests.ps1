@@ -130,6 +130,11 @@ Describe 'windows.search-web' {
         Should -Invoke Set-AfRegistryValue -Times 1 -Exactly
         Should -Invoke Set-AfRegistryValue -Times 1 -Exactly -ParameterFilter { $Path -eq $script:pol -and $Name -eq 'DisableSearchBoxSuggestions' -and $Type -eq 'DWord' -and $Value -eq 1 }
     }
+    It 'en Pro la nota visible dice que el efecto en Inicio viene de la comunidad, antes y después de aplicar' {
+        $os = New-Os -Build 26300 -Edition 'Professional'
+        (Invoke-Detect 'windows.search-web' @{ Os = $os }).Note | Should -Match 'comunidad'
+        (Invoke-Detect 'windows.search-web' @{ Os = $os; Registry = @{ "$script:pol|DisableSearchBoxSuggestions" = 1 } }).Note | Should -Match 'comunidad'
+    }
     It 'en Enterprise lee ConnectedSearchUseWeb y Apply solo la escribe a ella' {
         $os = New-Os -Build 26300 -Edition 'Enterprise'
         (Invoke-Detect 'windows.search-web' @{ Os = $os; Registry = @{ "$script:polLm|ConnectedSearchUseWeb" = 0 } }).State | Should -Be 'Ok'
@@ -143,16 +148,32 @@ Describe 'windows.search-web' {
 
 Describe 'windows.start-recommendations' {
     BeforeAll {
-        $script:startNames = 'Start_TrackDocs', 'Start_TrackProgs', 'Start_IrisRecommendations', 'Start_RecoPersonalizedSites', 'Start_AccountNotifications'
+        $script:startNames = 'Start_TrackProgs', 'Start_IrisRecommendations', 'Start_RecoPersonalizedSites', 'Start_AccountNotifications'
         $script:polEx = 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer'
     }
     It 'no aplica en Windows 10' {
         (Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 19045) }).State | Should -Be 'NotApplicable'
     }
-    It 'en Home Apply escribe los cinco en 0 y no la directiva' {
+    It 'no lee ni escribe Start_TrackDocs, que también vacía los archivos recientes del Explorador' {
+        @((Get-Check 'windows.start-recommendations').Reads) -join ' ' | Should -Not -Match 'Start_TrackDocs'
+        Mock Set-AfRegistryValue { $true }
+        Invoke-ApplyMocked 'windows.start-recommendations' (New-AfFakeInventory -Override @{ Os = (New-Os -Build 26300 -Edition 'Professional') }) | Out-Null
+        Should -Invoke Set-AfRegistryValue -Times 0 -Exactly -ParameterFilter { $Name -eq 'Start_TrackDocs' }
+    }
+    It 'en Home la fila avisa que Inicio puede seguir mostrando archivos recientes' {
+        $d = Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 26300 -Edition 'Core') }
+        $d.State | Should -Be 'Improvable'
+        $d.Note | Should -Match 'archivos recientes'
+        $reg = @{}
+        foreach ($n in $script:startNames) { $reg["$script:adv|$n"] = 0 }
+        $ok = Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 26300 -Edition 'Core'); Registry = $reg }
+        $ok.State | Should -Be 'Ok'
+        $ok.Note | Should -Match 'archivos recientes'
+    }
+    It 'en Home Apply escribe los cuatro en 0 y no la directiva' {
         Mock Set-AfRegistryValue { $true }
         Invoke-ApplyMocked 'windows.start-recommendations' (New-AfFakeInventory -Override @{ Os = (New-Os -Build 26300 -Edition 'Core') }) | Out-Null
-        Should -Invoke Set-AfRegistryValue -Times 5 -Exactly
+        Should -Invoke Set-AfRegistryValue -Times 4 -Exactly
         foreach ($n in $script:startNames) {
             Should -Invoke Set-AfRegistryValue -Times 1 -Exactly -ParameterFilter { $Path -eq $script:adv -and $Name -eq $n -and $Type -eq 'DWord' -and $Value -eq 0 }
         }
@@ -161,14 +182,14 @@ Describe 'windows.start-recommendations' {
     It 'en Pro Apply suma HideRecommendedSection en HKCU' {
         Mock Set-AfRegistryValue { $true }
         Invoke-ApplyMocked 'windows.start-recommendations' (New-AfFakeInventory -Override @{ Os = (New-Os -Build 26300 -Edition 'Professional') }) | Out-Null
-        Should -Invoke Set-AfRegistryValue -Times 6 -Exactly
+        Should -Invoke Set-AfRegistryValue -Times 5 -Exactly
         Should -Invoke Set-AfRegistryValue -Times 1 -Exactly -ParameterFilter { $Path -eq $script:polEx -and $Name -eq 'HideRecommendedSection' -and $Value -eq 1 }
     }
     It 'en Home la directiva olvidada no basta, y en Pro hace falta' {
         $reg = @{}
         foreach ($n in $script:startNames) { $reg["$script:adv|$n"] = 0 }
         $homeReg = $reg.Clone()
-        $homeReg.Remove("$script:adv|Start_TrackDocs")
+        $homeReg.Remove("$script:adv|Start_TrackProgs")
         $homeReg["$script:polEx|HideRecommendedSection"] = 1
         (Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 26300 -Edition 'Core'); Registry = $homeReg }).State | Should -Be 'Improvable'
         (Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 26300 -Edition 'Core'); Registry = $reg }).State | Should -Be 'Ok'
