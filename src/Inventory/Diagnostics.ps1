@@ -31,11 +31,11 @@ function Get-AfDiskHealth {
             $bus = $busNames[[int]$disk.BusType]
             $list += @{
                 Name = [string]$disk.FriendlyName; BusType = $(if ($bus) { $bus } else { 'Other' }); Health = $(if ($health) { $health } else { 'Unknown' })
-                Wear = $(if ($counter) { ConvertTo-AfCounter $counter.Wear })
-                Temperature = $(if ($counter) { ConvertTo-AfCounter $counter.Temperature })
-                TemperatureMax = $(if ($counter) { ConvertTo-AfCounter $counter.TemperatureMax })
-                ReadErrors = $(if ($counter) { ConvertTo-AfCounter $counter.ReadErrorsUncorrected })
-                WriteErrors = $(if ($counter) { ConvertTo-AfCounter $counter.WriteErrorsUncorrected })
+                Wear = $(if ($counter) { ConvertTo-AfCounter $counter.Wear } else { $null })
+                Temperature = $(if ($counter) { ConvertTo-AfCounter $counter.Temperature } else { $null })
+                TemperatureMax = $(if ($counter) { ConvertTo-AfCounter $counter.TemperatureMax } else { $null })
+                ReadErrors = $(if ($counter) { ConvertTo-AfCounter $counter.ReadErrorsUncorrected } else { $null })
+                WriteErrors = $(if ($counter) { ConvertTo-AfCounter $counter.WriteErrorsUncorrected } else { $null })
             }
         }
     } catch { $list = @() }
