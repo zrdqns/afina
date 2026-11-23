@@ -124,6 +124,7 @@ function Undo-AfRecords {
     param([object[]]$Records = @(), $User)
     $failed = New-Object System.Collections.ArrayList
     $adapters = New-Object System.Collections.ArrayList
+    $areas = New-Object System.Collections.ArrayList
     $reason = $null
     for ($i = $Records.Count - 1; $i -ge 0; $i--) {
         $record = $Records[$i]
@@ -131,6 +132,8 @@ function Undo-AfRecords {
         try {
             Undo-AfRecord -Record $record -User $User
             if ($record.Kind -eq 'NetAdapterProperty' -and $record.InterfaceGuid -and -not $adapters.Contains([string]$record.InterfaceGuid)) { [void]$adapters.Add([string]$record.InterfaceGuid) }
+            $area = Get-AfRecordNotifyArea -Record $record
+            if ($area -and -not $areas.Contains($area)) { [void]$areas.Add($area) }
         } catch {
             Write-AfLog -Level Warn -Message ('No se pudo deshacer {0} {1}: {2}' -f $record.Kind, $record.Name, $_.Exception.Message)
             if (-not $reason) { $reason = Get-AfApplyReason -ErrorRecord $_ }
@@ -138,6 +141,7 @@ function Undo-AfRecords {
         }
     }
     if ($adapters.Count) { Restart-AfAdapters -InterfaceGuid @($adapters) }
+    foreach ($area in $areas) { Send-AfShellNotify -Area $area }
     [pscustomobject]@{ Failed = @($failed); Reason = $reason }
 }
 

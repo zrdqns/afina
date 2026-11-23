@@ -49,6 +49,34 @@ Describe 'Get-AfDeviceInfo' {
         Mock Get-CimInstance { [pscustomobject]@{ BatteryStatus = 1 } } -ParameterFilter { $ClassName -eq 'Win32_Battery' }
         (Get-AfDeviceInfo).OnBattery | Should -BeTrue
     }
+
+    It 'IsDesktop con chasis 3 y sin baterías' {
+        Mock Get-CimInstance { [pscustomobject]@{ ChassisTypes = @(3) } } -ParameterFilter { $ClassName -eq 'Win32_SystemEnclosure' }
+        Mock Get-CimInstance { } -ParameterFilter { $ClassName -eq 'Win32_Battery' }
+        $d = Get-AfDeviceInfo
+        $d.IsDesktop | Should -BeTrue
+        $d.IsLaptop | Should -BeFalse
+    }
+
+    It 'no es IsDesktop con chasis desconocido, con la lectura vacía, con batería o con chasis de laptop' {
+        Mock Get-CimInstance { } -ParameterFilter { $ClassName -eq 'Win32_Battery' }
+        Mock Get-CimInstance { [pscustomobject]@{ ChassisTypes = @(2) } } -ParameterFilter { $ClassName -eq 'Win32_SystemEnclosure' }
+        (Get-AfDeviceInfo).IsDesktop | Should -BeFalse
+        Mock Get-CimInstance { } -ParameterFilter { $ClassName -eq 'Win32_SystemEnclosure' }
+        (Get-AfDeviceInfo).IsDesktop | Should -BeFalse
+        Mock Get-CimInstance { [pscustomobject]@{ ChassisTypes = @(10) } } -ParameterFilter { $ClassName -eq 'Win32_SystemEnclosure' }
+        (Get-AfDeviceInfo).IsDesktop | Should -BeFalse
+        Mock Get-CimInstance { [pscustomobject]@{ ChassisTypes = @(3) } } -ParameterFilter { $ClassName -eq 'Win32_SystemEnclosure' }
+        Mock Get-CimInstance { [pscustomobject]@{ BatteryStatus = 2 } } -ParameterFilter { $ClassName -eq 'Win32_Battery' }
+        (Get-AfDeviceInfo).IsDesktop | Should -BeFalse
+    }
+
+    It 'no es IsDesktop si falla la lectura de baterías, y no lanza' {
+        Mock Get-CimInstance { [pscustomobject]@{ ChassisTypes = @(3) } } -ParameterFilter { $ClassName -eq 'Win32_SystemEnclosure' }
+        Mock Get-CimInstance { throw 'WMI no responde' } -ParameterFilter { $ClassName -eq 'Win32_Battery' }
+        { Get-AfDeviceInfo } | Should -Not -Throw
+        (Get-AfDeviceInfo).IsDesktop | Should -BeFalse
+    }
 }
 
 Describe 'Get-AfGpuInfo' {

@@ -64,8 +64,8 @@ function Get-AfStorageChecks {
         Detect = {
             param($inv)
             $size = Format-AfSize -Bytes ([double]$inv.Hibernation.FileBytes)
-            # Sin dato del equipo se trata como laptop: ahí no se toca.
-            if (-not $inv.Device -or $inv.Device.IsLaptop) {
+            # Solo se reduce en un escritorio confirmado; laptop, tipo desconocido o sin dato: no se toca.
+            if (-not ($inv.Device -and $inv.Device.IsDesktop)) {
                 return New-AfDetection -State Info -Current $size -Note (T 'En laptops no se reduce: sin hibernación completa, el trabajo sin guardar puede perderse al agotarse la batería')
             }
             New-AfDetection -State Improvable -Current ((T 'Completo, {0}') -f $size) -Target (T 'Reducido') -Note (T 'Si se va la luz mientras duerme, se pierde lo no guardado') `
@@ -73,7 +73,7 @@ function Get-AfStorageChecks {
         }
         Apply = {
             param($inv, $detected, $tx)
-            if (-not $inv.Device -or $inv.Device.IsLaptop) { return }
+            if (-not ($inv.Device -and $inv.Device.IsDesktop)) { return }
             Set-AfHibernationType -Tx $tx -Type Reduced | Out-Null
         }
     }

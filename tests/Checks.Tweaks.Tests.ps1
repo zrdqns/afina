@@ -10,7 +10,8 @@
     $script:sense = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'
     $script:otherUser = [pscustomobject]@{ Name = 'LOQ\Otro'; Sid = 'S-1-5-21-2'; ProfilePath = 'C:\Users\Otro'; IsSameAsProcess = $false; HkcuRoot = 'Registry::HKEY_USERS\S-1-5-21-2' }
     $script:lowDisk = [pscustomobject]@{ SystemDrive = 'C:'; FreeBytes = [long]10GB; FreeGB = 10; SizeGB = 476; MediaType = 'SSD'; BusType = 'NVMe'; TrimEnabled = $true; TempBytes = $null }
-    $script:desktop = [pscustomobject]@{ Manufacturer = 'ASUS'; Model = 'PRIME'; IsLaptop = $false; OnBattery = $false }
+    $script:desktop = [pscustomobject]@{ Manufacturer = 'ASUS'; Model = 'PRIME'; IsLaptop = $false; IsDesktop = $true; OnBattery = $false }
+    $script:unknown = [pscustomobject]@{ Manufacturer = 'ASUS'; Model = 'PRIME'; IsLaptop = $false; IsDesktop = $false; OnBattery = $false }
 }
 
 Describe 'startup.edge-background' {
@@ -62,6 +63,18 @@ Describe 'network.delivery-optimization' {
     It 'NotApplicable sin cmdlet o con la lectura fallida' {
         (Test-Check 'network.delivery-optimization' (New-AfFakeInventory -Override @{ DeliveryOptimization = @{ Available = $false; Mode = $null } })).Detection.State | Should -Be 'NotApplicable'
         (Test-Check 'network.delivery-optimization' (New-AfFakeInventory -Override @{ DeliveryOptimization = $null })).Detection.State | Should -Be 'NotApplicable'
+    }
+
+    It 'Info si el modo Internet lo fija MDM o el registro, no si es de Configuración' {
+        foreach ($case in @(@('MdmProvider', 'Info'), @('RegistryProvider', 'Info'), @('SettingsProvider', 'Improvable'), @('DefaultProvider', 'Improvable'))) {
+            $inv = New-AfFakeInventory -Override @{ DeliveryOptimization = @{ Available = $true; Mode = 'Internet'; Provider = $case[0] } }
+            (Test-Check 'network.delivery-optimization' $inv).Detection.State | Should -Be $case[1] -Because $case[0]
+        }
+    }
+
+    It 'con el modo ya en Lan no mira el proveedor' {
+        $inv = New-AfFakeInventory -Override @{ DeliveryOptimization = @{ Available = $true; Mode = 'Lan'; Provider = 'MdmProvider' } }
+        (Test-Check 'network.delivery-optimization' $inv).Detection.State | Should -Be 'Ok'
     }
 
     It 'Apply pasa a Lan' {
@@ -119,6 +132,11 @@ Describe 'gaming.visual-effects' {
         $r = Test-Check 'gaming.visual-effects' (New-Weak 8 'SSD' $true 0)
         $r.Detection.State | Should -Be 'Improvable'
         $r.Preselected | Should -BeTrue
+    }
+
+    It 'NotApplicable con 0 GB de RAM leídos y SSD; con HDD sigue siendo débil' {
+        (Test-Check 'gaming.visual-effects' (New-Weak 0 'SSD' $true 1)).Detection.State | Should -Be 'NotApplicable'
+        (Test-Check 'gaming.visual-effects' (New-Weak 0 'HDD' $true 1)).Detection.State | Should -Be 'Improvable'
     }
 
     It 'Improvable en HDD con 16 GB y transparencia encendida' {
@@ -189,6 +207,21 @@ Describe 'storage.hibernation' {
         $r.Detection.State | Should -Be 'Info'
         $r.Detection.Current | Should -Match 'GB'
         $r.Preselected | Should -BeFalse
+    }
+
+    It 'con tipo de equipo desconocido o sin datos: Info y Apply no hace nada' {
+        Mock Set-AfHibernationType { $true }
+        foreach ($device in $script:unknown, $null) {
+            $inv = New-AfFakeInventory -Override @{ Hibernation = @{ Enabled = $true; FileBytes = [long]12GB; RamBytes = [long]32GB; Type = 'Full' }; Storage = $script:lowDisk; Device = $device }
+            (Test-Check 'storage.hibernation' $inv).Detection.State | Should -Be 'Info'
+            & (Get-Apply 'storage.hibernation') $inv $null (New-AfTransaction -User $inv.User)
+        }
+        Should -Invoke Set-AfHibernationType -Times 0 -Exactly
+    }
+
+    It 'NotApplicable con un disco sin leer (0 GB de 0 GB)' {
+        $empty = $script:lowDisk.PSObject.Copy(); $empty.FreeGB = 0; $empty.SizeGB = 0
+        (Test-Check 'storage.hibernation' (New-Hib 'Full' $empty $script:desktop)).Detection.State | Should -Be 'NotApplicable'
     }
 
     It 'NotApplicable con Reduced, Custom o lectura fallida' {

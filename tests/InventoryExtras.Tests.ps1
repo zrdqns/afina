@@ -36,6 +36,7 @@ Describe 'Test-AfLowDisk' {
         @{ Free = 19; Size = 476; Expected = $true }
         @{ Free = 20; Size = 100; Expected = $false }
         @{ Free = 25; Size = 200; Expected = $true }
+        @{ Free = 0; Size = 0; Expected = $false }
     ) {
         Test-AfLowDisk -Storage ([pscustomobject]@{ FreeGB = $Free; SizeGB = $Size }) | Should -Be $Expected
     }
@@ -74,6 +75,10 @@ Describe 'Get-AfDeliveryOptimizationInfo' {
         $d = Get-AfDeliveryOptimizationInfo
         $d.Available | Should -BeTrue
         $d.Mode | Should -Be 'Lan'
+    }
+    It 'devuelve el proveedor del modo' {
+        Mock Get-DOConfig { [pscustomobject]@{ DownloadMode = 'Internet'; DownloadModeProvider = 'MdmProvider' } }
+        (Get-AfDeliveryOptimizationInfo).Provider | Should -Be 'MdmProvider'
     }
 }
 

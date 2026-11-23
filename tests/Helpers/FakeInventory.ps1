@@ -7,7 +7,7 @@ function New-AfFakeInventory {
     $inv = [ordered]@{
         User = [pscustomobject]@{ Name = 'LOQ\Cliente'; Sid = 'S-1-5-21-1'; ProfilePath = 'C:\Users\Cliente'; IsSameAsProcess = $true; HkcuRoot = 'HKCU:' }
         Os = [pscustomobject]@{ Caption = 'Microsoft Windows 11 Home'; Build = 26100; Edition = 'Core'; IsWin11 = $true; IsInsider = $false; Ubr = 7019 }
-        Device = [pscustomobject]@{ Manufacturer = 'LENOVO'; Model = 'LOQ 15'; IsLaptop = $true; OnBattery = $false }
+        Device = [pscustomobject]@{ Manufacturer = 'LENOVO'; Model = 'LOQ 15'; IsLaptop = $true; IsDesktop = $false; OnBattery = $false }
         Cpu = [pscustomobject]@{ Name = 'AMD Ryzen 7 7435HS'; Cores = 8; Threads = 16 }
         Gpus = @(
             [pscustomobject]@{ Name = 'AMD Radeon(TM) Graphics'; Vendor = 'AMD'; IsDiscrete = $false; HasDriver = $true; DriverVersion = '31.0.24027.1012'; DriverDate = (Get-Date).AddDays(-60); WddmVersion = 3.1 }

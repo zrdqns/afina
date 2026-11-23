@@ -132,6 +132,29 @@ Describe 'Set-AfRegistryValue y Restore-AfRegistryValue' {
         (Get-AfRegistryState -Path $script:key -Name 'Buena').Exists | Should -BeFalse
     }
 
+    It 'Undo-AfRecords avisa una vez al shell al deshacer la transparencia, y no con otro registro' {
+        Mock Restore-AfRegistryValue { }
+        Mock Send-AfShellNotify { }
+        $theme = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+        $records = @(
+            [pscustomobject]@{ Kind = 'RegistryValue'; Path = $theme; Name = 'EnableTransparency' }
+            [pscustomobject]@{ Kind = 'RegistryValue'; Path = $theme; Name = 'EnableTransparency' }
+        )
+        Undo-AfRecords -Records $records -User $script:me | Out-Null
+        Should -Invoke Send-AfShellNotify -Times 1 -Exactly -ParameterFilter { $Area -eq 'ImmersiveColorSet' }
+        $other = @([pscustomobject]@{ Kind = 'RegistryValue'; Path = $theme; Name = 'AppsUseLightTheme' }, [pscustomobject]@{ Kind = 'RegistryValue'; Path = 'HKCU:\Software\AfinaTest'; Name = 'EnableTransparency' })
+        Undo-AfRecords -Records $other -User $script:me | Out-Null
+        Should -Invoke Send-AfShellNotify -Times 1 -Exactly
+    }
+
+    It 'Undo-AfRecords no avisa al shell si el registro no se pudo deshacer' {
+        Mock Restore-AfRegistryValue { throw (New-AfApplyError -Reason 'bloqueada') }
+        Mock Send-AfShellNotify { }
+        $record = [pscustomobject]@{ Kind = 'RegistryValue'; Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'; Name = 'EnableTransparency' }
+        Undo-AfRecords -Records @($record) -User $script:me | Out-Null
+        Should -Invoke Send-AfShellNotify -Times 0 -Exactly
+    }
+
     It 'Undo-AfRecords salta los registros Action' {
         Add-AfTxRecord -Tx $script:tx -Record @{ Kind = 'Action'; Name = 'Temporales'; Detail = 'Se liberaron 1,0 GB' }
         $result = Undo-AfRecords -Records @($script:tx.Records) -User $script:me

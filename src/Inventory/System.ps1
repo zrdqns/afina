@@ -34,7 +34,14 @@ function Get-AfDeviceInfo {
     $system = Get-CimInstance -ClassName Win32_ComputerSystem -OperationTimeoutSec 15
     $product = Get-CimInstance -ClassName Win32_ComputerSystemProduct -OperationTimeoutSec 15
     $enclosure = Get-CimInstance -ClassName Win32_SystemEnclosure -OperationTimeoutSec 15 | Select-Object -First 1
-    $battery = @(Get-CimInstance -ClassName Win32_Battery -OperationTimeoutSec 15)
+    $batteryRead = $true
+    $battery = @()
+    try {
+        $battery = @(Get-CimInstance -ClassName Win32_Battery -OperationTimeoutSec 15 -ErrorAction Stop)
+    } catch {
+        $batteryRead = $false
+    }
+    $desktopChassis = @(3, 4, 5, 6, 7, 13, 15, 16, 24, 35)
 
     $manufacturer = ([string]$system.Manufacturer).Trim()
     # Lenovo pone el tipo de máquina (83DV) en Model y el nombre comercial en Version.
@@ -45,6 +52,8 @@ function Get-AfDeviceInfo {
         Manufacturer = $manufacturer
         Model = $model
         IsLaptop = $hasLaptopChassis -or $battery.Count -gt 0
+        # Solo con chasis de escritorio conocido, sin chasis de laptop y con la lectura de baterías hecha y vacía.
+        IsDesktop = (-not $hasLaptopChassis) -and $batteryRead -and $battery.Count -eq 0 -and @($enclosure.ChassisTypes | Where-Object { $desktopChassis -contains [int]$_ }).Count -gt 0
         OnBattery = $battery.Count -gt 0 -and [int]$battery[0].BatteryStatus -eq 1
     }
 }

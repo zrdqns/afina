@@ -14,7 +14,7 @@ function Get-AfWindowedOptimizationsValue {
 # PC débil: 8 GB de RAM o menos, o Windows en un disco HDD.
 function Test-AfWeakPc {
     param([Parameter(Mandatory)]$Inventory)
-    ($Inventory.Memory -and $null -ne $Inventory.Memory.TotalGB -and [double]$Inventory.Memory.TotalGB -le 8) -or
+    ($Inventory.Memory -and [double]$Inventory.Memory.TotalGB -gt 0 -and [double]$Inventory.Memory.TotalGB -le 8) -or
     ($Inventory.Storage -and $Inventory.Storage.MediaType -eq 'HDD')
 }
 
@@ -166,7 +166,7 @@ function Get-AfGamingChecks {
         Title = (T 'Menos efectos visuales en esta PC')
         Why = (T 'Con poca memoria o con disco HDD, las animaciones y la transparencia le quitan fluidez a Windows.')
         Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $false
-        Source = (T 'Microsoft: efectos visuales de Windows'); SourceUrl = 'https://support.microsoft.com/en-us/windows/windows-accessibility-settings-visual-effects'; Undo = (T 'Se puede deshacer')
+        Source = (T 'Microsoft: efectos visuales de Windows'); SourceUrl = 'https://support.microsoft.com/en-us/windows/experience/performance-optimization/tips-to-improve-pc-performance-in-windows'; Undo = (T 'Se puede deshacer')
         Reads = @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize|EnableTransparency')
         AppliesTo = { param($inv) $inv.User -and $inv.User.IsSameAsProcess -and $inv.Effects -and (Test-AfWeakPc -Inventory $inv) }
         Detect = {

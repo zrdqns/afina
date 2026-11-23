@@ -256,6 +256,16 @@ Describe 'Hibernación' {
     }
 }
 
+Describe 'Get-AfRecordNotifyArea' {
+    It 'da ImmersiveColorSet solo para EnableTransparency de Personalize' {
+        $theme = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+        Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'RegistryValue'; Path = $theme; Name = 'EnableTransparency' }) | Should -Be 'ImmersiveColorSet'
+        Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'RegistryValue'; Path = $theme; Name = 'Otro' }) | Should -BeNullOrEmpty
+        Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'RegistryValue'; Path = 'HKCU:\Software\X'; Name = 'EnableTransparency' }) | Should -BeNullOrEmpty
+        Get-AfRecordNotifyArea -Record ([pscustomobject]@{ Kind = 'SystemParameter'; Name = 'Mouse' }) | Should -BeNullOrEmpty
+    }
+}
+
 Describe 'Add-AfUnverifiedNote' {
     It 'solo agrega fuera de la build probada' {
         Get-AfTestedBuild | Should -Be 26300

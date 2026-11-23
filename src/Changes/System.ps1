@@ -34,6 +34,13 @@ function Send-AfShellNotify {
     }
 }
 
+# Área que hay que avisar al shell tras restaurar un registro; $null si no hace falta.
+function Get-AfRecordNotifyArea {
+    param([Parameter(Mandatory)]$Record)
+    if ($Record.Kind -eq 'RegistryValue' -and $Record.Name -eq 'EnableTransparency' -and [string]$Record.Path -like '*\Themes\Personalize') { return 'ImmersiveColorSet' }
+    $null
+}
+
 function ConvertTo-AfSystemParameterValue {
     param([string]$Name, $Value)
     if ($Name -eq 'Mouse') { , [int[]]@($Value) } else { [bool]$Value }

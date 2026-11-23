@@ -6,7 +6,9 @@ function Test-AfLowDisk {
     if (-not $Storage) { return $false }
     $free = [double]$Storage.FreeGB
     $size = [double]$Storage.SizeGB
-    $free -lt 20 -or ($size -gt 0 -and ($free / $size) -lt 0.15)
+    # Un disco sin leer (tamaño 0) no es un disco lleno.
+    if ($size -le 0) { return $false }
+    $free -lt 20 -or ($free / $size) -lt 0.15
 }
 
 function Get-AfPagefileInfo {
@@ -22,10 +24,13 @@ function Get-AfPagefileInfo {
 
 function Get-AfDeliveryOptimizationInfo {
     try {
-        @{ Available = $true; Mode = (Get-AfDeliveryOptimizationMode) }
+        $mode = Get-AfDeliveryOptimizationMode
     } catch {
-        @{ Available = $false; Mode = $null }
+        return @{ Available = $false; Mode = $null; Provider = $null }
     }
+    # El proveedor (Settings, MDM, registro...) dice quién fijó el modo; si no se lee, queda en null.
+    $provider = try { [string](Get-DOConfig -ErrorAction Stop).DownloadModeProvider } catch { $null }
+    @{ Available = $true; Mode = $mode; Provider = $provider }
 }
 
 function Get-AfEdgeInfo {

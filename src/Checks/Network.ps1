@@ -100,6 +100,8 @@ function Get-AfNetworkChecks {
             if ($null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization|DODownloadMode']) { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
             if (-not $inv.DeliveryOptimization.Mode) { return New-AfDetection -State NotApplicable }
             if ([string]$inv.DeliveryOptimization.Mode -ne 'Internet') { return New-AfDetection -State Ok -Current (T 'Solo red local o sin compartir') }
+            # Con el modo Internet fijado por MDM o por el registro no se toca; con el modo ya en Lan no se mira el proveedor.
+            if ([string]$inv.DeliveryOptimization.Provider -in 'MdmProvider', 'RegistryProvider') { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
             New-AfDetection -State Improvable -Current (T 'Internet') -Target (T 'Red local') `
                 -What (T 'El modo de descarga pasa de Internet a Red local. Se puede cambiar en Configuración, Windows Update, Opciones avanzadas.')
         }
