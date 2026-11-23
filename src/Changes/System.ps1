@@ -147,7 +147,7 @@ function Get-AfHibernationInfo {
     $percent = [int](Get-AfRegistryValue -Path $script:AfPowerPath -Name 'HiberFileSizePercent')
     $file = Get-Item -LiteralPath (Join-Path $env:SystemDrive 'hiberfil.sys') -Force -ErrorAction SilentlyContinue
     $bytes = if ($file) { [long]$file.Length } else { [long]0 }
-    $ram = [long](Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).TotalPhysicalMemory
+    $ram = [long](Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop).TotalPhysicalMemory
     @{ Enabled = $enabled; FileBytes = $bytes; RamBytes = $ram; Type = (Get-AfHibernationType -FileBytes $bytes -RamBytes $ram -SizePercent $percent) }
 }
 

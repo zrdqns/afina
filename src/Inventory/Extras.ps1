@@ -10,8 +10,9 @@ function Test-AfLowDisk {
 }
 
 function Get-AfPagefileInfo {
-    $system = Get-CimInstance -ClassName Win32_ComputerSystem -OperationTimeoutSec 15
-    $files = @(Get-CimInstance -ClassName Win32_PageFileSetting -OperationTimeoutSec 15 -ErrorAction SilentlyContinue)
+    $system = Get-CimInstance -ClassName Win32_ComputerSystem -OperationTimeoutSec 15 -ErrorAction Stop
+    # Sin instancias es válido (paginación automática); un fallo de lectura lanza.
+    $files = @(Get-CimInstance -ClassName Win32_PageFileSetting -OperationTimeoutSec 15 -ErrorAction Stop)
     @{
         Automatic = [bool]$system.AutomaticManagedPagefile
         # MaximumSize = 0 significa que el sistema maneja el tamaño.

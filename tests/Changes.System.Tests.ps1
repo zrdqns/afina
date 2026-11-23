@@ -214,6 +214,12 @@ Describe 'Hibernación' {
         Get-AfHibernationType -FileBytes 0 -RamBytes $ram -SizePercent 0 | Should -BeNullOrEmpty
     }
 
+    It 'Get-AfHibernationInfo lanza si falla la lectura de la RAM' {
+        Mock Get-AfRegistryValue { 1 }
+        Mock Get-CimInstance { Write-Error 'falla a propósito' }
+        { Get-AfHibernationInfo } | Should -Throw
+    }
+
     Context 'Set-AfHibernationType' {
         BeforeEach {
             $script:hiber = 'Full'

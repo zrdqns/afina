@@ -37,6 +37,13 @@ Describe 'Get-AfInventory' {
         $inv.Registry['HKLM:\X|Y'] | Should -Be 1
     }
 
+    It 'si la lectura de paginación falla, la parte queda en $null y en Errors' {
+        Mock Get-AfPagefileInfo { throw 'falla a propósito' }
+        $inv = Get-AfInventory
+        $inv.Pagefile | Should -BeNullOrEmpty
+        $inv.Errors | Should -Contain 'Pagefile'
+    }
+
     It 'conserva como lista una parte con un solo elemento o vacía' {
         $inv = Get-AfInventory
         , $inv.Gpus | Should -BeOfType [object[]]

@@ -87,6 +87,28 @@ Describe 'Get-AfPagefileInfo' {
     }
 }
 
+Describe 'Get-AfPagefileInfo con fallos de lectura' {
+    It 'lanza si falla Win32_ComputerSystem' {
+        Mock Get-CimInstance { Write-Error 'falla a propósito' } -ParameterFilter { $ClassName -eq 'Win32_ComputerSystem' }
+        Mock Get-CimInstance { @() } -ParameterFilter { $ClassName -eq 'Win32_PageFileSetting' }
+        # Como en la app: los errores no terminantes solo paran si la llamada pide Stop.
+        $ErrorActionPreference = 'Continue'
+        { Get-AfPagefileInfo } | Should -Throw
+    }
+    It 'lanza si falla Win32_PageFileSetting' {
+        Mock Get-CimInstance { [pscustomobject]@{ AutomaticManagedPagefile = $true } } -ParameterFilter { $ClassName -eq 'Win32_ComputerSystem' }
+        Mock Get-CimInstance { Write-Error 'falla a propósito' } -ParameterFilter { $ClassName -eq 'Win32_PageFileSetting' }
+        { Get-AfPagefileInfo } | Should -Throw
+    }
+    It 'sin instancias de Win32_PageFileSetting no es un fallo' {
+        Mock Get-CimInstance { [pscustomobject]@{ AutomaticManagedPagefile = $true } } -ParameterFilter { $ClassName -eq 'Win32_ComputerSystem' }
+        Mock Get-CimInstance { @() } -ParameterFilter { $ClassName -eq 'Win32_PageFileSetting' }
+        $p = Get-AfPagefileInfo
+        $p.Automatic | Should -BeTrue
+        @($p.Files).Count | Should -Be 0
+    }
+}
+
 Describe 'Get-AfEffectsInfo' {
     It 'lee la animación de ventanas' {
         Mock Get-AfSystemParameterValue { $true }
