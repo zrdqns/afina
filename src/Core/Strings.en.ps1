@@ -632,6 +632,7 @@ Sensor de almacenamiento activado==>Storage Sense on
 Borra temporales solo cuando queda poco espacio, para que Windows no se quede sin lugar para actualizarse.==>Deletes temporary files only when space is low, so Windows does not run out of room to update.
 Microsoft: Sensor de almacenamiento==>Microsoft: Storage Sense
 Recall apagado==>Recall off
+Borra las capturas guardadas de Recall y no se recuperan.==>Deletes the saved Recall snapshots and they can't be recovered.
 Recall guarda capturas de lo que haces en pantalla para poder buscarlas después.==>Recall saves snapshots of what you do on screen so you can search them later.
 Microsoft: administrar Recall==>Microsoft: manage Recall
 Se deshace el ajuste; las capturas borradas no vuelven==>The setting is undone; deleted snapshots don't come back

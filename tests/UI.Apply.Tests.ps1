@@ -44,6 +44,13 @@ Describe 'Textos de aplicar' {
         Get-AfConfirmText -Count 3 -Advanced 2 -Network $true -Restore create | Should -Be 'Se aplicarán 3 cambios. 2 cambios bajan la seguridad de Windows. La red se cortará unos segundos. Se crea un punto de restauración antes.'
     }
 
+    It 'la confirmación de Recall avisa que se borran las capturas y no dice que baja la seguridad' {
+        $only = Get-AfConfirmText -Count 1 -DeletesRecall $true -Restore create
+        $only | Should -Be 'Se aplicará 1 cambio. Borra las capturas guardadas de Recall y no se recuperan. Se crea un punto de restauración antes.'
+        $only | Should -Not -BeLike '*baja la seguridad*'
+        Get-AfConfirmText -Count 2 -Advanced 1 -DeletesRecall $true -Restore create | Should -Be 'Se aplicarán 2 cambios. 1 cambio baja la seguridad de Windows. Borra las capturas guardadas de Recall y no se recuperan. Se crea un punto de restauración antes.'
+    }
+
     It 'Get-AfDoneText da los resúmenes exactos' {
         (Get-AfDoneText -Applied 7 -Reboot 1 -Manual 2).Text | Should -Be '7 cambios aplicados. Reinicia para terminar 1. Quedan 2 para hacer a mano.'
         (Get-AfDoneText -Applied 6 -Failed 1).Text | Should -Be '6 cambios aplicados y 1 no se pudo.'

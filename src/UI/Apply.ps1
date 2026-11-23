@@ -54,11 +54,12 @@ function Set-AfFooter {
 }
 
 function Get-AfConfirmText {
-    param([int]$Count, [bool]$Network = $false, [bool]$Display = $false, [int]$Reboot = 0, [ValidateSet('create', 'enable', 'off', 'blocked')][string]$Restore = 'create', [bool]$Updates = $false, [int]$Advanced = 0)
+    param([int]$Count, [bool]$Network = $false, [bool]$Display = $false, [int]$Reboot = 0, [ValidateSet('create', 'enable', 'off', 'blocked')][string]$Restore = 'create', [bool]$Updates = $false, [int]$Advanced = 0, [bool]$DeletesRecall = $false)
     $parts = @()
     $parts += if ($Count -eq 1) { (T 'Se aplicará 1 cambio.') } else { (T 'Se aplicarán {0} cambios.') -f $Count }
     if ($Updates) { $parts += (T 'Las actualizaciones pueden tardar varios minutos.') }
     if ($Advanced -eq 1) { $parts += (T '1 cambio baja la seguridad de Windows.') } elseif ($Advanced -gt 1) { $parts += (T '{0} cambios bajan la seguridad de Windows.') -f $Advanced }
+    if ($DeletesRecall) { $parts += (T 'Borra las capturas guardadas de Recall y no se recuperan.') }
     if ($Display) { $parts += (T 'La pantalla cambia y pide confirmar.') }
     if ($Network) { $parts += (T 'La red se cortará unos segundos.') }
     if ($Reboot -gt 0) { $parts += (T 'Al final pide reiniciar.') }
@@ -191,7 +192,8 @@ function Enter-AfConfirm {
         Display = @($selected | Where-Object { $_.Check.Id -eq 'display.refresh' }).Count -gt 0
         Reboot = @($selected | Where-Object { $_.Check.NeedsReboot }).Count
         Updates = @($selected | Where-Object { $_.Check.Id -like 'updates.*' }).Count -gt 0
-        Advanced = @($selected | Where-Object { $_.Check.Risk -eq 'Advanced' }).Count
+        Advanced = @($selected | Where-Object { $_.Check.Risk -eq 'Advanced' -and $_.Check.Id -ne 'cleanup.recall' }).Count
+        DeletesRecall = @($selected | Where-Object { $_.Check.Id -eq 'cleanup.recall' }).Count -gt 0
     }
     $s.Phase = 'confirm'
     $Window.FindName('Groups').IsHitTestVisible = $false
@@ -205,7 +207,7 @@ function Get-AfConfirmNote {
     $c = $Window.Tag.Confirm
     $restore = $c.Restore
     if ($restore -eq 'enable' -and $Window.FindName('RestoreRow').Visibility -eq 'Visible' -and -not $Window.FindName('RestoreOption').IsChecked) { $restore = 'off' }
-    Get-AfConfirmText -Count $c.Count -Network $c.Network -Display $c.Display -Reboot $c.Reboot -Restore $restore -Updates ([bool]$c.Updates) -Advanced ([int]$c.Advanced)
+    Get-AfConfirmText -Count $c.Count -Network $c.Network -Display $c.Display -Reboot $c.Reboot -Restore $restore -Updates ([bool]$c.Updates) -Advanced ([int]$c.Advanced) -DeletesRecall ([bool]$c.DeletesRecall)
 }
 
 function Exit-AfConfirm {

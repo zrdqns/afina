@@ -204,6 +204,16 @@ Describe 'cleanup.widgets' {
         (Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional'); Apps = $script:withWidgets; Registry = @{ $script:dsh = 0 } }).State | Should -Be 'Ok'
     }
 
+    It 'en Windows 11 Home la directiva no cuenta' {
+        $d = Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Core'); Apps = $script:withWidgets; Registry = @{ $script:dsh = 0 } }
+        $d.State | Should -Be 'Info'
+    }
+
+    It 'en Windows 10 la directiva no cuenta' {
+        $d = Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional' 19045); Apps = $script:withWidgets; Registry = @{ $script:dsh = 0 } }
+        $d.State | Should -Be 'Info'
+    }
+
     It 'sin el paquete de Widgets en Windows 11 no aplica' {
         $d = Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional'); Apps = [pscustomobject]@{ Promo = @(); Copilot = $null; HasWidgets = $false } }
         $d.State | Should -Be 'NotApplicable'
@@ -305,6 +315,15 @@ Describe 'cleanup.recall' {
         Mock Get-AfRecallState { 'Enabled' }
         (Invoke-Recall (New-RecallInv -Registry @{ $script:aiPolicy = 1 })).State | Should -Be 'Ok'
         Should -Invoke Get-AfRecallState -Times 0 -Exactly
+    }
+
+    It 'en Home la directiva no se respeta: se sigue a la característica' {
+        Mock Get-AfRecallState { 'Enabled' }
+        $d = Invoke-Recall (New-RecallInv -Edition 'Core' -Registry @{ $script:aiPolicy = 1 })
+        $d.State | Should -Be 'Info'
+        Should -Invoke Get-AfRecallState -Times 1 -Exactly
+        Mock Get-AfRecallState { 'Disabled' }
+        (Invoke-Recall (New-RecallInv -Edition 'Core' -Registry @{ $script:aiPolicy = 1 })).State | Should -Be 'Ok'
     }
 
     It 'sin los requisitos no aplica y no lee la característica' {

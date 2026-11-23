@@ -35,12 +35,13 @@ function Get-AfOptionalChecks {
         Detect = { param($inv) New-AfDetection -State Info -Current (T 'Comprobando Recall…') -Data @{ Async = $true } }
         AsyncDetect = {
             param($inv)
-            # Con la directiva puesta no hace falta la lectura lenta.
-            if ($inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI|DisableAIDataAnalysis'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Apagado') }
+            $policyEdition = Test-AfPolicyEdition -Os $inv.Os
+            # Con la directiva puesta no hace falta la lectura lenta; en Home no se respeta, así que no cuenta.
+            if ($policyEdition -and $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI|DisableAIDataAnalysis'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Apagado') }
             try { $state = Get-AfRecallState } catch { return New-AfDetection -State NotApplicable -Note (T 'No se pudo leer el estado de Recall') }
             if ($state -eq 'Absent') { return New-AfDetection -State NotApplicable }
             if ($state -eq 'Disabled') { return New-AfDetection -State Ok -Current (T 'Apagado') }
-            if (-not (Test-AfPolicyEdition -Os $inv.Os)) {
+            if (-not $policyEdition) {
                 return New-AfDetection -State Info -Current (T 'Activo') -Steps @(
                     (T 'Abre Configuración > Privacidad y seguridad > Recall y capturas.')
                     (T 'Apaga Guardar capturas.')
@@ -212,7 +213,6 @@ function Get-AfOptionalChecks {
             param($inv)
             $win11 = [bool]$inv.Os.IsWin11
             if ($win11 -and -not $inv.Apps.HasWidgets) { return New-AfDetection -State NotApplicable }
-            if ($inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests'] -eq 0) { return New-AfDetection -State Ok -Current (T 'Apagados') }
             if (-not $win11) {
                 if ($inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds|ShellFeedsTaskbarViewMode'] -eq 2) { return New-AfDetection -State Ok -Current (T 'Apagados') }
                 return New-AfDetection -State Info -Current (T 'Activos') -Steps @(
@@ -221,6 +221,8 @@ function Get-AfOptionalChecks {
                 )
             }
             if (Test-AfPolicyEdition -Os $inv.Os) {
+                # La directiva solo se respeta en Windows 11 Pro y superiores.
+                if ($inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests'] -eq 0) { return New-AfDetection -State Ok -Current (T 'Apagados') }
                 return New-AfDetection -State Improvable -Current (T 'Activos') -Target (T 'Apagados') -Note (T 'Pide reiniciar') `
                     -What (T 'Se apagan los widgets con la directiva de Windows. Pide reiniciar.')
             }
