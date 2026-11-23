@@ -545,6 +545,8 @@ la hibernación tiene un tamaño personalizado==>hibernation has a custom size
 Windows no aceptó el tipo de hibernación==>Windows didn't accept the hibernation type
 falta espacio en el disco para volver a la hibernación completa==>not enough disk space to go back to full hibernation
 Escrito, comprueba que se vea el cambio==>Written, check that the change shows
+Windows tiene un modo de Optimización de entrega que Afina no sabe volver a poner==>Windows uses a Delivery Optimization mode that Afina can't set back
+Windows no desactivó el archivo de paginación automático==>Windows didn't turn off the automatic page file
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }

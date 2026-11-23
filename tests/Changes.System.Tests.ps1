@@ -100,6 +100,25 @@ Describe 'Set-AfDeliveryOptimizationMode' {
         { Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan } | Should -Throw
     }
 
+    It 'si al deshacer el modo no vuelve, falla y conserva el registro' {
+        $tx = New-AfTransaction -User $script:user
+        Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan | Out-Null
+        Mock Invoke-AfSetDeliveryOptimizationMode { }
+        $result = Undo-AfRecords -Records @($tx.Records) -User $script:user
+        $result.Failed.Count | Should -Be 1
+        $result.Reason | Should -Not -BeNullOrEmpty
+    }
+
+    It 'no escribe si el modo actual no se sabe volver a poner' {
+        foreach ($mode in 'Group', 'Simple', 'Bypass', '') {
+            $script:doMode = $mode
+            $tx = New-AfTransaction -User $script:user
+            { Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan } | Should -Throw
+            $tx.Records.Count | Should -Be 0
+        }
+        Should -Invoke Invoke-AfSetDeliveryOptimizationMode -Times 0 -Exactly
+    }
+
     It 'al deshacer con una directiva puesta avisa y conserva el registro' {
         $tx = New-AfTransaction -User $script:user
         Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan | Out-Null
@@ -156,6 +175,24 @@ Describe 'Set-AfPagefileAuto' {
         Test-AfRecordRestored -Record $tx.Records[0] -User $script:user | Should -BeTrue
     }
 
+    It 'si al deshacer el automático sigue activo, falla y conserva el registro' {
+        $tx = New-AfTransaction -User $script:user
+        Set-AfPagefileAuto -Tx $tx | Out-Null
+        Mock Set-CimInstance { }
+        $result = Undo-AfRecords -Records @($tx.Records) -User $script:user
+        $result.Failed.Count | Should -Be 1
+        $result.Reason | Should -Not -BeNullOrEmpty
+        Should -Invoke New-ItemProperty -Times 0 -Exactly
+    }
+
+    It 'si el PagingFiles original ya era automático, el indicador activo no es fallo' {
+        $script:pagingState = [pscustomobject]@{ KeyExists = $true; Exists = $true; Type = 'String'; Value = '?:\pagefile.sys' }
+        $tx = New-AfTransaction -User $script:user
+        Set-AfPagefileAuto -Tx $tx | Out-Null
+        Mock Set-CimInstance { }
+        (Undo-AfRecords -Records @($tx.Records) -User $script:user).Failed.Count | Should -Be 0
+    }
+
     It 'conserva MultiString al deshacer' {
         $script:pagingState = [pscustomobject]@{ KeyExists = $true; Exists = $true; Type = 'MultiString'; Value = [string[]]@('C:\pagefile.sys 0 0') }
         $tx = New-AfTransaction -User $script:user
@@ -172,6 +209,8 @@ Describe 'Hibernación' {
         Get-AfHibernationType -FileBytes ([long]($ram * 0.4)) -RamBytes $ram -SizePercent 40 | Should -Be 'Full'
         Get-AfHibernationType -FileBytes ([long]($ram * 0.2)) -RamBytes $ram -SizePercent 0 | Should -Be 'Reduced'
         Get-AfHibernationType -FileBytes ([long]($ram * 0.4)) -RamBytes $ram -SizePercent 60 | Should -Be 'Custom'
+        Get-AfHibernationType -FileBytes ([long]($ram * 0.2)) -RamBytes $ram -SizePercent 20 | Should -Be 'Reduced'
+        Get-AfHibernationType -FileBytes ([long]($ram * 0.4)) -RamBytes $ram -SizePercent 20 | Should -Be 'Full'
         Get-AfHibernationType -FileBytes 0 -RamBytes $ram -SizePercent 0 | Should -BeNullOrEmpty
     }
 

@@ -57,19 +57,21 @@ function Get-AfSystemParameterState {
 # --- Optimización de entrega ---
 
 function Get-AfDeliveryOptimizationMode {
-    [string](Get-DOConfig).DownloadMode
+    [string](Get-DOConfig -ErrorAction Stop).DownloadMode
 }
 
 # Envoltorio: el cmdlet usa un enum que Pester no puede copiar al sustituirlo.
 function Invoke-AfSetDeliveryOptimizationMode {
     param([Parameter(Mandatory)][string]$Mode)
-    Set-DODownloadMode -downloadMode $Mode
+    Set-DODownloadMode -downloadMode $Mode -ErrorAction Stop
 }
 
 function Set-AfDeliveryOptimizationMode {
     param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][ValidateSet('Lan', 'Internet', 'CdnOnly')][string]$Mode)
     $previous = Get-AfDeliveryOptimizationMode
     if ($previous -eq $Mode) { return $false }
+    # Set-DODownloadMode solo acepta estos tres: con otro modo actual no habría cómo deshacer.
+    if (@('Lan', 'Internet', 'CdnOnly') -notcontains $previous) { throw (New-AfApplyError -Reason (T 'Windows tiene un modo de Optimización de entrega que Afina no sabe volver a poner')) }
     Invoke-AfSetDeliveryOptimizationMode -Mode $Mode
     Add-AfTxRecord -Tx $Tx -Record @{ Kind = 'DeliveryOptimizationMode'; Previous = $previous; New = $Mode }
     if ((Get-AfDeliveryOptimizationMode) -ne $Mode) { throw (New-AfApplyError -Reason (T 'Windows no aceptó el modo de Optimización de entrega')) }
@@ -82,6 +84,7 @@ function Restore-AfDeliveryOptimizationMode {
         throw (New-AfApplyError -Reason (T 'una directiva fija el modo de Optimización de entrega; quítala para deshacerlo'))
     }
     Invoke-AfSetDeliveryOptimizationMode -Mode $Record.Previous
+    if ((Get-AfDeliveryOptimizationMode) -ne [string]$Record.Previous) { throw (New-AfApplyError -Reason (T 'Windows no aceptó el modo de Optimización de entrega')) }
 }
 
 function Get-AfDeliveryOptimizationModeState {
@@ -92,12 +95,12 @@ function Get-AfDeliveryOptimizationModeState {
 # --- Archivo de paginación automático ---
 
 function Get-AfPagefileAutomatic {
-    [bool](Get-CimInstance -ClassName Win32_ComputerSystem).AutomaticManagedPagefile
+    [bool](Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop).AutomaticManagedPagefile
 }
 
 function Set-AfPagefileAutomatic {
     param([Parameter(Mandatory)][bool]$Value)
-    Get-CimInstance -ClassName Win32_ComputerSystem | Set-CimInstance -Property @{ AutomaticManagedPagefile = $Value }
+    Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop | Set-CimInstance -Property @{ AutomaticManagedPagefile = $Value } -ErrorAction Stop
 }
 
 function Set-AfPagefileAuto {
@@ -116,6 +119,9 @@ function Set-AfPagefileAuto {
 function Restore-AfPagefileAuto {
     param([Parameter(Mandatory)]$Record, $User)
     Set-AfPagefileAutomatic -Value $false
+    # Si el original ya era el automático (?:\pagefile.sys), el indicador puede seguir activo sin que sea un fallo.
+    $wasAutomatic = $Record.Previous.Exists -and ((@($Record.Previous.Value) -join ' ') -match '^\?:\\pagefile\.sys')
+    if (-not $wasAutomatic -and (Get-AfPagefileAutomatic)) { throw (New-AfApplyError -Reason (T 'Windows no desactivó el archivo de paginación automático')) }
     # Windows reescribe PagingFiles al cambiar el modo: se vuelve a dejar el valor y el tipo originales.
     Restore-AfRegistryValue -Record $Record -User $User
 }
@@ -131,7 +137,7 @@ function Get-AfPagefileAutoState {
 function Get-AfHibernationType {
     param([Parameter(Mandatory)][long]$FileBytes, [Parameter(Mandatory)][long]$RamBytes, [Parameter(Mandatory)][int]$SizePercent)
     if ($FileBytes -le 0) { return $null }
-    if ($SizePercent -ne 0 -and $SizePercent -ne 40) { return 'Custom' }
+    if (@(0, 20, 40) -notcontains $SizePercent) { return 'Custom' }
     if ($RamBytes -gt 0 -and $FileBytes -ge ($RamBytes * 0.3)) { return 'Full' }
     'Reduced'
 }
