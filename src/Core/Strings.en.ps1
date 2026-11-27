@@ -631,6 +631,8 @@ El archivo baja de 40 % a 20 % de la RAM, cerca de la mitad. Se conserva el inic
 Sensor de almacenamiento activado==>Storage Sense on
 Borra temporales solo cuando queda poco espacio, para que Windows no se quede sin lugar para actualizarse.==>Deletes temporary files only when space is low, so Windows does not run out of room to update.
 Microsoft: Sensor de almacenamiento==>Microsoft: Storage Sense
+De fábrica==>Windows default
+Windows lo enciende solo cuando queda poco espacio==>Windows turns it on by itself when space runs low
 Recall apagado==>Recall off
 Borra las capturas guardadas de Recall y no se recuperan.==>Deletes the saved Recall snapshots and they can't be recovered.
 Recall guarda capturas de lo que haces en pantalla para poder buscarlas después.==>Recall saves snapshots of what you do on screen so you can search them later.

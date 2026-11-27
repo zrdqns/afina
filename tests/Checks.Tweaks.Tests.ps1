@@ -250,11 +250,27 @@ Describe 'storage.storage-sense' {
     It 'Improvable y marcado con el sensor apagado' {
         $r = Test-Check 'storage.storage-sense' (New-AfFakeInventory -Override @{ Registry = @{ "$($script:sense)|01" = 0 } })
         $r.Detection.State | Should -Be 'Improvable'
+        $r.Detection.Current | Should -Be (T 'Apagado')
         $r.Preselected | Should -BeTrue
     }
 
     It 'Ok con el sensor encendido' {
-        (Test-Check 'storage.storage-sense' (New-AfFakeInventory -Override @{ Registry = @{ "$($script:sense)|01" = 1 } })).Detection.State | Should -Be 'Ok'
+        $r = Test-Check 'storage.storage-sense' (New-AfFakeInventory -Override @{ Registry = @{ "$($script:sense)|01" = 1 } })
+        $r.Detection.State | Should -Be 'Ok'
+        $r.Detection.Current | Should -Be (T 'Activado')
+    }
+
+    It 'Ok de fábrica sin la clave 01, con la nota de que Windows lo enciende solo' {
+        $r = Test-Check 'storage.storage-sense' (New-AfFakeInventory)
+        $r.Detection.State | Should -Be 'Ok'
+        $r.Detection.Current | Should -Be (T 'De fábrica')
+        $r.Detection.Note | Should -Be (T 'Windows lo enciende solo cuando queda poco espacio')
+        $r.Preselected | Should -BeFalse
+    }
+
+    It 'Info con directiva aunque falte la clave 01' {
+        $inv = New-AfFakeInventory -Override @{ Registry = @{ 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\StorageSense|AllowStorageSenseGlobal' = 1 } }
+        (Test-Check 'storage.storage-sense' $inv).Detection.State | Should -Be 'Info'
     }
 
     It 'Info con directiva' {

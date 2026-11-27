@@ -30,7 +30,7 @@
 Describe 'Línea de internet (irm | iex)' {
     It 'irm entrega el build intacto como texto UTF-8 (raw de GitHub)' {
         $text = Get-AfServedText -ContentType 'text/plain; charset=utf-8'
-        $text.Contains('Afina 0.4.0: análisis y optimización de Windows') | Should -BeTrue
+        $text.Contains('Afina 0.5.0: análisis y optimización de Windows') | Should -BeTrue
         { [scriptblock]::Create($text) } | Should -Not -Throw
     }
 

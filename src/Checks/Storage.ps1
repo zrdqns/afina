@@ -88,7 +88,10 @@ function Get-AfStorageChecks {
         Detect = {
             param($inv)
             if ($null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\StorageSense|AllowStorageSenseGlobal']) { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
-            if ($inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy|01'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Activado') }
+            $enabled = $inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy|01']
+            # Sin la clave, el usuario nunca lo tocó: Windows lo enciende solo cuando falta espacio (Microsoft Learn y soporte).
+            if ($null -eq $enabled) { return New-AfDetection -State Ok -Current (T 'De fábrica') -Note (T 'Windows lo enciende solo cuando queda poco espacio') }
+            if ($enabled -eq 1) { return New-AfDetection -State Ok -Current (T 'Activado') }
             New-AfDetection -State Improvable -Current (T 'Apagado') -Target (T 'Activado') `
                 -What (T 'Corre solo con poco espacio libre y solo sobre temporales. No toca la Papelera ni Descargas.')
         }

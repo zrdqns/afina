@@ -1,1 +1,1 @@
-﻿function Get-AfVersion { '0.4.0' }
+﻿function Get-AfVersion { '0.5.0' }

@@ -8,8 +8,11 @@ Describe 'Get-AfRelaunchArguments' {
         $a[0..4] | Should -Be @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '"D:\Mis herramientas\Afina.ps1"')
     }
 
-    It 'nunca arma una línea que descargue código (Defender la bloquea como malware)' {
-        (Get-AfRelaunchArguments -ScriptPath 'C:\A.ps1') -join ' ' | Should -Not -Match 'irm|iex|-Command'
+    # La lista se compara entera: así no hace falta nombrar los comandos que el antivirus toma por malware.
+    It 'relanza solo desde el archivo, sin nada más en la línea' {
+        $a = @(Get-AfRelaunchArguments -ScriptPath 'C:\A.ps1')
+        $a.Count | Should -Be 5
+        $a | Should -Be @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '"C:\A.ps1"')
     }
 
     It 'pasa los parámetros extra al final' {

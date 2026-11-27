@@ -10,8 +10,17 @@ function Save-AfSession {
     # Se escribe aparte y se reemplaza: un corte a mitad de escritura no deja el respaldo dañado.
     $temporary = $Session.Path + '.tmp'
     [System.IO.File]::WriteAllText($temporary, $json, (New-Object System.Text.UTF8Encoding($false)))
-    # [NullString]::Value: un $null de PowerShell llegaría a .NET como "" y Replace lo rechaza como ruta.
-    if ([System.IO.File]::Exists($Session.Path)) { [System.IO.File]::Replace($temporary, $Session.Path, [NullString]::Value) } else { [System.IO.File]::Move($temporary, $Session.Path) }
+    # Un antivirus o el indexador pueden tener el respaldo abierto un instante: hasta 3 intentos, solo ante IOException.
+    for ($attempt = 1; ; $attempt++) {
+        try {
+            # [NullString]::Value: un $null de PowerShell llegaría a .NET como "" y Replace lo rechaza como ruta.
+            if ([System.IO.File]::Exists($Session.Path)) { [System.IO.File]::Replace($temporary, $Session.Path, [NullString]::Value) } else { [System.IO.File]::Move($temporary, $Session.Path) }
+            return
+        } catch [System.IO.IOException] {
+            if ($attempt -ge 3) { throw }
+            Start-Sleep -Milliseconds 200
+        }
+    }
 }
 
 # Se escribe enseguida: si no se puede guardar el respaldo, no se aplica nada.
