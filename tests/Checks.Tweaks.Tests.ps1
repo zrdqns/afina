@@ -43,10 +43,25 @@ Describe 'startup.edge-background' {
 }
 
 Describe 'network.delivery-optimization' {
-    It 'Improvable y marcado en modo Internet' {
-        $r = Test-Check 'network.delivery-optimization' (New-AfFakeInventory -Override @{ DeliveryOptimization = @{ Available = $true; Mode = 'Internet' } })
-        $r.Detection.State | Should -Be 'Improvable'
-        $r.Preselected | Should -BeTrue
+    It 'es a mano: Kind Manual, sin Apply y sin marcar' {
+        $check = @(Get-AfCatalog) | Where-Object { $_.Id -eq 'network.delivery-optimization' }
+        $check.Kind | Should -Be 'Manual'
+        $check.ContainsKey('Apply') | Should -BeFalse
+        $check.Preselect | Should -BeFalse
+        $check.Undo | Should -Be 'No cambia nada'
+    }
+
+    It 'Manual con pasos de Configuración en modo Internet, según la versión de Windows' {
+        $win11 = [pscustomobject]@{ Caption = 'Microsoft Windows 11'; Build = 26300; Edition = 'Professional'; IsWin11 = $true; IsInsider = $false; Ubr = 1000 }
+        $r = Test-Check 'network.delivery-optimization' (New-AfFakeInventory -Override @{ Os = $win11; DeliveryOptimization = @{ Available = $true; Mode = 'Internet' } })
+        $r.Detection.State | Should -Be 'Manual'
+        $r.Preselected | Should -BeFalse
+        $r.Detection.Steps[0] | Should -Be 'Abre Configuración > Windows Update > Opciones avanzadas > Optimización de distribución.'
+        $r.Detection.Steps[1] | Should -Be 'Elige "Dispositivos de mi red local" o apaga "Permitir descargas de otros dispositivos".'
+        $win10 = [pscustomobject]@{ Caption = 'Microsoft Windows 10'; Build = 19045; Edition = 'Professional'; IsWin11 = $false; IsInsider = $false; Ubr = 1000 }
+        $d = (Test-Check 'network.delivery-optimization' (New-AfFakeInventory -Override @{ Os = $win10; DeliveryOptimization = @{ Available = $true; Mode = 'Internet' } })).Detection
+        $d.Steps[0] | Should -Be 'Abre Configuración > Actualización y seguridad > Optimización de distribución.'
+        (@($d.Steps) -join ' ') | Should -Not -Match 'Se puede cambiar'
     }
 
     It 'Ok en Lan, CdnOnly, Group y Simple' {
@@ -66,7 +81,7 @@ Describe 'network.delivery-optimization' {
     }
 
     It 'Info si el modo Internet lo fija MDM o el registro, no si es de Configuración' {
-        foreach ($case in @(@('MdmProvider', 'Info'), @('RegistryProvider', 'Info'), @('SettingsProvider', 'Improvable'), @('DefaultProvider', 'Improvable'))) {
+        foreach ($case in @(@('MdmProvider', 'Info'), @('RegistryProvider', 'Info'), @('SettingsProvider', 'Manual'), @('DefaultProvider', 'Manual'))) {
             $inv = New-AfFakeInventory -Override @{ DeliveryOptimization = @{ Available = $true; Mode = 'Internet'; Provider = $case[0] } }
             (Test-Check 'network.delivery-optimization' $inv).Detection.State | Should -Be $case[1] -Because $case[0]
         }
@@ -77,11 +92,11 @@ Describe 'network.delivery-optimization' {
         (Test-Check 'network.delivery-optimization' $inv).Detection.State | Should -Be 'Ok'
     }
 
-    It 'Apply pasa a Lan' {
-        Mock Set-AfDeliveryOptimizationMode { $true }
-        $tx = New-AfTransaction -User (New-AfFakeInventory).User
-        & (Get-Apply 'network.delivery-optimization') (New-AfFakeInventory) $null $tx
-        Should -Invoke Set-AfDeliveryOptimizationMode -Times 1 -Exactly -ParameterFilter { $Mode -eq 'Lan' }
+    It 'ya no existe la pieza que cambiaba el modo' {
+        foreach ($name in 'Set-AfDeliveryOptimizationMode', 'Restore-AfDeliveryOptimizationMode', 'Get-AfDeliveryOptimizationModeState', 'Invoke-AfSetDeliveryOptimizationMode') {
+            Get-Command -Name $name -ErrorAction SilentlyContinue | Should -BeNullOrEmpty -Because $name
+        }
+        Get-Command -Name 'Get-AfDeliveryOptimizationMode' | Should -Not -BeNullOrEmpty
     }
 }
 
@@ -207,13 +222,16 @@ Describe 'storage.hibernation' {
         $r.Detection.State | Should -Be 'Info'
         $r.Detection.Current | Should -Match 'GB'
         $r.Preselected | Should -BeFalse
+        $r.Detection.Note | Should -Be 'Solo se reduce en escritorios confirmados; en laptops y equipos sin identificar no se toca.'
     }
 
     It 'con tipo de equipo desconocido o sin datos: Info y Apply no hace nada' {
         Mock Set-AfHibernationType { $true }
         foreach ($device in $script:unknown, $null) {
             $inv = New-AfFakeInventory -Override @{ Hibernation = @{ Enabled = $true; FileBytes = [long]12GB; RamBytes = [long]32GB; Type = 'Full' }; Storage = $script:lowDisk; Device = $device }
-            (Test-Check 'storage.hibernation' $inv).Detection.State | Should -Be 'Info'
+            $d = (Test-Check 'storage.hibernation' $inv).Detection
+            $d.State | Should -Be 'Info'
+            $d.Note | Should -Be 'Solo se reduce en escritorios confirmados; en laptops y equipos sin identificar no se toca.'
             & (Get-Apply 'storage.hibernation') $inv $null (New-AfTransaction -User $inv.User)
         }
         Should -Invoke Set-AfHibernationType -Times 0 -Exactly

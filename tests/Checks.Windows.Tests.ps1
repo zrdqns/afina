@@ -118,6 +118,10 @@ Describe 'windows.search-web' {
         $d.State | Should -Be 'Info'
         (@($d.Steps) -join ' ') | Should -Match 'no quita'
     }
+    It 'en Home los pasos van a la ruta de su versión de Windows' {
+        (Invoke-Detect 'windows.search-web' @{ Os = (New-Os -Build 26300 -Edition 'Core') }).Steps[0] | Should -Be 'Abre Configuración > Privacidad y seguridad > Permisos de búsqueda.'
+        (Invoke-Detect 'windows.search-web' @{ Os = (New-Os -Build 19045 -Edition 'Core') }).Steps[0] | Should -Be 'Abre Configuración > Búsqueda > Permisos e historial.'
+    }
     It 'en Home una directiva olvidada no cuenta como hecha' {
         $d = Invoke-Detect 'windows.search-web' @{ Os = (New-Os -Build 26300 -Edition 'Core'); Registry = @{ "$script:pol|DisableSearchBoxSuggestions" = 1 } }
         $d.State | Should -Be 'Info'
@@ -196,6 +200,43 @@ Describe 'windows.start-recommendations' {
         (Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 26300 -Edition 'Professional'); Registry = $reg }).State | Should -Be 'Improvable'
         $reg["$script:polEx|HideRecommendedSection"] = 1
         (Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 26300 -Edition 'Professional'); Registry = $reg }).State | Should -Be 'Ok'
+    }
+    It 'el texto dice que también se apagan "Más usadas" y el historial de Ejecutar' {
+        $what = (Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 26300 -Edition 'Core') }).What
+        $what | Should -Match '"Más usadas"'
+        $what | Should -Match 'Ejecutar \(Win\+R\)'
+    }
+}
+
+Describe 'Ajustes de Windows: textos de la revisión final' {
+    BeforeAll { $script:managed = 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.' }
+    It 'las ramas que escriben una directiva avisan que Configuración puede mostrarla como administrada' {
+        foreach ($case in @(
+                @('windows.search-web', 'Professional'), @('windows.search-web', 'Enterprise'), @('windows.start-recommendations', 'Professional'))) {
+            $d = Invoke-Detect $case[0] @{ Os = (New-Os -Build 26300 -Edition $case[1]) }
+            $d.State | Should -Be 'Improvable' -Because ($case -join ' ')
+            $d.What | Should -BeLike "*$script:managed" -Because ($case -join ' ')
+        }
+    }
+    It 'las ramas sin directiva no lo dicen' {
+        $core = Invoke-Detect 'windows.start-recommendations' @{ Os = (New-Os -Build 26300 -Edition 'Core') }
+        $core.State | Should -Be 'Improvable'
+        $core.What | Should -Not -BeLike '*organización administra*'
+        Mock Get-AfRegistryState { New-State $false }
+        foreach ($id in 'windows.file-extensions', 'windows.end-task', 'windows.battery-percent', 'windows.classic-menu') {
+            $d = Invoke-Detect $id @{ Os = (New-Os -Build 26300) }
+            $d.State | Should -Be 'Improvable' -Because $id
+            $d.What | Should -Not -BeLike '*organización administra*' -Because $id
+        }
+    }
+    It 'las filas que piden reiniciar no lo repiten en la nota: ya lo dice la etiqueta' {
+        foreach ($case in @(
+                @('windows.end-task', 'Professional'), @('windows.battery-percent', 'Professional'), @('windows.search-web', 'Enterprise'), @('windows.start-recommendations', 'Professional'))) {
+            (Get-Check $case[0]).NeedsReboot | Should -BeTrue -Because $case[0]
+            $d = Invoke-Detect $case[0] @{ Os = (New-Os -Build 26300 -Edition $case[1]) }
+            $d.State | Should -Be 'Improvable' -Because $case[0]
+            $d.Note | Should -Not -Be 'Pide reiniciar' -Because $case[0]
+        }
     }
 }
 

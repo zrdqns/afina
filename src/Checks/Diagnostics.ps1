@@ -35,6 +35,7 @@ function Get-AfDiskState {
     if (-not $line) {
         $line = if ($health -eq 'Healthy' -and $null -eq $wear) { (T 'Buena, sin datos de desgaste') }
         elseif ($health -eq 'Healthy') { (T 'Buena, desgaste {0} %') -f $wear }
+        elseif ($null -ne $wear) { (T 'Desgaste {0} %') -f $wear }
         else { (T 'Sin datos de desgaste') }
     }
     @{ Rank = $rank; Wear = $(if ($null -ne $wear) { $wear } else { -1 }); Line = $line }

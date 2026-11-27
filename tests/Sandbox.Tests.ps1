@@ -69,6 +69,12 @@ Describe 'Arnés del Sandbox (en la PC, sin Sandbox)' {
         { Test-AfSandboxPieces -User (Get-AfUserForSid) } | Should -Throw -ExpectedMessage '*solo se corre dentro de Windows Sandbox*'
     }
 
+    It 'ni el desafinado ni las piezas cambian el modo de Optimización de entrega (la fila es a mano)' {
+        foreach ($name in 'Set-AfSandboxDetuned', 'Test-AfSandboxPieces') {
+            (Get-Command $name).ScriptBlock.ToString() | Should -Not -Match 'DeliveryOptimizationMode' -Because $name
+        }
+    }
+
     It 'Get-AfSandboxState incluye anuncios, diagnóstico y las características de prueba' -Tag 'Integration' {
         $state = Get-AfSandboxState
         $state.Contains('Registro|HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager|SilentInstalledAppsEnabled') | Should -BeTrue

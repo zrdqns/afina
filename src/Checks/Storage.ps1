@@ -66,7 +66,7 @@ function Get-AfStorageChecks {
             $size = Format-AfSize -Bytes ([double]$inv.Hibernation.FileBytes)
             # Solo se reduce en un escritorio confirmado; laptop, tipo desconocido o sin dato: no se toca.
             if (-not ($inv.Device -and $inv.Device.IsDesktop)) {
-                return New-AfDetection -State Info -Current $size -Note (T 'En laptops no se reduce: sin hibernación completa, el trabajo sin guardar puede perderse al agotarse la batería')
+                return New-AfDetection -State Info -Current $size -Note (T 'Solo se reduce en escritorios confirmados; en laptops y equipos sin identificar no se toca.')
             }
             New-AfDetection -State Improvable -Current ((T 'Completo, {0}') -f $size) -Target (T 'Reducido') -Note (T 'Si se va la luz mientras duerme, se pierde lo no guardado') `
                 -What (T 'El archivo baja de 40 % a 20 % de la RAM, cerca de la mitad. Se conserva el inicio rápido; se pierden hibernar y el sueño híbrido.')

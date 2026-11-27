@@ -180,6 +180,12 @@ Describe 'cleanup.widgets' {
         $r.Check.NeedsReboot | Should -BeTrue
     }
 
+    It 'con la directiva avisa que Configuración puede mostrarla como administrada y no repite el reinicio en la nota' {
+        $d = Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Professional'); Apps = $script:withWidgets }
+        $d.What | Should -BeLike '*Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.'
+        $d.Note | Should -Not -Be 'Pide reiniciar'
+    }
+
     It 'Windows 11 Home da pasos' {
         $d = Invoke-Detect 'cleanup.widgets' @{ Os = (New-WidgetOs 'Core'); Apps = $script:withWidgets; Registry = @{ $script:taskbarDa = 1 } }
         $d.State | Should -Be 'Info'
@@ -287,6 +293,18 @@ Describe 'cleanup.recall' {
         $d.Note | Should -Be 'Borra las capturas guardadas y no se recuperan'
         (Get-Check 'cleanup.recall').Risk | Should -Be 'Advanced'
         (Get-Check 'cleanup.recall').Preselect | Should -BeFalse
+    }
+
+    It 'instalado se muestra como Disponible (InstallState 1 no dice que guarde capturas)' {
+        Mock Get-AfRecallState { 'Enabled' }
+        (Invoke-Recall (New-RecallInv)).Current | Should -Be 'Disponible'
+        (Invoke-Recall (New-RecallInv -Edition 'Core')).Current | Should -Be 'Disponible'
+    }
+
+    It 'en Pro avisa que Configuración puede mostrar la directiva como administrada; en Home no hay directiva' {
+        Mock Get-AfRecallState { 'Enabled' }
+        (Invoke-Recall (New-RecallInv)).What | Should -BeLike '*Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.'
+        (Invoke-Recall (New-RecallInv -Edition 'Core')).What | Should -Not -BeLike '*organización administra*'
     }
 
     It 'activo en Home da pasos' {

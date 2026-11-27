@@ -91,8 +91,9 @@ function Get-AfNetworkChecks {
         Id = 'network.delivery-optimization'; Category = 'network'
         Title = (T 'Optimización de entrega solo en la red local')
         Why = (T 'En modo Internet, Windows sube partes de sus actualizaciones a otros equipos y gasta tu conexión.')
-        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $false
-        Source = (T 'Microsoft: Optimización de entrega'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/deployment/do/waas-delivery-optimization'; Undo = (T 'Se puede deshacer')
+        # A mano: Set-DODownloadMode deja el modo fijado por AdminProvider y no está documentado si Configuración vuelve a mandar.
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: Optimización de entrega'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/deployment/do/waas-delivery-optimization'; Undo = (T 'No cambia nada')
         Reads = @('HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization|DODownloadMode')
         AppliesTo = { param($inv) $inv.DeliveryOptimization -and $inv.DeliveryOptimization.Available }
         Detect = {
@@ -102,9 +103,9 @@ function Get-AfNetworkChecks {
             if ([string]$inv.DeliveryOptimization.Mode -ne 'Internet') { return New-AfDetection -State Ok -Current (T 'Solo red local o sin compartir') }
             # Con el modo Internet fijado por MDM o por el registro no se toca; con el modo ya en Lan no se mira el proveedor.
             if ([string]$inv.DeliveryOptimization.Provider -in 'MdmProvider', 'RegistryProvider') { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
-            New-AfDetection -State Improvable -Current (T 'Internet') -Target (T 'Red local') `
-                -What (T 'El modo de descarga pasa de Internet a Red local. Se puede cambiar en Configuración, Windows Update, Opciones avanzadas.')
+            $open = if ($inv.Os.IsWin11) { (T 'Abre Configuración > Windows Update > Opciones avanzadas > Optimización de distribución.') } else { (T 'Abre Configuración > Actualización y seguridad > Optimización de distribución.') }
+            New-AfDetection -State Manual -Current (T 'Internet') -Target (T 'Red local') `
+                -Steps @($open, (T 'Elige "Dispositivos de mi red local" o apaga "Permitir descargas de otros dispositivos".'))
         }
-        Apply = { param($inv, $detected, $tx) Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan | Out-Null }
     }
 }

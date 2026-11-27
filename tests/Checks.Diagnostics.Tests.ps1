@@ -29,6 +29,12 @@ Describe 'Get-AfDiskDetection' {
         (Get-Disk @(New-Disk -Health 'Unhealthy')).State | Should -Be 'Manual'
     }
     It 'Unknown sin más datos no alarma' { (Get-Disk @(New-Disk -Health 'Unknown')).State | Should -Be 'Ok' }
+    It 'Unknown con desgaste conocido muestra el desgaste, no "Sin datos de desgaste"' {
+        $d = Get-Disk @(New-Disk -Health 'Unknown' -Wear 20)
+        $d.State | Should -Be 'Ok'
+        $d.Current | Should -Be 'Desgaste 20 %'
+        (Get-Disk @(New-Disk -Health 'Unknown')).Current | Should -Be 'Sin datos de desgaste'
+    }
     It 'errores sin corregir solos nunca pasan de Info' {
         (Get-Disk @(New-Disk -Wear 10 -ReadErrors 5000 -WriteErrors 9000)).State | Should -Be 'Info'
         (Get-Disk @(New-Disk -Wear 10 -ReadErrors 0 -WriteErrors 0)).State | Should -Be 'Ok'
@@ -94,6 +100,27 @@ Describe 'Get-AfDiskHealth' {
         @($h.Disks).Count | Should -Be 0
         (Get-AfDiskDetection -Health $h).State | Should -Be 'Manual'
     }
+    It 'con BusType y HealthStatus visibles como texto (tras Get-PhysicalDisk) usa los números crudos' {
+        # Así llegan después del inventario: el módulo Storage cambia lo visible, el valor crudo sigue siendo el número.
+        $script:textDisk = New-CimDisk 'NVMe WD' 0 17
+        $script:textDisk | Add-Member -MemberType ScriptProperty -Name BusType -Value { 'NVMe' } -Force
+        $script:textDisk | Add-Member -MemberType ScriptProperty -Name HealthStatus -Value { 'Healthy' } -Force
+        Mock Get-CimInstance { if ($ClassName -eq 'MSFT_PhysicalDisk') { @($script:textDisk) } else { throw 'x' } }
+        Mock Get-CimAssociatedInstance { $null }
+        $h = Get-AfDiskHealth
+        @($h.Disks).Count | Should -Be 1
+        $h.Disks[0].BusType | Should -Be 'NVMe'
+        $h.Disks[0].Health | Should -Be 'Healthy'
+    }
+    It 'deja fuera los discos USB (7) y los virtuales de archivo (15, Docker o WSL)' {
+        Mock Get-CimInstance { if ($ClassName -eq 'MSFT_PhysicalDisk') { @((New-CimDisk 'Msft Virtual Disk' 0 15), (New-CimDisk 'Pendrive' 0 7), (New-CimDisk 'NVMe')) } else { throw 'x' } }
+        Mock Get-CimAssociatedInstance { $null }
+        @((Get-AfDiskHealth).Disks | ForEach-Object { $_.Name }) | Should -Be @('NVMe')
+    }
+    It 'en esta PC, después del inventario, lee al menos un disco (solo lectura)' -Tag 'Integration' {
+        $null = Get-AfInventory
+        @((Get-AfDiskHealth).Disks).Count | Should -BeGreaterThan 0
+    }
 }
 
 Describe 'Get-AfDiskDetection: casos de la revisión' {
@@ -111,11 +138,31 @@ Describe 'Get-AfBatteryHealth' {
     BeforeAll {
         function New-Static([string]$Name, $Design) { [pscustomobject]@{ InstanceName = $Name; DesignedCapacity = [uint32]$Design } }
         function New-Full([string]$Name, $Full) { [pscustomobject]@{ InstanceName = $Name; FullChargedCapacity = [uint32]$Full } }
+        # El informe de powercfg queda simulado sin datos: ninguna prueba corre el powercfg real.
         function Set-BatteryMocks($Static, $Full, $Cycles = @()) {
             $script:bat = @{ BatteryStaticData = $Static; BatteryFullChargedCapacity = $Full; BatteryCycleCount = $Cycles }
             Mock Get-CimInstance { $script:bat[$ClassName] }
+            Mock Invoke-AfProcess { [pscustomobject]@{ ExitCode = 1; Output = ''; Error = ''; TimedOut = $false } }
+        }
+        # Simula powercfg /batteryreport: escribe el XML de ejemplo donde pide /output.
+        function Set-ReportMock([string]$Xml) {
+            $script:reportXml = $Xml
+            Mock Invoke-AfProcess {
+                $out = [regex]::Match($Arguments, '/output "([^"]+)"').Groups[1].Value
+                [System.IO.File]::WriteAllText($out, $script:reportXml, (New-Object System.Text.UTF8Encoding($true)))
+                [pscustomobject]@{ ExitCode = 0; Output = ''; Error = ''; TimedOut = $false }
+            }
+        }
+        function New-ReportXml([string[]]$Batteries) {
+            $items = @($Batteries | ForEach-Object { $d, $f, $c = $_ -split ','; "<Battery><Id>B</Id><DesignCapacity>$d</DesignCapacity><FullChargeCapacity>$f</FullChargeCapacity><CycleCount>$c</CycleCount></Battery>" }) -join ''
+            '<?xml version="1.0" encoding="utf-8"?><BatteryReport xmlns="http://schemas.microsoft.com/battery/2012"><Batteries>{0}</Batteries><RuntimeEstimates><DesignCapacity><Capacity>1</Capacity></DesignCapacity></RuntimeEstimates></BatteryReport>' -f $items
         }
     }
+    BeforeEach {
+        $script:savedTemp = $env:TEMP
+        $env:TEMP = "$TestDrive"
+    }
+    AfterEach { $env:TEMP = $script:savedTemp }
     It 'una batería' {
         Set-BatteryMocks @(New-Static 'A' 50000) @(New-Full 'A' 48000) @([pscustomobject]@{ InstanceName = 'A'; CycleCount = [uint32]120 })
         $h = Get-AfBatteryHealth
@@ -146,6 +193,42 @@ Describe 'Get-AfBatteryHealth' {
         Get-AfBatteryHealth | Should -BeNullOrEmpty
         Set-BatteryMocks @() @()
         Get-AfBatteryHealth | Should -BeNullOrEmpty
+    }
+    It 'si WMI lanza (Error genérico), lee el informe de powercfg con tiempo límite y lo borra' {
+        Mock Get-CimInstance { throw 'Error genérico' }
+        Set-ReportMock (New-ReportXml '55997,50326,0')
+        $h = Get-AfBatteryHealth
+        $h.DesignMWh | Should -Be 55997
+        $h.FullMWh | Should -Be 50326
+        $h.Cycles | Should -Be 0
+        Should -Invoke Invoke-AfProcess -Times 1 -Exactly -ParameterFilter { $FilePath -like '*\powercfg.exe' -and $Arguments -like '/batteryreport /xml /output *' -and $TimeoutMs -ge 10000 }
+        @(Get-ChildItem -LiteralPath "$TestDrive" -File).Count | Should -Be 0
+    }
+    It 'si WMI no trae ninguna batería válida, también cae al informe' {
+        Set-BatteryMocks @(New-Static 'A' 4294967295) @(New-Full 'A' 48000)
+        Set-ReportMock (New-ReportXml '50000,40000,12')
+        (Get-AfBatteryHealth).FullMWh | Should -Be 40000
+    }
+    It 'con WMI válido no corre powercfg' {
+        Set-BatteryMocks @(New-Static 'A' 50000) @(New-Full 'A' 48000)
+        (Get-AfBatteryHealth).FullMWh | Should -Be 48000
+        Should -Invoke Invoke-AfProcess -Times 0 -Exactly
+    }
+    It 'el informe se suma como WMI: ignora ceros y 0xFFFFFFFF y limita la carga a su diseño' {
+        Mock Get-CimInstance { throw 'Error genérico' }
+        Set-ReportMock (New-ReportXml '55997,50326,3', '0,40000,9', '50000,4294967295,9', '50000,60000,12')
+        $h = Get-AfBatteryHealth
+        $h.DesignMWh | Should -Be 105997
+        $h.FullMWh | Should -Be 100326
+        $h.Cycles | Should -Be 15
+    }
+    It 'sin baterías en el informe, o si powercfg falla, devuelve null y no deja archivos' {
+        Mock Get-CimInstance { throw 'Error genérico' }
+        Set-ReportMock (New-ReportXml @())
+        Get-AfBatteryHealth | Should -BeNullOrEmpty
+        Mock Invoke-AfProcess { [pscustomobject]@{ ExitCode = $null; Output = ''; Error = ''; TimedOut = $true } }
+        Get-AfBatteryHealth | Should -BeNullOrEmpty
+        @(Get-ChildItem -LiteralPath "$TestDrive" -File).Count | Should -Be 0
     }
 }
 

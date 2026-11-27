@@ -1,5 +1,4 @@
 ﻿$script:AfPagingPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management'
-$script:AfPolicyDoPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization'
 $script:AfPowerPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Power'
 
 # --- Parámetros del sistema (ratón, animaciones del área de cliente) ---
@@ -75,40 +74,9 @@ function Get-AfSystemParameterState {
 
 # --- Optimización de entrega ---
 
+# Solo se lee (inventario): la fila es a mano, Afina no cambia el modo.
 function Get-AfDeliveryOptimizationMode {
     [string](Get-DOConfig -ErrorAction Stop).DownloadMode
-}
-
-# Envoltorio: el cmdlet usa un enum que Pester no puede copiar al sustituirlo.
-function Invoke-AfSetDeliveryOptimizationMode {
-    param([Parameter(Mandatory)][string]$Mode)
-    Set-DODownloadMode -downloadMode $Mode -ErrorAction Stop
-}
-
-function Set-AfDeliveryOptimizationMode {
-    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][ValidateSet('Lan', 'Internet', 'CdnOnly')][string]$Mode)
-    $previous = Get-AfDeliveryOptimizationMode
-    if ($previous -eq $Mode) { return $false }
-    # Set-DODownloadMode solo acepta estos tres: con otro modo actual no habría cómo deshacer.
-    if (@('Lan', 'Internet', 'CdnOnly') -notcontains $previous) { throw (New-AfApplyError -Reason (T 'Windows tiene un modo de Optimización de entrega que Afina no sabe volver a poner')) }
-    Invoke-AfSetDeliveryOptimizationMode -Mode $Mode
-    Add-AfTxRecord -Tx $Tx -Record @{ Kind = 'DeliveryOptimizationMode'; Previous = $previous; New = $Mode }
-    if ((Get-AfDeliveryOptimizationMode) -ne $Mode) { throw (New-AfApplyError -Reason (T 'Windows no aceptó el modo de Optimización de entrega')) }
-    $true
-}
-
-function Restore-AfDeliveryOptimizationMode {
-    param([Parameter(Mandatory)]$Record, $User)
-    if ($null -ne (Get-AfRegistryValue -Path $script:AfPolicyDoPath -Name 'DODownloadMode')) {
-        throw (New-AfApplyError -Reason (T 'una directiva fija el modo de Optimización de entrega; quítala para deshacerlo'))
-    }
-    Invoke-AfSetDeliveryOptimizationMode -Mode $Record.Previous
-    if ((Get-AfDeliveryOptimizationMode) -ne [string]$Record.Previous) { throw (New-AfApplyError -Reason (T 'Windows no aceptó el modo de Optimización de entrega')) }
-}
-
-function Get-AfDeliveryOptimizationModeState {
-    param([Parameter(Mandatory)]$Record, $User)
-    Get-AfDeliveryOptimizationMode
 }
 
 # --- Archivo de paginación automático ---
@@ -166,7 +134,7 @@ function Get-AfHibernationInfo {
     $percent = [int](Get-AfRegistryValue -Path $script:AfPowerPath -Name 'HiberFileSizePercent')
     $file = Get-Item -LiteralPath (Join-Path $env:SystemDrive 'hiberfil.sys') -Force -ErrorAction SilentlyContinue
     $bytes = if ($file) { [long]$file.Length } else { [long]0 }
-    $ram = [long](Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop).TotalPhysicalMemory
+    $ram = [long](Get-CimInstance -ClassName Win32_ComputerSystem -OperationTimeoutSec 15 -ErrorAction Stop).TotalPhysicalMemory
     @{ Enabled = $enabled; FileBytes = $bytes; RamBytes = $ram; Type = (Get-AfHibernationType -FileBytes $bytes -RamBytes $ram -SizePercent $percent) }
 }
 

@@ -537,15 +537,12 @@ Windows no dejó leer ese ajuste==>Windows wouldn't let it read that setting
 Windows no aceptó el ajuste==>Windows didn't accept the setting
 abre Afina con la cuenta del dueño para este ajuste==>open Afina with the owner's account for this setting
 abre Afina con la cuenta del dueño para deshacerlo==>open Afina with the owner's account to undo it
-Windows no aceptó el modo de Optimización de entrega==>Windows didn't accept the Delivery Optimization mode
-una directiva fija el modo de Optimización de entrega; quítala para deshacerlo==>a policy sets the Delivery Optimization mode; remove it to undo this
 Windows no activó el archivo de paginación automático==>Windows didn't turn on the automatic page file
 la hibernación está desactivada==>hibernation is turned off
 la hibernación tiene un tamaño personalizado==>hibernation has a custom size
 Windows no aceptó el tipo de hibernación==>Windows didn't accept the hibernation type
 falta espacio en el disco para volver a la hibernación completa==>not enough disk space to go back to full hibernation
 Escrito, comprueba que se vea el cambio==>Written, check that the change shows
-Windows tiene un modo de Optimización de entrega que Afina no sabe volver a poner==>Windows uses a Delivery Optimization mode that Afina can't set back
 Windows no desactivó el archivo de paginación automático==>Windows didn't turn off the automatic page file
 {0}: Windows lo marca en mal estado==>{0}: Windows marks it as unhealthy
 {0}: Windows lo marca con advertencia==>{0}: Windows marks it with a warning
@@ -556,6 +553,7 @@ Windows no desactivó el archivo de paginación automático==>Windows didn't tur
 Buena, sin datos de desgaste==>Good, no wear data
 Buena, desgaste {0} %==>Good, {0} % wear
 Sin datos de desgaste==>No wear data
+Desgaste {0} %==>{0} % wear
 Windows predice una falla de disco==>Windows predicts a disk failure
 Respalda tus archivos ya.==>Back up your files now.
 Cambia el disco cuanto antes.==>Replace the disk as soon as possible.
@@ -608,7 +606,9 @@ Microsoft: Optimización de entrega==>Microsoft: Delivery Optimization
 Solo red local o sin compartir==>Local network only or not sharing
 Internet==>Internet
 Red local==>Local network
-El modo de descarga pasa de Internet a Red local. Se puede cambiar en Configuración, Windows Update, Opciones avanzadas.==>The download mode changes from Internet to Local network. It can be changed in Settings, Windows Update, Advanced options.
+Abre Configuración > Windows Update > Opciones avanzadas > Optimización de distribución.==>Open Settings > Windows Update > Advanced options > Delivery Optimization.
+Abre Configuración > Actualización y seguridad > Optimización de distribución.==>Open Settings > Update & Security > Delivery Optimization.
+Elige "Dispositivos de mi red local" o apaga "Permitir descargas de otros dispositivos".==>Choose "Devices on my local network" or turn off "Allow downloads from other devices".
 Aceleración del mouse apagada==>Mouse acceleration off
 "Mejorar la precisión del puntero" mueve el cursor según la velocidad del mouse, y apuntar se vuelve menos predecible en los juegos.==>"Enhance pointer precision" moves the cursor based on how fast the mouse moves, so aiming becomes less predictable in games.
 Microsoft: opciones del puntero del mouse==>Microsoft: mouse pointer options
@@ -623,7 +623,7 @@ Se apagan "Efectos de animación" y "Efectos de transparencia" de Accesibilidad.
 Archivo de hibernación más chico==>Smaller hibernation file
 Con poco espacio libre, hiberfil.sys ocupa cerca de la mitad de la memoria RAM en el disco.==>With little free space, hiberfil.sys takes about half of the RAM size on disk.
 Microsoft: powercfg y la hibernación==>Microsoft: powercfg and hibernation
-En laptops no se reduce: sin hibernación completa, el trabajo sin guardar puede perderse al agotarse la batería==>Not reduced on laptops: without full hibernation, unsaved work can be lost when the battery runs out
+Solo se reduce en escritorios confirmados; en laptops y equipos sin identificar no se toca.==>Only reduced on confirmed desktops; laptops and unidentified PCs are left as they are.
 Completo, {0}==>Full, {0}
 Reducido==>Reduced
 Si se va la luz mientras duerme, se pierde lo no guardado==>If the power goes out while it sleeps, unsaved work is lost
@@ -640,11 +640,12 @@ Microsoft: administrar Recall==>Microsoft: manage Recall
 Se deshace el ajuste; las capturas borradas no vuelven==>The setting is undone; deleted snapshots don't come back
 Comprobando Recall…==>Checking Recall…
 No se pudo leer el estado de Recall==>Couldn't read the Recall state
-Activo==>On
+Disponible==>Available
 Abre Configuración > Privacidad y seguridad > Recall y capturas.==>Open Settings > Privacy & security > Recall & snapshots.
 Apaga Guardar capturas.==>Turn off Save snapshots.
 Borra las capturas guardadas y no se recuperan==>Deletes the saved snapshots and they can't be recovered
 Se apaga el análisis de lo que hay en pantalla con la directiva de Windows. Las capturas guardadas se borran y no se recuperan.==>Screen analysis is turned off with the Windows policy. Saved snapshots are deleted and can't be recovered.
+Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.==>Settings may show that an organization manages this setting until you undo it.
 Widgets apagados==>Widgets off
 Los widgets y las noticias de la barra de tareas usan memoria y red en segundo plano.==>Taskbar widgets and news use memory and network in the background.
 Microsoft: política NewsAndInterests==>Microsoft: NewsAndInterests policy
@@ -692,6 +693,7 @@ Microsoft: política de búsqueda==>Microsoft: search policy
 Activa==>On
 Apagada==>Off
 Abre Configuración > Privacidad y seguridad > Permisos de búsqueda.==>Open Settings > Privacy and security > Search permissions.
+Abre Configuración > Búsqueda > Permisos e historial.==>Open Settings > Search > Permissions & history.
 Apaga "Búsqueda de contenido en la nube" y "Mostrar aspectos destacados de la búsqueda".==>Turn off "Cloud content search" and "Show search highlights".
 Esto no quita Bing del todo: Windows Home no tiene un ajuste para eso.==>This does not remove Bing completely: Windows Home has no setting for that.
 Se apaga la búsqueda web con la directiva de Windows. Pide reiniciar.==>Web search is turned off with the Windows policy. Needs a restart.
@@ -703,7 +705,7 @@ Inicio puede seguir mostrando archivos recientes==>Start can still show recent f
 Microsoft: política de Inicio==>Microsoft: Start policy
 Apagadas==>Off
 Activas==>On
-Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio. No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.==>Recommended programs, suggested sites and account notices are turned off in Start. Recent files are not touched. On Pro and above the Recommended section is also hidden.
+Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio, y también la lista de "Más usadas" y el historial de Ejecutar (Win+R). No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.==>Recommended programs, suggested sites and account notices are turned off in Start, along with the "Most used" list and the Run (Win+R) history. Recent files are not touched. On Pro and above the Recommended section is also hidden.
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }

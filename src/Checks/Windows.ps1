@@ -36,7 +36,7 @@
             param($inv)
             $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
             if ($inv.Registry["$adv\TaskbarDeveloperSettings|TaskbarEndTask"] -eq 1) { return New-AfDetection -State Ok -Current (T 'Activado') }
-            New-AfDetection -State Improvable -Current (T 'Apagado') -Target (T 'Activado') -Note (T 'Pide reiniciar') `
+            New-AfDetection -State Improvable -Current (T 'Apagado') -Target (T 'Activado') `
                 -What (T 'Se activa "Finalizar tarea" en Configuración > Sistema > Para programadores.')
         }
         Apply = {
@@ -59,7 +59,7 @@
             param($inv)
             $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
             if ($inv.Registry["$adv|IsBatteryPercentageEnabled"] -eq 1) { return New-AfDetection -State Ok -Current (T 'Visible') }
-            New-AfDetection -State Improvable -Current (T 'Oculto') -Target (T 'Visible') -Note (T 'Pide reiniciar') `
+            New-AfDetection -State Improvable -Current (T 'Oculto') -Target (T 'Visible') `
                 -What (T 'Se activa el porcentaje de batería en la bandeja del sistema.')
         }
         Apply = {
@@ -118,21 +118,21 @@
             # Las directivas no se respetan en Home: un valor olvidado ahí no cuenta como hecho.
             if (-not (Test-AfPolicyEdition -Os $inv.Os)) {
                 return New-AfDetection -State Info -Current (T 'Activa') -Steps @(
-                    (T 'Abre Configuración > Privacidad y seguridad > Permisos de búsqueda.')
+                    $(if ($inv.Os.IsWin11) { (T 'Abre Configuración > Privacidad y seguridad > Permisos de búsqueda.') } else { (T 'Abre Configuración > Búsqueda > Permisos e historial.') })
                     (T 'Apaga "Búsqueda de contenido en la nube" y "Mostrar aspectos destacados de la búsqueda".')
                     (T 'Esto no quita Bing del todo: Windows Home no tiene un ajuste para eso.')
                 )
             }
             if (Test-AfEnterpriseEdition -Os $inv.Os) {
                 if ($inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search|ConnectedSearchUseWeb'] -eq 0) { return New-AfDetection -State Ok -Current (T 'Apagada') }
-                return New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') -Note (T 'Pide reiniciar') `
-                    -What (T 'Se apaga la búsqueda web con la directiva de Windows. Pide reiniciar.')
+                return New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') `
+                    -What ((T 'Se apaga la búsqueda web con la directiva de Windows. Pide reiniciar.') + ' ' + (T 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.'))
             }
             # La nota va siempre a la vista: Microsoft no documenta el efecto en Inicio y no debe darse por seguro.
             $note = T 'El efecto en Inicio viene de la comunidad, no de Microsoft'
             if ($inv.Registry['HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|DisableSearchBoxSuggestions'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Apagada') -Note $note }
             New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') -Note $note `
-                -What (T 'Se apagan las sugerencias del cuadro de búsqueda con la directiva de Windows. Microsoft solo documenta que quita las búsquedas recientes del Explorador; su efecto en Inicio viene de la comunidad.')
+                -What ((T 'Se apagan las sugerencias del cuadro de búsqueda con la directiva de Windows. Microsoft solo documenta que quita las búsquedas recientes del Explorador; su efecto en Inicio viene de la comunidad.') + ' ' + (T 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.'))
         }
         Apply = {
             param($inv, $detected, $tx)
@@ -169,8 +169,10 @@
             if ($off -and (-not $policyEdition -or $inv.Registry['HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|HideRecommendedSection'] -eq 1)) {
                 return New-AfDetection -State Ok -Current (T 'Apagadas') -Note $(if (-not $policyEdition) { (T 'Inicio puede seguir mostrando archivos recientes') })
             }
-            New-AfDetection -State Improvable -Current (T 'Activas') -Target (T 'Apagadas') -Note $(if ($policyEdition) { (T 'Pide reiniciar') } else { (T 'Inicio puede seguir mostrando archivos recientes') }) `
-                -What (T 'Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio. No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.')
+            # Start_TrackProgs también apaga la lista de "Más usadas" y el historial de Ejecutar (Win+R).
+            $what = T 'Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio, y también la lista de "Más usadas" y el historial de Ejecutar (Win+R). No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.'
+            if ($policyEdition) { $what += ' ' + (T 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.') }
+            New-AfDetection -State Improvable -Current (T 'Activas') -Target (T 'Apagadas') -Note $(if (-not $policyEdition) { (T 'Inicio puede seguir mostrando archivos recientes') }) -What $what
         }
         Apply = {
             param($inv, $detected, $tx)

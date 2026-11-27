@@ -239,7 +239,6 @@ function Set-AfSandboxDetuned {
         if (-not (Test-Path -LiteralPath $policy)) { New-Item -Path $policy -Force | Out-Null }
         New-ItemProperty -LiteralPath $policy -Name '01' -PropertyType DWord -Value 0 -Force | Out-Null
     }
-    & $step 'Optimización de entrega en Internet' { Invoke-AfSetDeliveryOptimizationMode -Mode 'Internet' }
     & $step 'Archivo de paginación fijo' {
         Set-AfPagefileAutomatic -Value $false
         New-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management' -Name 'PagingFiles' -PropertyType MultiString -Value @('C:\pagefile.sys 1024 1024') -Force | Out-Null
@@ -303,12 +302,7 @@ function Test-AfSandboxPieces {
     } else {
         [pscustomobject]@{ Name = 'AppxPackage'; Applied = $false; Restored = $true; Detail = 'sin paquete aprovisionado de la lista' }
     }
-    # Parámetros del sistema y Optimización de entrega: la ida y vuelta pasa por la API real (la hibernación queda fuera: el Sandbox no hiberna).
+    # Parámetros del sistema: la ida y vuelta pasa por la API real (la hibernación queda fuera: el Sandbox no hiberna).
     Invoke-AfPieceRoundTrip -Name 'SystemParameter Mouse' -User $User -Apply { param($tx) Set-AfSystemParameter -Tx $tx -Name Mouse -Value @(0, 0, 0) } -Read { (Get-AfSystemParameterValue -Name Mouse) -join ',' }
     Invoke-AfPieceRoundTrip -Name 'SystemParameter ClientAreaAnimation' -User $User -Apply { param($tx) Set-AfSystemParameter -Tx $tx -Name ClientAreaAnimation -Value $false } -Read { [string](Get-AfSystemParameterValue -Name ClientAreaAnimation) }
-    # Se anota quién fija el modo justo después de cambiarlo: con MdmProvider o RegistryProvider la revisión no se ofrece.
-    $script:AfSandboxDoProvider = $null
-    $doPiece = Invoke-AfPieceRoundTrip -Name 'DeliveryOptimizationMode' -User $User -Apply { param($tx) $applied = Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan; $script:AfSandboxDoProvider = [string](Get-DOConfig).DownloadModeProvider; $applied } -Read { Get-AfDeliveryOptimizationMode }
-    $doPiece.Detail += " (DownloadModeProvider tras Lan: $script:AfSandboxDoProvider)"
-    $doPiece
 }

@@ -67,70 +67,6 @@ Describe 'Set-AfSystemParameter' {
     }
 }
 
-Describe 'Set-AfDeliveryOptimizationMode' {
-    BeforeEach {
-        $script:doMode = 'Internet'
-        Mock Get-AfRegistryValue { $null } -ParameterFilter { $Name -eq 'DODownloadMode' }
-        Mock Get-DOConfig { [pscustomobject]@{ DownloadMode = $script:doMode } }
-        Mock Invoke-AfSetDeliveryOptimizationMode { $script:doMode = $Mode }
-    }
-
-    It 'de Internet a Lan y vuelta' {
-        $tx = New-AfTransaction -User $script:user
-        Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan | Should -BeTrue
-        $tx.Records[0].Kind | Should -Be 'DeliveryOptimizationMode'
-        $tx.Records[0].Previous | Should -Be 'Internet'
-        $script:doMode | Should -Be 'Lan'
-        (Undo-AfRecords -Records @($tx.Records) -User $script:user).Failed.Count | Should -Be 0
-        $script:doMode | Should -Be 'Internet'
-        Test-AfRecordRestored -Record $tx.Records[0] -User $script:user | Should -BeTrue
-    }
-
-    It 'si ya está en Lan no deja registro' {
-        $script:doMode = 'Lan'
-        $tx = New-AfTransaction -User $script:user
-        Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan | Should -BeFalse
-        $tx.Records.Count | Should -Be 0
-        Should -Invoke Invoke-AfSetDeliveryOptimizationMode -Times 0 -Exactly
-    }
-
-    It 'si Windows no lo tomó, lanza' {
-        Mock Invoke-AfSetDeliveryOptimizationMode { }
-        $tx = New-AfTransaction -User $script:user
-        { Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan } | Should -Throw
-    }
-
-    It 'si al deshacer el modo no vuelve, falla y conserva el registro' {
-        $tx = New-AfTransaction -User $script:user
-        Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan | Out-Null
-        Mock Invoke-AfSetDeliveryOptimizationMode { }
-        $result = Undo-AfRecords -Records @($tx.Records) -User $script:user
-        $result.Failed.Count | Should -Be 1
-        $result.Reason | Should -Not -BeNullOrEmpty
-    }
-
-    It 'no escribe si el modo actual no se sabe volver a poner' {
-        foreach ($mode in 'Group', 'Simple', 'Bypass', '') {
-            $script:doMode = $mode
-            $tx = New-AfTransaction -User $script:user
-            { Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan } | Should -Throw
-            $tx.Records.Count | Should -Be 0
-        }
-        Should -Invoke Invoke-AfSetDeliveryOptimizationMode -Times 0 -Exactly
-    }
-
-    It 'al deshacer con una directiva puesta avisa y conserva el registro' {
-        $tx = New-AfTransaction -User $script:user
-        Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan | Out-Null
-        Mock Get-AfRegistryValue { 1 } -ParameterFilter { $Name -eq 'DODownloadMode' }
-        $result = Undo-AfRecords -Records @($tx.Records) -User $script:user
-        $result.Failed.Count | Should -Be 1
-        $result.Reason | Should -Match 'directiva'
-        $script:doMode | Should -Be 'Lan'
-        Should -Invoke Invoke-AfSetDeliveryOptimizationMode -Times 1 -Exactly
-    }
-}
-
 Describe 'Set-AfPagefileAuto' {
     BeforeEach {
         $script:auto = $false
@@ -218,6 +154,13 @@ Describe 'Hibernación' {
         Mock Get-AfRegistryValue { 1 }
         Mock Get-CimInstance { Write-Error 'falla a propósito' }
         { Get-AfHibernationInfo } | Should -Throw
+    }
+
+    It 'Get-AfHibernationInfo lee la RAM con tiempo límite' {
+        Mock Get-AfRegistryValue { 1 }
+        Mock Get-CimInstance { New-CimInstance -ClassName Win32_ComputerSystem -ClientOnly -Property @{ TotalPhysicalMemory = [uint64]16GB } }
+        (Get-AfHibernationInfo).RamBytes | Should -Be 16GB
+        Should -Invoke Get-CimInstance -Times 1 -Exactly -ParameterFilter { $ClassName -eq 'Win32_ComputerSystem' -and $OperationTimeoutSec -gt 0 }
     }
 
     Context 'Set-AfHibernationType' {
