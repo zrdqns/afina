@@ -41,6 +41,12 @@ function Invoke-AfWsb {
     [pscustomobject]@{ Ok = $process.ExitCode -eq 0 -and ($null -eq $inner -or $inner -eq 0); TimedOut = $false; ExitCode = $process.ExitCode; Output = ($outText + ' ' + $errText).Trim() }
 }
 
+# Configuración de arranque: con la GPU virtual dwm.exe se cae en bucle (udwm.dll, 0xc00001ad), no queda winlogon y la sesión nunca inicia.
+# Con render por software basta para la prueba.
+function Get-AfSandboxStartConfig {
+    '<Configuration><vGPU>Disable</vGPU></Configuration>'
+}
+
 function Get-AfSandboxId {
     param([string]$Text)
     ([regex]::Match([string]$Text, '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')).Value
@@ -67,6 +73,25 @@ $script:AfSandboxValues = @(
     'HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes|ActiveOverlayDcPowerScheme'
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection|AllowTelemetry'
     'HKCU:\Software\Microsoft\Windows\CurrentVersion\Privacy|TailoredExperiencesWithDiagnosticDataEnabled'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|HideFileExt'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|IsBatteryPercentageEnabled'
+    # Start_TrackDocs no lo toca ninguna revisión: va aquí para que el informe pruebe que no cambió.
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|Start_TrackDocs'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|Start_TrackProgs'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|Start_IrisRecommendations'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|Start_RecoPersonalizedSites'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|Start_AccountNotifications'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings|TaskbarEndTask'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize|EnableTransparency'
+    'HKCU:\Control Panel\Mouse|MouseSpeed'
+    'HKCU:\Control Panel\Mouse|MouseThreshold1'
+    'HKCU:\Control Panel\Mouse|MouseThreshold2'
+    'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management|PagingFiles'
+    'HKLM:\SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests'
+    'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI|DisableAIDataAnalysis'
+    'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search|ConnectedSearchUseWeb'
+    'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|DisableSearchBoxSuggestions'
+    'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|HideRecommendedSection'
 )
 
 # Características sin importancia para la ida y vuelta de la pieza WindowsFeature (se usa la primera apagada con su contenido).
@@ -87,6 +112,9 @@ $script:AfSandboxKeys = @(
     'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32'
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'
+    'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'
+    'HKCU:\Software\Classes\CLSID\{51668040-5e31-4023-bbe3-149163bd80f1}\InprocServer32'
 )
 
 function ConvertTo-AfStateText {
@@ -109,6 +137,8 @@ function Get-AfSandboxState {
     foreach ($key in $script:AfSandboxKeys) {
         $item = Get-Item -LiteralPath $key -ErrorAction SilentlyContinue
         if (-not $item) { $state["Clave|$key"] = '(no existe)'; continue }
+        # Una clave que queda vacía también es una diferencia, y el valor por defecto sale con nombre vacío (Clave|ruta|).
+        $state["Clave|$key"] = 'existe'
         foreach ($name in @($item.GetValueNames() | Sort-Object)) {
             $state["Clave|$key|$name"] = '{0}:{1}' -f $item.GetValueKind($name), (ConvertTo-AfStateText $item.GetValue($name, $null, 'DoNotExpandEnvironmentNames'))
         }
@@ -119,6 +149,7 @@ function Get-AfSandboxState {
     $values = ConvertFrom-AfPowercfgQuery -Text $query.Output
     $state['Energía|Wi-Fi CA/CC'] = if ($values) { '{0}/{1}' -f $values.Ac, $values.Dc } else { '(sin datos)' }
     $state['Energía|Modo con cargador'] = Get-AfCurrentOverlay
+    $state['Entrega|Modo'] = try { [string](Get-DOConfig -ErrorAction Stop).DownloadMode } catch { '(sin datos)' }
     try { foreach ($firewall in @(Get-NetFirewallProfile -ErrorAction Stop)) { $state["Firewall|$($firewall.Name)"] = [string]$firewall.Enabled } } catch { $state['Firewall'] = '(sin datos)' }
     try {
         $mp = Get-MpPreference -ErrorAction Stop
@@ -190,6 +221,29 @@ function Set-AfSandboxDetuned {
             (Get-Item -LiteralPath $file).LastWriteTime = (Get-Date).AddDays(-3)
         }
     }
+    & $step 'Extensiones ocultas' { New-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt' -PropertyType DWord -Value 1 -Force | Out-Null }
+    & $step 'Aceleración del mouse encendida' {
+        foreach ($pair in @(@('MouseSpeed', '1'), @('MouseThreshold1', '6'), @('MouseThreshold2', '10'))) {
+            New-ItemProperty -LiteralPath 'HKCU:\Control Panel\Mouse' -Name $pair[0] -PropertyType String -Value $pair[1] -Force | Out-Null
+        }
+        Invoke-AfSetSystemParameter -Name Mouse -Value ([int[]]@(6, 10, 1))  # umbral 1, umbral 2, aceleración: lo normal de Windows
+    }
+    & $step 'Transparencia y animación encendidas' {
+        $personalize = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+        if (-not (Test-Path -LiteralPath $personalize)) { New-Item -Path $personalize -Force | Out-Null }
+        New-ItemProperty -LiteralPath $personalize -Name 'EnableTransparency' -PropertyType DWord -Value 1 -Force | Out-Null
+        Invoke-AfSetSystemParameter -Name ClientAreaAnimation -Value $true
+    }
+    & $step 'Sensor de almacenamiento apagado' {
+        $policy = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'
+        if (-not (Test-Path -LiteralPath $policy)) { New-Item -Path $policy -Force | Out-Null }
+        New-ItemProperty -LiteralPath $policy -Name '01' -PropertyType DWord -Value 0 -Force | Out-Null
+    }
+    & $step 'Optimización de entrega en Internet' { Invoke-AfSetDeliveryOptimizationMode -Mode 'Internet' }
+    & $step 'Archivo de paginación fijo' {
+        Set-AfPagefileAutomatic -Value $false
+        New-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management' -Name 'PagingFiles' -PropertyType MultiString -Value @('C:\pagefile.sys 1024 1024') -Force | Out-Null
+    }
     @($done)
 }
 
@@ -249,4 +303,12 @@ function Test-AfSandboxPieces {
     } else {
         [pscustomobject]@{ Name = 'AppxPackage'; Applied = $false; Restored = $true; Detail = 'sin paquete aprovisionado de la lista' }
     }
+    # Parámetros del sistema y Optimización de entrega: la ida y vuelta pasa por la API real (la hibernación queda fuera: el Sandbox no hiberna).
+    Invoke-AfPieceRoundTrip -Name 'SystemParameter Mouse' -User $User -Apply { param($tx) Set-AfSystemParameter -Tx $tx -Name Mouse -Value @(0, 0, 0) } -Read { (Get-AfSystemParameterValue -Name Mouse) -join ',' }
+    Invoke-AfPieceRoundTrip -Name 'SystemParameter ClientAreaAnimation' -User $User -Apply { param($tx) Set-AfSystemParameter -Tx $tx -Name ClientAreaAnimation -Value $false } -Read { [string](Get-AfSystemParameterValue -Name ClientAreaAnimation) }
+    # Se anota quién fija el modo justo después de cambiarlo: con MdmProvider o RegistryProvider la revisión no se ofrece.
+    $script:AfSandboxDoProvider = $null
+    $doPiece = Invoke-AfPieceRoundTrip -Name 'DeliveryOptimizationMode' -User $User -Apply { param($tx) $applied = Set-AfDeliveryOptimizationMode -Tx $tx -Mode Lan; $script:AfSandboxDoProvider = [string](Get-DOConfig).DownloadModeProvider; $applied } -Read { Get-AfDeliveryOptimizationMode }
+    $doPiece.Detail += " (DownloadModeProvider tras Lan: $script:AfSandboxDoProvider)"
+    $doPiece
 }

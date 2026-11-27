@@ -17,7 +17,8 @@ $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
 $watch = [System.Diagnostics.Stopwatch]::StartNew()
 function Write-Step([string]$Text) { '{0,6:N0} s  {1}' -f $watch.Elapsed.TotalSeconds, $Text }
 
-$started = Invoke-AfWsb -Arguments 'start' -TimeoutSeconds 240
+# Sin GPU virtual: con ella dwm.exe se cae en el Sandbox y la sesión del usuario nunca inicia; el render por software basta aquí.
+$started = Invoke-AfWsb -Arguments ('start --config "{0}"' -f (Get-AfSandboxStartConfig)) -TimeoutSeconds 240
 $id = Get-AfSandboxId -Text $started.Output
 if (-not $id) { throw "Windows Sandbox no arrancó: $($started.Output)" }
 Write-Step "Sandbox $id"
