@@ -1,4 +1,4 @@
-# Afina 0.4.0: análisis y optimización de Windows. Generado por build.ps1; no editar a mano.
+# Afina 0.5.0: análisis y optimización de Windows. Generado por build.ps1; no editar a mano.
 # Iconos: Phosphor Icons (https://phosphoricons.com), licencia MIT.
 param(
     [switch]$Scan,
@@ -18,7 +18,7 @@ if ([string]$ExecutionContext.SessionState.LanguageMode -ne 'FullLanguage') {
 }
 
 $Global:AfCodeBlock = {
-function Get-AfVersion { '0.4.0' }
+function Get-AfVersion { '0.5.0' }
 
 # Traducciones al inglés. Cada línea: el texto en español tal cual está en el código (distingue mayúsculas), "==>" y su traducción.
 # Lo usa Get-AfText (alias T) en Core\Localization.ps1; tests\Translations.Tests.ps1 vigila que no falte ninguna.
@@ -260,6 +260,7 @@ Red==>Network
 Reinicia la PC.==>Restart the PC.
 Rendimiento==>Performance
 Rendimiento máximo==>Maximum Performance
+Revisa el disco==>Check the disk
 Revisa en el menú del monitor que la entrada no esté en un modo de compatibilidad.==>In the monitor's menu, check that the input isn't in a compatibility mode.
 Revisa la lista: si no reconoces alguno, consúltalo en VirusTotal desde "Analizar seguridad".==>Check the list: if you don't recognize one, look it up on VirusTotal from "Scan security".
 Se activa al reiniciar==>Turns on after a restart
@@ -427,6 +428,7 @@ ya no está en la PC; se reinstala desde la Microsoft Store==>it's no longer on 
 Activar Restaurar sistema en C:==>Turn on System Restore on C:
 Afinación==>Tune-up
 Afinada==>Tuned up
+Ajustes de Windows==>Windows settings
 Afinado==>In tune
 Al final pide reiniciar.==>A restart is needed at the end.
 Analizando esta PC==>Scanning this PC
@@ -454,6 +456,7 @@ Deshaciendo…==>Undoing…
 Deshecha==>Undone
 Deshecha en parte==>Partly undone
 Deshecho==>Undone
+Diagnóstico==>Diagnostics
 Disco==>Disk
 El análisis no pudo terminar. Revisa el registro en ProgramData\Afina.==>The scan couldn't finish. Check the log in ProgramData\Afina.
 Elige qué optimizar==>Choose what to optimize
@@ -552,6 +555,179 @@ Deshacer todo==>Undo all
 Idioma==>Language
 Automático sigue el idioma de Windows.==>Automatic follows the Windows display language.
 Disponible al terminar==>Available when it finishes
+Windows no dejó leer ese ajuste==>Windows wouldn't let it read that setting
+Windows no aceptó el ajuste==>Windows didn't accept the setting
+abre Afina con la cuenta del dueño para este ajuste==>open Afina with the owner's account for this setting
+abre Afina con la cuenta del dueño para deshacerlo==>open Afina with the owner's account to undo it
+Windows no activó el archivo de paginación automático==>Windows didn't turn on the automatic page file
+la hibernación está desactivada==>hibernation is turned off
+la hibernación tiene un tamaño personalizado==>hibernation has a custom size
+Windows no aceptó el tipo de hibernación==>Windows didn't accept the hibernation type
+falta espacio en el disco para volver a la hibernación completa==>not enough disk space to go back to full hibernation
+Escrito, comprueba que se vea el cambio==>Written, check that the change shows
+Windows no desactivó el archivo de paginación automático==>Windows didn't turn off the automatic page file
+{0}: Windows lo marca en mal estado==>{0}: Windows marks it as unhealthy
+{0}: Windows lo marca con advertencia==>{0}: Windows marks it with a warning
+{0}: Windows reporta un problema de salud==>{0}: Windows reports a health problem
+{0}: desgaste {1} %==>{0}: wear {1} %
+{0}: errores sin corregir ({1})==>{0}: uncorrected errors ({1})
+{0}: temperatura en su máximo ({1} °C)==>{0}: temperature at its maximum ({1} °C)
+Buena, sin datos de desgaste==>Good, no wear data
+Buena, desgaste {0} %==>Good, {0} % wear
+Sin datos de desgaste==>No wear data
+Desgaste {0} %==>{0} % wear
+Windows predice una falla de disco==>Windows predicts a disk failure
+Respalda tus archivos ya.==>Back up your files now.
+Cambia el disco cuanto antes.==>Replace the disk as soon as possible.
+Mantén un respaldo al día y vigila el disco.==>Keep a backup up to date and watch the disk.
+Conserva el {0} % de su capacidad==>Holds {0} % of its capacity
+{0} ciclos de carga==>{0} charge cycles
+La batería ya dura menos que cuando era nueva.==>The battery now lasts less than when it was new.
+La batería está muy gastada: conviene cambiarla.==>The battery is very worn: it's worth replacing.
+Mientras tanto, usa la laptop con el cargador conectado.==>Meanwhile, use the laptop plugged in.
+Sin datos recientes==>No recent data
+Último arranque medido: {0}==>Last boot measured: {0}
+{0} s hasta el escritorio==>{0} s to the desktop
+Revisa los programas de la categoría Inicio: son lo que más alarga el arranque.==>Check the programs in the Startup category: they add the most to boot time.
+Salud del disco==>Disk health
+Un disco con desgaste alto o fallas puede dejar de funcionar sin aviso y llevarse tus archivos.==>A disk with high wear or faults can stop working without warning and take your files with it.
+Contadores de confiabilidad del almacenamiento de Windows==>Windows storage reliability counters
+No cambia nada==>Changes nothing
+Revisando…==>Checking…
+Salud de la batería==>Battery health
+Una batería gastada dura menos y puede limitar el rendimiento de la laptop.==>A worn battery lasts less and can limit the laptop's performance.
+Capacidad de diseño y de carga completa de la batería==>Battery design and full-charge capacity
+Tiempo de arranque==>Boot time
+Un arranque largo suele venir de programas que se abren con Windows.==>A long boot usually comes from programs that open with Windows.
+Registro de rendimiento del arranque de Windows==>Windows boot performance log
+Archivo de paginación==>Page file
+Si el archivo de paginación está apagado o es muy chico, los juegos y apps pesadas pueden cerrarse por falta de memoria.==>If the page file is off or too small, games and heavy apps can close from lack of memory.
+Configuración del archivo de paginación de Windows==>Windows page file settings
+Vuelve a la configuración anterior==>Goes back to the previous setting
+Automático==>Automatic
+Lo maneja Windows==>Managed by Windows
+{0} MB fijos==>{0} MB fixed
+Apagado==>Off
+Libera espacio primero: hacen falta al menos 4 GB libres.==>Free up space first: at least 4 GB must be free.
+Deja que Windows maneje el archivo de paginación. Pide reiniciar.==>Lets Windows manage the page file. Needs a restart.
+# Optimizaciones de rendimiento
+El código nativo no está disponible==>Native code is not available
+Edge sigue activo en segundo plano==>Edge keeps running in the background
+Edge se queda en memoria aunque cierres todas sus ventanas, y arranca con Windows para abrir más rápido.==>Edge stays in memory even after you close all its windows, and starts with Windows to open faster.
+Microsoft: Aumento de inicio de Edge==>Microsoft: Edge startup boost
+Lo fija una directiva==>Set by a policy
+Cierra Edge para revisarlo==>Close Edge to check it
+Cerrado==>Closed
+Edge corre sin ventanas==>Edge is running with no windows
+Abre Edge y entra a edge://settings/system.==>Open Edge and go to edge://settings/system.
+Apaga "Aumento de inicio".==>Turn off "Startup boost".
+Apaga "Seguir ejecutando extensiones y aplicaciones en segundo plano".==>Turn off "Continue running background extensions and apps when Microsoft Edge is closed".
+Optimización de entrega solo en la red local==>Delivery Optimization on the local network only
+En modo Internet, Windows sube partes de sus actualizaciones a otros equipos y gasta tu conexión.==>In Internet mode, Windows uploads parts of its updates to other PCs and uses your connection.
+Microsoft: Optimización de entrega==>Microsoft: Delivery Optimization
+Solo red local o sin compartir==>Local network only or not sharing
+Internet==>Internet
+Red local==>Local network
+Abre Configuración > Windows Update > Opciones avanzadas > Optimización de distribución.==>Open Settings > Windows Update > Advanced options > Delivery Optimization.
+Abre Configuración > Actualización y seguridad > Optimización de distribución.==>Open Settings > Update & Security > Delivery Optimization.
+Elige "Dispositivos de mi red local" o apaga "Permitir descargas de otros dispositivos".==>Choose "Devices on my local network" or turn off "Allow downloads from other devices".
+Aceleración del mouse apagada==>Mouse acceleration off
+"Mejorar la precisión del puntero" mueve el cursor según la velocidad del mouse, y apuntar se vuelve menos predecible en los juegos.==>"Enhance pointer precision" moves the cursor based on how fast the mouse moves, so aiming becomes less predictable in games.
+Microsoft: opciones del puntero del mouse==>Microsoft: mouse pointer options
+Cambia cómo se siente el mouse==>Changes how the mouse feels
+Se apaga "Mejorar la precisión del puntero". La velocidad del puntero no cambia.==>"Enhance pointer precision" is turned off. Pointer speed does not change.
+Menos efectos visuales en esta PC==>Fewer visual effects on this PC
+Con poca memoria o con disco HDD, las animaciones y la transparencia le quitan fluidez a Windows.==>With little memory or an HDD, animations and transparency make Windows feel less smooth.
+Microsoft: efectos visuales de Windows==>Microsoft: Windows visual effects
+Activos==>On
+Apagados==>Off
+Se apagan "Efectos de animación" y "Efectos de transparencia" de Accesibilidad. El suavizado de fuentes se queda como está.==>"Animation effects" and "Transparency effects" in Accessibility are turned off. Font smoothing stays as it is.
+Archivo de hibernación más chico==>Smaller hibernation file
+Con poco espacio libre, hiberfil.sys ocupa cerca de la mitad de la memoria RAM en el disco.==>With little free space, hiberfil.sys takes about half of the RAM size on disk.
+Microsoft: powercfg y la hibernación==>Microsoft: powercfg and hibernation
+Solo se reduce en escritorios confirmados; en laptops y equipos sin identificar no se toca.==>Only reduced on confirmed desktops; laptops and unidentified PCs are left as they are.
+Completo, {0}==>Full, {0}
+Reducido==>Reduced
+Si se va la luz mientras duerme, se pierde lo no guardado==>If the power goes out while it sleeps, unsaved work is lost
+El archivo baja de 40 % a 20 % de la RAM, cerca de la mitad. Se conserva el inicio rápido; se pierden hibernar y el sueño híbrido.==>The file goes from 40 % to 20 % of RAM, about half. Fast startup is kept; hibernate and hybrid sleep are lost.
+Sensor de almacenamiento activado==>Storage Sense on
+Borra temporales solo cuando queda poco espacio, para que Windows no se quede sin lugar para actualizarse.==>Deletes temporary files only when space is low, so Windows does not run out of room to update.
+Microsoft: Sensor de almacenamiento==>Microsoft: Storage Sense
+De fábrica==>Windows default
+Windows lo enciende solo cuando queda poco espacio==>Windows turns it on by itself when space runs low
+Recall apagado==>Recall off
+Borra las capturas guardadas de Recall y no se recuperan.==>Deletes the saved Recall snapshots and they can't be recovered.
+Recall guarda capturas de lo que haces en pantalla para poder buscarlas después.==>Recall saves snapshots of what you do on screen so you can search them later.
+Microsoft: administrar Recall==>Microsoft: manage Recall
+Se deshace el ajuste; las capturas borradas no vuelven==>The setting is undone; deleted snapshots don't come back
+Comprobando Recall…==>Checking Recall…
+No se pudo leer el estado de Recall==>Couldn't read the Recall state
+Disponible==>Available
+Abre Configuración > Privacidad y seguridad > Recall y capturas.==>Open Settings > Privacy & security > Recall & snapshots.
+Apaga Guardar capturas.==>Turn off Save snapshots.
+Borra las capturas guardadas y no se recuperan==>Deletes the saved snapshots and they can't be recovered
+Se apaga el análisis de lo que hay en pantalla con la directiva de Windows. Las capturas guardadas se borran y no se recuperan.==>Screen analysis is turned off with the Windows policy. Saved snapshots are deleted and can't be recovered.
+Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.==>Settings may show that an organization manages this setting until you undo it.
+Widgets apagados==>Widgets off
+Los widgets y las noticias de la barra de tareas usan memoria y red en segundo plano.==>Taskbar widgets and news use memory and network in the background.
+Microsoft: política NewsAndInterests==>Microsoft: NewsAndInterests policy
+Haz clic derecho en la barra de tareas.==>Right-click the taskbar.
+Abre Noticias e intereses y elige Desactivar.==>Open News and interests and choose Turn off.
+Se apagan los widgets con la directiva de Windows. Pide reiniciar.==>Widgets are turned off with the Windows policy. Needs a restart.
+Abre Configuración > Personalización > Barra de tareas.==>Open Settings > Personalization > Taskbar.
+Apaga Widgets.==>Turn off Widgets.
+Copilot quitado==>Copilot removed
+La app de Copilot viene con Windows y se ejecuta en segundo plano.==>The Copilot app comes with Windows and runs in the background.
+Microsoft: administrar Copilot==>Microsoft: manage Copilot
+Se vuelve a instalar; desde la Microsoft Store, con internet==>It is reinstalled from the Microsoft Store, with internet
+Abre Afina con la cuenta del dueño para quitarlo==>Open Afina with the owner's account to remove it
+Quitado==>Removed
+Se quita la app de Copilot para esta cuenta con Remove-AppxPackage.==>The Copilot app is removed for this account with Remove-AppxPackage.
+Corre solo con poco espacio libre y solo sobre temporales. No toca la Papelera ni Descargas.==>Runs only when free space is low and only on temporary files. It does not touch the Recycle Bin or Downloads.
+Extensiones de archivo visibles==>File extensions shown
+Ver la extensión ayuda a notar un archivo disfrazado, como factura.pdf.exe.==>Seeing the extension helps you spot a disguised file, like invoice.pdf.exe.
+Microsoft: Explorador de archivos==>Microsoft: File Explorer
+Visibles==>Shown
+Ocultas==>Hidden
+El Explorador de archivos muestra la extensión de todos los archivos.==>File Explorer shows the extension of every file.
+Finalizar tarea en la barra de tareas==>End task on the taskbar
+Agrega "Finalizar tarea" al menú de cada app de la barra, para cerrar una que no responde sin abrir el Administrador de tareas.==>Adds "End task" to the menu of each taskbar app, to close one that is not responding without opening Task Manager.
+Microsoft: configuración avanzada de Windows==>Microsoft: Windows advanced settings
+Activado==>On
+Apagado==>Off
+Se activa "Finalizar tarea" en Configuración > Sistema > Para programadores.==>"End task" is turned on in Settings > System > For developers.
+Porcentaje de batería en la barra==>Battery percentage on the taskbar
+Muestra el porcentaje junto al icono de la batería, sin pasar el mouse por encima.==>Shows the percentage next to the battery icon, without hovering over it.
+Microsoft: KB5067036==>Microsoft: KB5067036
+Visible==>Shown
+Oculto==>Hidden
+Se activa el porcentaje de batería en la bandeja del sistema.==>The battery percentage is turned on in the system tray.
+Menú contextual clásico==>Classic context menu
+Vuelve el menú de clic derecho completo de Windows 10, sin tener que pulsar "Mostrar más opciones".==>Brings back the full Windows 10 right-click menu, without having to click "Show more options".
+Pureinfotech (sin fuente de Microsoft)==>Pureinfotech (no Microsoft source)
+Una actualización de Windows puede volver a romperlo==>A Windows update can break it again
+Clásico==>Classic
+Nuevo==>New
+Se crean dos claves vacías en tu usuario que devuelven el menú clásico. Pide reiniciar.==>Two empty keys are created for your user that bring back the classic menu. Needs a restart.
+Búsqueda sin resultados de internet==>Search without web results
+El cuadro de búsqueda de Windows manda lo que escribes a Bing y mezcla resultados de la web con los de tu PC.==>The Windows search box sends what you type to Bing and mixes web results with those from your PC.
+Microsoft: política de búsqueda==>Microsoft: search policy
+Activa==>On
+Apagada==>Off
+Abre Configuración > Privacidad y seguridad > Permisos de búsqueda.==>Open Settings > Privacy and security > Search permissions.
+Abre Configuración > Búsqueda > Permisos e historial.==>Open Settings > Search > Permissions & history.
+Apaga "Búsqueda de contenido en la nube" y "Mostrar aspectos destacados de la búsqueda".==>Turn off "Cloud content search" and "Show search highlights".
+Esto no quita Bing del todo: Windows Home no tiene un ajuste para eso.==>This does not remove Bing completely: Windows Home has no setting for that.
+Se apaga la búsqueda web con la directiva de Windows. Pide reiniciar.==>Web search is turned off with the Windows policy. Needs a restart.
+Se apagan las sugerencias del cuadro de búsqueda con la directiva de Windows. Microsoft solo documenta que quita las búsquedas recientes del Explorador; su efecto en Inicio viene de la comunidad.==>Search box suggestions are turned off with the Windows policy. Microsoft only documents that it removes recent searches in File Explorer; its effect on Start comes from the community.
+Inicio sin recomendaciones==>Start without recommendations
+El menú Inicio muestra apps sugeridas, sitios recomendados y avisos de la cuenta que casi nadie usa.==>The Start menu shows suggested apps, recommended sites and account notices that almost nobody uses.
+El efecto en Inicio viene de la comunidad, no de Microsoft==>The effect on Start comes from the community, not from Microsoft
+Inicio puede seguir mostrando archivos recientes==>Start can still show recent files
+Microsoft: política de Inicio==>Microsoft: Start policy
+Apagadas==>Off
+Activas==>On
+Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio, y también la lista de "Más usadas" y el historial de Ejecutar (Win+R). No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.==>Recommended programs, suggested sites and account notices are turned off in Start, along with the "Most used" list and the Run (Win+R) history. Recent files are not touched. On Pro and above the Recommended section is also hidden.
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }
@@ -942,6 +1118,53 @@ namespace Afina {
             return result;
         }
 
+        // Ratón y animaciones del área de cliente (SystemParametersInfo). Los Set guardan en el perfil y avisan a las ventanas.
+        const uint SPI_GETMOUSE = 0x0003, SPI_SETMOUSE = 0x0004, SPI_GETCLIENTAREAANIMATION = 0x1042, SPI_SETCLIENTAREAANIMATION = 0x1043;
+        const uint SPIF_UPDATEINIFILE = 0x01, SPIF_SENDCHANGE = 0x02;
+
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+        static extern bool SpiArray(uint action, uint param, int[] values, uint flags);
+
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+        static extern bool SpiGetInt(uint action, uint param, out int value, uint flags);
+
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+        static extern bool SpiSetPtr(uint action, uint param, IntPtr value, uint flags);
+
+        // { umbral 1, umbral 2, aceleración }
+        public static int[] GetMouseParams() {
+            int[] values = new int[3];
+            if (!SpiArray(SPI_GETMOUSE, 0, values, 0)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            return values;
+        }
+
+        public static bool SetMouseParams(int t1, int t2, int accel) {
+            return SpiArray(SPI_SETMOUSE, 0, new int[] { t1, t2, accel }, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+        }
+
+        public static bool GetClientAreaAnimation() {
+            int value;
+            if (!SpiGetInt(SPI_GETCLIENTAREAANIMATION, 0, out value, 0)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            return value != 0;
+        }
+
+        public static bool SetClientAreaAnimation(bool on) {
+            return SpiSetPtr(SPI_SETCLIENTAREAANIMATION, 0, new IntPtr(on ? 1 : 0), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+        }
+
+        [DllImport("shell32.dll")]
+        static extern void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, UIntPtr wParam, string lParam, uint flags, uint timeout, out UIntPtr result);
+
+        // Avisa al shell (asociaciones) y a todas las ventanas (WM_SETTINGCHANGE con el área), máximo 2 s por ventana.
+        public static void NotifyShell(string area) {
+            SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);
+            UIntPtr result;
+            SendMessageTimeout(new IntPtr(0xFFFF), 0x001A, UIntPtr.Zero, area, 0x0002, 2000, out result);
+        }
+
         public class DisplayMode { public int Width; public int Height; public int Hz; }
 
         public class DisplayInfo {
@@ -1182,6 +1405,15 @@ function Add-AfTxRecord {
     Send-AfTxStep -Tx $Tx -Name 'apply'
 }
 
+# Build de Windows en la que se probó Afina de verdad.
+function Get-AfTestedBuild { 26300 }
+
+# En otra build el cambio se escribe igual, pero no se pudo ver en pantalla: la fila lo avisa.
+function Add-AfUnverifiedNote {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)]$Os)
+    if ([int]$Os.Build -ne (Get-AfTestedBuild)) { [void]$Tx.Notes.Add((T 'Escrito, comprueba que se vea el cambio')) }
+}
+
 # Error con un motivo que se puede mostrar en la fila. Uso: throw (New-AfApplyError -Reason '…').
 function New-AfApplyError {
     param([Parameter(Mandatory)][string]$Reason, [switch]$Reverted)
@@ -1256,6 +1488,7 @@ function Undo-AfRecords {
     param([object[]]$Records = @(), $User)
     $failed = New-Object System.Collections.ArrayList
     $adapters = New-Object System.Collections.ArrayList
+    $areas = New-Object System.Collections.ArrayList
     $reason = $null
     for ($i = $Records.Count - 1; $i -ge 0; $i--) {
         $record = $Records[$i]
@@ -1263,6 +1496,8 @@ function Undo-AfRecords {
         try {
             Undo-AfRecord -Record $record -User $User
             if ($record.Kind -eq 'NetAdapterProperty' -and $record.InterfaceGuid -and -not $adapters.Contains([string]$record.InterfaceGuid)) { [void]$adapters.Add([string]$record.InterfaceGuid) }
+            $area = Get-AfRecordNotifyArea -Record $record
+            if ($area -and -not $areas.Contains($area)) { [void]$areas.Add($area) }
         } catch {
             Write-AfLog -Level Warn -Message ('No se pudo deshacer {0} {1}: {2}' -f $record.Kind, $record.Name, $_.Exception.Message)
             if (-not $reason) { $reason = Get-AfApplyReason -ErrorRecord $_ }
@@ -1270,6 +1505,7 @@ function Undo-AfRecords {
         }
     }
     if ($adapters.Count) { Restart-AfAdapters -InterfaceGuid @($adapters) }
+    foreach ($area in $areas) { Send-AfShellNotify -Area $area }
     [pscustomobject]@{ Failed = @($failed); Reason = $reason }
 }
 
@@ -1290,7 +1526,7 @@ function Complete-AfTransaction {
 }
 
 function Get-AfRegistryState {
-    param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Name, $User)
+    param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][AllowEmptyString()][string]$Name, $User)
     $resolved = Resolve-AfRegistryPath -Path $Path -User $User
     $key = $null
     try { $key = Get-Item -LiteralPath $resolved -ErrorAction Stop } catch { }
@@ -1320,7 +1556,7 @@ function Set-AfRegistryValue {
     param(
         [Parameter(Mandatory)]$Tx,
         [Parameter(Mandatory)][string]$Path,
-        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Name,
         [Parameter(Mandatory)][ValidateSet('DWord', 'QWord', 'String', 'ExpandString', 'MultiString', 'Binary')][string]$Type,
         [Parameter(Mandatory)][AllowEmptyString()][AllowEmptyCollection()]$Value
     )
@@ -1328,16 +1564,28 @@ function Set-AfRegistryValue {
     $target = ConvertTo-AfRegistryData -Type $Type -Value $Value
     if ($before.Exists -and $before.Type -eq $Type -and (ConvertTo-AfComparable $before.Value) -eq (ConvertTo-AfComparable $target)) { return $false }
     $resolved = Resolve-AfRegistryPath -Path $Path -User $Tx.User
+    # Claves que no existían, de la más profunda a la más alta, tal como llegaron (sin resolver).
+    $created = @()
+    $cursor = $Path
+    while ($cursor -and -not (Test-Path -LiteralPath (Resolve-AfRegistryPath -Path $cursor -User $Tx.User))) {
+        $created += $cursor
+        $cursor = Split-Path -Path $cursor -Parent
+    }
     try {
-        if (-not $before.KeyExists) { New-Item -Path $resolved -Force -ErrorAction Stop | Out-Null }
-        New-ItemProperty -LiteralPath $resolved -Name $Name -PropertyType $Type -Value $target -Force -ErrorAction Stop | Out-Null
+        if ($created.Count) { New-Item -Path $resolved -Force -ErrorAction Stop | Out-Null }
+        if ($Name -eq '') {
+            if ($Type -ne 'String') { throw 'The default value only supports String' }
+            Set-Item -LiteralPath $resolved -Value $target -ErrorAction Stop
+        } else {
+            New-ItemProperty -LiteralPath $resolved -Name $Name -PropertyType $Type -Value $target -Force -ErrorAction Stop | Out-Null
+        }
     } catch {
         Write-AfLog -Level Warn -Message "Registro $resolved\$Name`: $($_.Exception.Message)"
-        if (-not $before.KeyExists) { Remove-Item -LiteralPath $resolved -Recurse -Force -ErrorAction SilentlyContinue }
+        if ($created.Count) { Remove-Item -LiteralPath (Resolve-AfRegistryPath -Path $created[-1] -User $Tx.User) -Recurse -Force -ErrorAction SilentlyContinue }
         throw (New-AfApplyError -Reason (T 'Windows no dejó escribir en el registro'))
     }
     Add-AfTxRecord -Tx $Tx -Record @{
-        Kind = 'RegistryValue'; Path = $Path; Name = $Name; KeyExisted = $before.KeyExists
+        Kind = 'RegistryValue'; Path = $Path; Name = $Name; KeyExisted = $before.KeyExists; CreatedKeys = $created
         Previous = [pscustomobject]@{ Exists = $before.Exists; Type = $before.Type; Value = $before.Value }
         New = [pscustomobject]@{ Exists = $true; Type = $Type; Value = $target }
     }
@@ -1351,16 +1599,34 @@ function Restore-AfRegistryValue {
     try {
         if ($previous.Exists) {
             if (-not (Test-Path -LiteralPath $resolved)) { New-Item -Path $resolved -Force -ErrorAction Stop | Out-Null }
-            New-ItemProperty -LiteralPath $resolved -Name $Record.Name -PropertyType $previous.Type -Value (ConvertTo-AfRegistryData -Type $previous.Type -Value $previous.Value) -Force -ErrorAction Stop | Out-Null
+            if ($Record.Name -eq '') {
+                Set-Item -LiteralPath $resolved -Value ([string]$previous.Value) -ErrorAction Stop
+            } else {
+                New-ItemProperty -LiteralPath $resolved -Name $Record.Name -PropertyType $previous.Type -Value (ConvertTo-AfRegistryData -Type $previous.Type -Value $previous.Value) -Force -ErrorAction Stop | Out-Null
+            }
             return
         }
         $state = Get-AfRegistryState -Path $Record.Path -Name $Record.Name -User $User
-        if ($state.Exists) { Remove-ItemProperty -LiteralPath $resolved -Name $Record.Name -Force -ErrorAction Stop }
-        if (-not $Record.KeyExisted -and $state.KeyExists) {
-            $key = Get-Item -LiteralPath $resolved -ErrorAction Stop
+        if ($state.Exists) {
+            if ($Record.Name -eq '') {
+                # Remove-ItemProperty no acepta el nombre vacío ni '(default)' en 5.1: se borra por .NET.
+                $writable = (Get-Item -LiteralPath $resolved -ErrorAction Stop).OpenSubKey('', $true)
+                try { $writable.DeleteValue('') } finally { $writable.Close() }
+            } else {
+                Remove-ItemProperty -LiteralPath $resolved -Name $Record.Name -Force -ErrorAction Stop
+            }
+        }
+        # Los registros viejos no tienen CreatedKeys (y en JSON una sola clave vuelve como texto): se usa KeyExisted.
+        $created = @($Record.CreatedKeys | Where-Object { $_ })
+        if (-not $created.Count -and -not $Record.KeyExisted) { $created = @($Record.Path) }
+        foreach ($createdPath in $created) {
+            $createdResolved = Resolve-AfRegistryPath -Path $createdPath -User $User
+            if (-not (Test-Path -LiteralPath $createdResolved)) { continue }
+            $key = Get-Item -LiteralPath $createdResolved -ErrorAction Stop
             $empty = $key.SubKeyCount -eq 0 -and $key.ValueCount -eq 0
             $key.Close()
-            if ($empty) { Remove-Item -LiteralPath $resolved -Force -ErrorAction Stop }
+            if (-not $empty) { break }
+            Remove-Item -LiteralPath $createdResolved -Force -ErrorAction Stop
         }
     } catch {
         Write-AfLog -Level Warn -Message "Deshacer registro $resolved\$($Record.Name): $($_.Exception.Message)"
@@ -2090,6 +2356,174 @@ function Get-AfAppxPackageState {
     if (@(Get-AppxPackage -Name $Record.PackageName -ErrorAction SilentlyContinue).Count) { 'Installed' } else { 'Removed' }
 }
 
+$script:AfPagingPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management'
+$script:AfPowerPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Power'
+
+# --- Parámetros del sistema (ratón, animaciones del área de cliente) ---
+
+# Envoltorios del código nativo: las pruebas los sustituyen para no tocar el sistema.
+function Get-AfSystemParameterValue {
+    param([Parameter(Mandatory)][ValidateSet('Mouse', 'ClientAreaAnimation')][string]$Name)
+    if (-not (Initialize-AfNative)) { throw (New-AfApplyError -Reason (T 'Windows no dejó leer ese ajuste')) }
+    if ($Name -eq 'Mouse') { , [int[]][Afina.Native]::GetMouseParams() } else { [Afina.Native]::GetClientAreaAnimation() }
+}
+
+function Invoke-AfSetSystemParameter {
+    param([Parameter(Mandatory)][ValidateSet('Mouse', 'ClientAreaAnimation')][string]$Name, [Parameter(Mandatory)]$Value)
+    if (-not (Initialize-AfNative)) { throw (New-AfApplyError -Reason (T 'Windows no aceptó el ajuste')) }
+    $ok = if ($Name -eq 'Mouse') {
+        $v = [int[]]@($Value)
+        [Afina.Native]::SetMouseParams($v[0], $v[1], $v[2])
+    } else {
+        [Afina.Native]::SetClientAreaAnimation([bool]$Value)
+    }
+    if (-not $ok) { throw (New-AfApplyError -Reason (T 'Windows no aceptó el ajuste')) }
+}
+
+# Avisa al shell y a las ventanas de un cambio de ajustes. Solo corre dentro de Apply (hilo de aplicar, no el de WPF); si falla, el cambio sigue.
+function Send-AfShellNotify {
+    param([Parameter(Mandatory)][string]$Area)
+    try {
+        if (-not (Initialize-AfNative)) { throw (T 'El código nativo no está disponible') }
+        [Afina.Native]::NotifyShell($Area)
+    } catch {
+        Write-AfLog -Level Warn -Message "No se pudo avisar al shell ($Area): $($_.Exception.Message)"
+    }
+}
+
+# Área que hay que avisar al shell tras restaurar un registro; $null si no hace falta.
+function Get-AfRecordNotifyArea {
+    param([Parameter(Mandatory)]$Record)
+    if ($Record.Kind -eq 'RegistryValue' -and $Record.Name -eq 'EnableTransparency' -and [string]$Record.Path -like '*\Themes\Personalize') { return 'ImmersiveColorSet' }
+    if ($Record.Kind -eq 'RegistryValue' -and $Record.Name -eq 'HideFileExt' -and [string]$Record.Path -like '*\Explorer\Advanced') { return 'ShellState' }
+    $null
+}
+
+function ConvertTo-AfSystemParameterValue {
+    param([string]$Name, $Value)
+    if ($Name -eq 'Mouse') { , [int[]]@($Value) } else { [bool]$Value }
+}
+
+# Los parámetros son del usuario de la sesión: con otra cuenta (elevación) no se escriben.
+function Set-AfSystemParameter {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][ValidateSet('Mouse', 'ClientAreaAnimation')][string]$Name, [Parameter(Mandatory)]$Value)
+    if ($Tx.User -and -not $Tx.User.IsSameAsProcess) { throw (New-AfApplyError -Reason (T 'abre Afina con la cuenta del dueño para este ajuste')) }
+    $target = ConvertTo-AfSystemParameterValue -Name $Name -Value $Value
+    $previous = Get-AfSystemParameterValue -Name $Name
+    if ((ConvertTo-AfComparable $previous) -eq (ConvertTo-AfComparable $target)) { return $false }
+    Invoke-AfSetSystemParameter -Name $Name -Value $target
+    Add-AfTxRecord -Tx $Tx -Record @{ Kind = 'SystemParameter'; Name = $Name; Previous = $previous; New = $target }
+    if ((ConvertTo-AfComparable (Get-AfSystemParameterValue -Name $Name)) -ne (ConvertTo-AfComparable $target)) {
+        throw (New-AfApplyError -Reason (T 'Windows no aceptó el ajuste'))
+    }
+    $true
+}
+
+function Restore-AfSystemParameter {
+    param([Parameter(Mandatory)]$Record, $User)
+    if ($User -and -not $User.IsSameAsProcess) { throw (New-AfApplyError -Reason (T 'abre Afina con la cuenta del dueño para deshacerlo')) }
+    Invoke-AfSetSystemParameter -Name $Record.Name -Value (ConvertTo-AfSystemParameterValue -Name $Record.Name -Value $Record.Previous)
+}
+
+function Get-AfSystemParameterState {
+    param([Parameter(Mandatory)]$Record, $User)
+    Get-AfSystemParameterValue -Name $Record.Name
+}
+
+# --- Optimización de entrega ---
+
+# Solo se lee (inventario): la fila es a mano, Afina no cambia el modo.
+function Get-AfDeliveryOptimizationMode {
+    [string](Get-DOConfig -ErrorAction Stop).DownloadMode
+}
+
+# --- Archivo de paginación automático ---
+
+function Get-AfPagefileAutomatic {
+    [bool](Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop).AutomaticManagedPagefile
+}
+
+function Set-AfPagefileAutomatic {
+    param([Parameter(Mandatory)][bool]$Value)
+    Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop | Set-CimInstance -Property @{ AutomaticManagedPagefile = $Value } -ErrorAction Stop
+}
+
+function Set-AfPagefileAuto {
+    param([Parameter(Mandatory)]$Tx)
+    if (Get-AfPagefileAutomatic) { return $false }
+    $before = Get-AfRegistryState -Path $script:AfPagingPath -Name 'PagingFiles'
+    Set-AfPagefileAutomatic -Value $true
+    Add-AfTxRecord -Tx $Tx -Record @{
+        Kind = 'PagefileAuto'; Path = $script:AfPagingPath; Name = 'PagingFiles'; KeyExisted = $true
+        Previous = [pscustomobject]@{ Exists = $before.Exists; Type = $before.Type; Value = $before.Value }
+    }
+    if (-not (Get-AfPagefileAutomatic)) { throw (New-AfApplyError -Reason (T 'Windows no activó el archivo de paginación automático')) }
+    $true
+}
+
+function Restore-AfPagefileAuto {
+    param([Parameter(Mandatory)]$Record, $User)
+    Set-AfPagefileAutomatic -Value $false
+    # Si el original ya era el automático (?:\pagefile.sys), el indicador puede seguir activo sin que sea un fallo.
+    $wasAutomatic = $Record.Previous.Exists -and ((@($Record.Previous.Value) -join ' ') -match '^\?:\\pagefile\.sys')
+    if (-not $wasAutomatic -and (Get-AfPagefileAutomatic)) { throw (New-AfApplyError -Reason (T 'Windows no desactivó el archivo de paginación automático')) }
+    # Windows reescribe PagingFiles al cambiar el modo: se vuelve a dejar el valor y el tipo originales.
+    Restore-AfRegistryValue -Record $Record -User $User
+}
+
+function Get-AfPagefileAutoState {
+    param([Parameter(Mandatory)]$Record, $User)
+    Get-AfRegistryValueState -Record $Record -User $User
+}
+
+# --- Archivo de hibernación ---
+
+# Completa (Full) ocupa cerca de la RAM; reducida (Reduced), alrededor del 20 %.
+function Get-AfHibernationType {
+    param([Parameter(Mandatory)][long]$FileBytes, [Parameter(Mandatory)][long]$RamBytes, [Parameter(Mandatory)][int]$SizePercent)
+    if ($FileBytes -le 0) { return $null }
+    if (@(0, 20, 40) -notcontains $SizePercent) { return 'Custom' }
+    if ($RamBytes -gt 0 -and $FileBytes -ge ($RamBytes * 0.3)) { return 'Full' }
+    'Reduced'
+}
+
+function Get-AfHibernationInfo {
+    $enabled = [bool](Get-AfRegistryValue -Path $script:AfPowerPath -Name 'HibernateEnabled')
+    $percent = [int](Get-AfRegistryValue -Path $script:AfPowerPath -Name 'HiberFileSizePercent')
+    $file = Get-Item -LiteralPath (Join-Path $env:SystemDrive 'hiberfil.sys') -Force -ErrorAction SilentlyContinue
+    $bytes = if ($file) { [long]$file.Length } else { [long]0 }
+    $ram = [long](Get-CimInstance -ClassName Win32_ComputerSystem -OperationTimeoutSec 15 -ErrorAction Stop).TotalPhysicalMemory
+    @{ Enabled = $enabled; FileBytes = $bytes; RamBytes = $ram; Type = (Get-AfHibernationType -FileBytes $bytes -RamBytes $ram -SizePercent $percent) }
+}
+
+function Set-AfHibernationType {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][ValidateSet('Reduced', 'Full')][string]$Type)
+    $info = Get-AfHibernationInfo
+    if ($info.Type -eq $Type) { return $false }
+    if (-not $info.Enabled -or -not $info.Type) { throw (New-AfApplyError -Reason (T 'la hibernación está desactivada')) }
+    if ($info.Type -eq 'Custom') { throw (New-AfApplyError -Reason (T 'la hibernación tiene un tamaño personalizado')) }
+    Invoke-AfPowercfg -Arguments ('/h /type {0}' -f $Type.ToLowerInvariant()) | Out-Null
+    Add-AfTxRecord -Tx $Tx -Record @{ Kind = 'HibernationType'; Previous = $info.Type; New = $Type }
+    if ((Get-AfHibernationInfo).Type -ne $Type) { throw (New-AfApplyError -Reason (T 'Windows no aceptó el tipo de hibernación')) }
+    $true
+}
+
+function Restore-AfHibernationType {
+    param([Parameter(Mandatory)]$Record, $User)
+    try {
+        Invoke-AfPowercfg -Arguments ('/h /type {0}' -f ([string]$Record.Previous).ToLowerInvariant()) | Out-Null
+    } catch {
+        Write-AfLog -Level Warn -Message "Hibernación: $($_.Exception.Message)"
+        if ($Record.Previous -eq 'Full') { throw (New-AfApplyError -Reason (T 'falta espacio en el disco para volver a la hibernación completa')) }
+        throw
+    }
+}
+
+function Get-AfHibernationTypeState {
+    param([Parameter(Mandatory)]$Record, $User)
+    (Get-AfHibernationInfo).Type
+}
+
 # Lectores de salidas de comandos. Solo usan posiciones, números y palabras que no cambian con el idioma.
 
 # powercfg /q <plan> <subgrupo> <ajuste>: los dos últimos 0x... son CA y CC, en ese orden.
@@ -2210,7 +2644,26 @@ function Get-AfSystemInfo {
         Edition = Get-AfRegistryValue -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID'
         IsWin11 = $build -ge 22000
         IsInsider = [bool](Get-AfRegistryValue -Path 'HKLM:\SOFTWARE\Microsoft\WindowsSelfHost\Applicability' -Name 'BranchName')
+        Ubr = [int](Get-AfRegistryValue -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'UBR')
     }
+}
+
+# Las directivas solo se respetan fuera de Home.
+function Test-AfPolicyEdition {
+    param($Os)
+    -not ([string]$Os.Edition).StartsWith('Core')
+}
+
+function Test-AfEnterpriseEdition {
+    param($Os)
+    ([string]$Os.Edition) -match '^(Enterprise|Education|IoTEnterprise)'
+}
+
+# El porcentaje de batería en la bandeja llegó con la 26100.7019.
+function Test-AfBatteryPercentBuild {
+    param($Os)
+    $build = [int]$Os.Build
+    $build -gt 26200 -or ($build -in 26100, 26200 -and [int]$Os.Ubr -ge 7019)
 }
 
 function Get-AfDeviceInfo {
@@ -2218,7 +2671,14 @@ function Get-AfDeviceInfo {
     $system = Get-CimInstance -ClassName Win32_ComputerSystem -OperationTimeoutSec 15
     $product = Get-CimInstance -ClassName Win32_ComputerSystemProduct -OperationTimeoutSec 15
     $enclosure = Get-CimInstance -ClassName Win32_SystemEnclosure -OperationTimeoutSec 15 | Select-Object -First 1
-    $battery = @(Get-CimInstance -ClassName Win32_Battery -OperationTimeoutSec 15)
+    $batteryRead = $true
+    $battery = @()
+    try {
+        $battery = @(Get-CimInstance -ClassName Win32_Battery -OperationTimeoutSec 15 -ErrorAction Stop)
+    } catch {
+        $batteryRead = $false
+    }
+    $desktopChassis = @(3, 4, 5, 6, 7, 13, 15, 16, 24, 35)
 
     $manufacturer = ([string]$system.Manufacturer).Trim()
     # Lenovo pone el tipo de máquina (83DV) en Model y el nombre comercial en Version.
@@ -2229,6 +2689,8 @@ function Get-AfDeviceInfo {
         Manufacturer = $manufacturer
         Model = $model
         IsLaptop = $hasLaptopChassis -or $battery.Count -gt 0
+        # Solo con chasis de escritorio conocido, sin chasis de laptop y con la lectura de baterías hecha y vacía.
+        IsDesktop = (-not $hasLaptopChassis) -and $batteryRead -and $battery.Count -eq 0 -and @($enclosure.ChassisTypes | Where-Object { $desktopChassis -contains [int]$_ }).Count -gt 0
         OnBattery = $battery.Count -gt 0 -and [int]$battery[0].BatteryStatus -eq 1
     }
 }
@@ -2683,6 +3145,7 @@ function Get-AfStorageInfo {
     $trim = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\fsutil.exe') -Arguments 'behavior query DisableDeleteNotify' -TimeoutMs 15000
     [pscustomobject]@{
         SystemDrive = $drive
+        FreeBytes = [long]$logical.FreeSpace
         FreeGB = [math]::Round([double]$logical.FreeSpace / 1GB)
         SizeGB = [math]::Round([double]$logical.Size / 1GB)
         MediaType = $type.MediaType
@@ -2754,12 +3217,206 @@ function Get-AfPromoApps {
             Write-AfLog -Level Warn -Message "No se pudieron listar las apps aprovisionadas: $($_.Exception.Message)"
         }
     }
-    [pscustomobject]@{ Promo = $promo }
+    # Copilot no está en la lista cerrada: se ofrece aparte, con su propia revisión.
+    $copilot = $null
+    $found = $packages | Where-Object { $_.Name -eq 'Microsoft.Copilot' } | Select-Object -First 1
+    if ($found) {
+        $copilot = [pscustomobject]@{
+            Name = 'Copilot'; PackageName = $found.Name; PackageFullName = $found.PackageFullName; PackageFamilyName = $found.PackageFamilyName
+            StoreId = if ($found.PackageFamilyName -eq 'Microsoft.Copilot_8wekyb3d8bbwe') { '9NHT9RB2F4HD' } else { $null }
+            Provisioned = $false
+        }
+    }
+    $hasWidgets = [bool]($packages | Where-Object { $_.Name -eq 'MicrosoftWindows.Client.WebExperience' } | Select-Object -First 1)
+    [pscustomobject]@{ Promo = $promo; Copilot = $copilot; HasWidgets = $hasWidgets }
+}
+
+# Lecturas extra del inventario (solo lectura): paginación, entrega, Edge y efectos.
+# Ninguna lanza hacia las revisiones: el inventario anota las partes que fallan.
+
+function Test-AfLowDisk {
+    param($Storage)
+    if (-not $Storage) { return $false }
+    $free = [double]$Storage.FreeGB
+    $size = [double]$Storage.SizeGB
+    # Un disco sin leer (tamaño 0) no es un disco lleno.
+    if ($size -le 0) { return $false }
+    $free -lt 20 -or ($free / $size) -lt 0.15
+}
+
+function Get-AfPagefileInfo {
+    $system = Get-CimInstance -ClassName Win32_ComputerSystem -OperationTimeoutSec 15 -ErrorAction Stop
+    # Sin instancias es válido (paginación automática); un fallo de lectura lanza.
+    $files = @(Get-CimInstance -ClassName Win32_PageFileSetting -OperationTimeoutSec 15 -ErrorAction Stop)
+    @{
+        Automatic = [bool]$system.AutomaticManagedPagefile
+        # MaximumSize = 0 significa que el sistema maneja el tamaño.
+        Files = @($files | ForEach-Object { @{ Name = [string]$_.Name; MaxMB = [int]$_.MaximumSize } })
+    }
+}
+
+# Recall: 'Enabled', 'Disabled' o 'Absent' (sin fila). Tarda unos 6 s y lanza si la lectura falla.
+function Get-AfRecallState {
+    $feature = Get-CimInstance -ClassName Win32_OptionalFeature -Filter "Name='Recall'" -OperationTimeoutSec 15 -ErrorAction Stop | Select-Object -First 1
+    if (-not $feature) { return 'Absent' }
+    switch ([int]$feature.InstallState) { 1 { 'Enabled' } 2 { 'Disabled' } default { 'Absent' } }
+}
+
+function Get-AfDeliveryOptimizationInfo {
+    try {
+        $mode = Get-AfDeliveryOptimizationMode
+    } catch {
+        return @{ Available = $false; Mode = $null; Provider = $null }
+    }
+    # El proveedor (Settings, MDM, registro...) dice quién fijó el modo; si no se lee, queda en null.
+    $provider = try { [string](Get-DOConfig -ErrorAction Stop).DownloadModeProvider } catch { $null }
+    @{ Available = $true; Mode = $mode; Provider = $provider }
+}
+
+function Get-AfEdgeInfo {
+    $roots = @(${env:ProgramFiles(x86)}, $env:ProgramFiles) | Where-Object { $_ }
+    $installed = [bool]@($roots | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'Microsoft\Edge\Application\msedge.exe') }).Count
+    $session = [Diagnostics.Process]::GetCurrentProcess().SessionId
+    $mine = @(Get-Process -Name msedge -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $session })
+    @{
+        Installed = $installed
+        Running = $mine.Count -gt 0
+        HasWindow = @($mine | Where-Object { [int64]$_.MainWindowHandle -ne 0 }).Count -gt 0
+    }
+}
+
+function Get-AfEffectsInfo {
+    @{ ClientAreaAnimation = [bool](Get-AfSystemParameterValue -Name ClientAreaAnimation) }
+}
+
+# Convierte un contador sin lanzar: lo que no cabe en Int64 (UInt64 basura) o no es número queda en $null.
+function ConvertTo-AfCounter {
+    param($Value)
+    if ($null -eq $Value) { return $null }
+    try {
+        $number = [decimal]$Value
+        if ($number -lt 0 -or $number -gt [decimal][long]::MaxValue) { return $null }
+        [long]$number
+    } catch { $null }
+}
+
+function Get-AfFailurePrediction {
+    try {
+        [bool]@(Get-CimInstance -Namespace 'root\wmi' -ClassName MSStorageDriver_FailurePredictStatus -OperationTimeoutSec 15 -ErrorAction Stop | Where-Object { $_.PredictFailure }).Count
+    } catch { $false }
+}
+
+function Get-AfDiskHealth {
+    # La predicción se lee aparte: no debe perderse si la lista de discos falla.
+    $predict = Get-AfFailurePrediction
+    $list = @()
+    try {
+        # MSFT_PhysicalDisk por CIM (con tiempo límite): HealthStatus 0 Healthy, 1 Warning, 2 Unhealthy, 5 Unknown.
+        $disks = @(Get-CimInstance -Namespace 'root\Microsoft\Windows\Storage' -ClassName MSFT_PhysicalDisk -OperationTimeoutSec 15 -ErrorAction Stop)
+        $busNames = @{ 3 = 'ATA'; 6 = 'FireWire'; 8 = 'RAID'; 9 = 'iSCSI'; 10 = 'SAS'; 11 = 'SATA'; 12 = 'SD'; 13 = 'MMC'; 16 = 'Spaces'; 17 = 'NVMe' }
+        $healthNames = @{ 0 = 'Healthy'; 1 = 'Warning'; 2 = 'Unhealthy'; 5 = 'Unknown' }
+        foreach ($disk in $disks) {
+            # Después de Get-PhysicalDisk (lo usa el inventario), el módulo Storage muestra BusType y HealthStatus como texto: se leen los números crudos.
+            $raw = $disk.CimInstanceProperties
+            $busType = if ($raw -and $raw['BusType']) { [int]$raw['BusType'].Value } else { [int]$disk.BusType }
+            $healthStatus = if ($raw -and $raw['HealthStatus']) { [int]$raw['HealthStatus'].Value } else { [int]$disk.HealthStatus }
+            # 7 es USB y 15 es un disco virtual de archivo (Docker o WSL): no son discos de la PC.
+            if ($busType -in 7, 15) { continue }
+            $counter = $null
+            try { $counter = @(Get-CimAssociatedInstance -InputObject $disk -ResultClassName MSFT_StorageReliabilityCounter -OperationTimeoutSec 10 -ErrorAction Stop)[0] } catch { $counter = $null }
+            $health = $healthNames[$healthStatus]
+            $bus = $busNames[$busType]
+            $list += @{
+                Name = [string]$disk.FriendlyName; BusType = $(if ($bus) { $bus } else { 'Other' }); Health = $(if ($health) { $health } else { 'Unknown' })
+                Wear = $(if ($counter) { ConvertTo-AfCounter $counter.Wear } else { $null })
+                Temperature = $(if ($counter) { ConvertTo-AfCounter $counter.Temperature } else { $null })
+                TemperatureMax = $(if ($counter) { ConvertTo-AfCounter $counter.TemperatureMax } else { $null })
+                ReadErrors = $(if ($counter) { ConvertTo-AfCounter $counter.ReadErrorsUncorrected } else { $null })
+                WriteErrors = $(if ($counter) { ConvertTo-AfCounter $counter.WriteErrorsUncorrected } else { $null })
+            }
+        }
+    } catch { $list = @() }
+    @{ Disks = @($list); PredictFailure = $predict }
+}
+
+# Suma las baterías: 0 y 0xFFFFFFFF son "sin dato" y la carga nunca pasa de su diseño. Sin ninguna válida, $null.
+function Get-AfBatteryTotals {
+    param([object[]]$Batteries)
+    $design = 0L; $charge = 0L; $cycles = 0L; $found = $false
+    foreach ($battery in @($Batteries | Where-Object { $_ })) {
+        $d = [long](ConvertTo-AfCounter $battery.Design)
+        $f = [long](ConvertTo-AfCounter $battery.Full)
+        if ($d -le 0 -or $d -ge 4294967295 -or $f -le 0 -or $f -ge 4294967295) { continue }
+        $found = $true
+        $design += $d
+        $charge += [math]::Min($f, $d)
+        $cycle = ConvertTo-AfCounter $battery.Cycles
+        if ($null -ne $cycle -and $cycle -lt 4294967295) { $cycles += $cycle }
+    }
+    if (-not $found) { return $null }
+    @{ DesignMWh = [int]$design; FullMWh = [int]$charge; Cycles = [int]$cycles }
+}
+
+# Las baterías según WMI, emparejadas por InstanceName.
+function Get-AfBatteryWmi {
+    $static = @(Get-CimInstance -Namespace 'root\wmi' -ClassName BatteryStaticData -OperationTimeoutSec 15 -ErrorAction Stop)
+    $full = @(Get-CimInstance -Namespace 'root\wmi' -ClassName BatteryFullChargedCapacity -OperationTimeoutSec 15 -ErrorAction Stop)
+    $cycleRows = @()
+    try { $cycleRows = @(Get-CimInstance -Namespace 'root\wmi' -ClassName BatteryCycleCount -OperationTimeoutSec 15 -ErrorAction Stop) } catch { $cycleRows = @() }
+    foreach ($battery in $static) {
+        $match = $full | Where-Object { $_.InstanceName -eq $battery.InstanceName } | Select-Object -First 1
+        if (-not $match) { continue }
+        $cycle = $cycleRows | Where-Object { $_.InstanceName -eq $battery.InstanceName } | Select-Object -First 1
+        @{ Design = $battery.DesignedCapacity; Full = $match.FullChargedCapacity; Cycles = $(if ($cycle) { $cycle.CycleCount }) }
+    }
+}
+
+# Las baterías según el informe de powercfg (XML en %TEMP%, se borra siempre). Funciona sin administrador.
+function Get-AfBatteryReport {
+    $path = Join-Path $env:TEMP ('afina-bateria-{0}.xml' -f [guid]::NewGuid().ToString('N'))
+    try {
+        $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\powercfg.exe') -Arguments ('/batteryreport /xml /output "{0}"' -f $path) -TimeoutMs 15000
+        if ($result.TimedOut -or $result.ExitCode -ne 0 -or -not [System.IO.File]::Exists($path)) { return }
+        $xml = New-Object System.Xml.XmlDocument
+        $xml.Load($path)
+        foreach ($battery in @($xml.BatteryReport.Batteries.Battery | Where-Object { $_ })) {
+            @{ Design = $battery.DesignCapacity; Full = $battery.FullChargeCapacity; Cycles = $battery.CycleCount }
+        }
+    } finally {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Get-AfBatteryHealth {
+    # En algunas laptops (una ASUS) BatteryStaticData falla con "Error genérico" aun como administrador: entonces se usa el informe de powercfg.
+    $health = try { Get-AfBatteryTotals -Batteries @(Get-AfBatteryWmi) } catch { $null }
+    if ($health) { return $health }
+    Get-AfBatteryTotals -Batteries @(Get-AfBatteryReport)
+}
+function Get-AfBootTimes {
+    param([int]$Max = 5, [int]$Days = 30)
+    try {
+        $events = @(Get-WinEvent -FilterHashtable @{ LogName = 'Microsoft-Windows-Diagnostics-Performance/Operational'; Id = 100; StartTime = (Get-Date).AddDays(-$Days) } -ErrorAction Stop)
+    } catch {
+        # Sin eventos que coincidan no es un fallo: es "sin datos".
+        if ($_.FullyQualifiedErrorId -like 'NoMatchingEventsFound*' -or $_.Exception.Message -like '*No events were found*') { return @() }
+        throw
+    }
+    $boots = foreach ($event in $events) {
+        # Los campos se leen por nombre: su posición cambia entre versiones de Windows.
+        $fields = @{}
+        foreach ($data in @(([xml]$event.ToXml()).Event.EventData.Data)) { $fields[[string]$data.Name] = [string]$data.'#text' }
+        if ($fields['BootIsRebootAfterInstall'] -eq 'true') { continue }
+        if (-not $fields.ContainsKey('MainPathBootTime')) { continue }
+        @{ Time = [datetime]$event.TimeCreated; MainPathMs = [int]$fields['MainPathBootTime'] }
+    }
+    @($boots | Sort-Object { $_.Time } -Descending | Select-Object -First $Max)
 }
 
 function Get-AfInventoryPartNames {
     'User', 'Os', 'Device', 'Cpu', 'Gpus', 'Memory', 'Displays', 'Power', 'VendorTools', 'Network', 'Wlan',
-    'Security', 'Apps', 'Startup', 'Autostart', 'Storage', 'Registry'
+    'Security', 'Apps', 'Startup', 'Autostart', 'Storage', 'Registry',
+    'Pagefile', 'Hibernation', 'DeliveryOptimization', 'Edge', 'Effects'
 }
 
 # Lee la PC una sola vez. Si una parte falla, queda en $null, se anota en Errors y el resto sigue.
@@ -2784,6 +3441,11 @@ function Get-AfInventory {
         Autostart = { , @(Get-AfAutostartBinaries -User $user) }
         Storage = { Get-AfStorageInfo -User $user }
         Registry = { Get-AfRegistrySnapshot -Reads $Reads -User $user }
+        Pagefile = { Get-AfPagefileInfo }
+        Hibernation = { Get-AfHibernationInfo }
+        DeliveryOptimization = { Get-AfDeliveryOptimizationInfo }
+        Edge = { Get-AfEdgeInfo }
+        Effects = { Get-AfEffectsInfo }
     }
 
     $inventory = [ordered]@{}
@@ -2813,8 +3475,9 @@ function Get-AfCategories {
         [pscustomobject]@{ Id = 'startup'; Name = (T 'Inicio'); Icon = 'rocket-launch' }
         [pscustomobject]@{ Id = 'storage'; Name = (T 'Almacenamiento'); Icon = 'hard-drives' }
         [pscustomobject]@{ Id = 'security'; Name = (T 'Seguridad'); Icon = 'shield-check' }
-        [pscustomobject]@{ Id = 'hardware'; Name = (T 'Hardware'); Icon = 'wrench' }
+        [pscustomobject]@{ Id = 'hardware'; Name = (T 'Diagnóstico'); Icon = 'wrench' }
         [pscustomobject]@{ Id = 'optional'; Name = (T 'Opcional'); Icon = 'sliders-horizontal' }
+        [pscustomobject]@{ Id = 'windows'; Name = (T 'Ajustes de Windows'); Icon = 'windows-logo' }
     )
 }
 
@@ -2861,9 +3524,11 @@ function Get-AfCatalogProviders {
         { Get-AfNetworkChecks }
         { Get-AfStartupChecks }
         { Get-AfStorageChecks }
+        { Get-AfDiagnosticsChecks }
         { Get-AfHardwareChecks }
         { Get-AfSecurityChecks }
         { Get-AfOptionalChecks }
+        { Get-AfWindowsChecks }
     )
 }
 
@@ -2914,9 +3579,33 @@ function Invoke-AfCheck {
     }
 }
 
+# Las categorías optional y windows no mueven la aguja ni cuentan como listas.
+function Test-AfIsScoredCategory {
+    param([string]$Category)
+    $Category -notin 'optional', 'windows'
+}
+
 function Test-AfCountsForScore {
     param($Result)
-    $Result.Check.Kind -eq 'Auto' -and $Result.Check.Category -ne 'optional' -and $Result.Detection.State -in 'Ok', 'Improvable'
+    $Result.Check.Kind -eq 'Auto' -and (Test-AfIsScoredCategory -Category $Result.Check.Category) -and
+        ($Result.Detection.State -eq 'Ok' -or ($Result.Detection.State -eq 'Improvable' -and $Result.Preselected))
+}
+
+function Test-AfIsReady {
+    param($Result)
+    $Result.Check.Kind -eq 'Auto' -and (Test-AfIsScoredCategory -Category $Result.Check.Category) -and
+        $Result.Detection.State -eq 'Improvable' -and [bool]$Result.Preselected
+}
+
+# Una lectura (Reading) sigue visible en Ok pero no cuenta como "En orden".
+function Test-AfOkRow {
+    param($Result)
+    $Result.Detection.State -eq 'Ok' -and -not $Result.Check.Reading
+}
+
+function Test-AfRowPending {
+    param($Result)
+    $Result.Detection.State -in 'Improvable', 'Manual', 'Error' -or ($Result.Detection.State -eq 'Info' -and -not $Result.Check.Reading)
 }
 
 # Posición de la aguja: peso en orden / peso de las revisiones automáticas que cuentan (sección 9 del diseño).
@@ -2932,11 +3621,23 @@ function Get-AfScore {
 function Get-AfSummary {
     param([object[]]$Results = @())
     [pscustomobject]@{
-        Ready = @($Results | Where-Object { $_.Check.Kind -eq 'Auto' -and $_.Check.Category -ne 'optional' -and $_.Detection.State -eq 'Improvable' }).Count
+        Ready = @($Results | Where-Object { Test-AfIsReady $_ }).Count
         Manual = @($Results | Where-Object { $_.Detection.State -eq 'Manual' }).Count
-        Ok = @($Results | Where-Object { $_.Detection.State -eq 'Ok' }).Count
+        Ok = @($Results | Where-Object { Test-AfOkRow $_ }).Count
         Optional = @($Results | Where-Object { $_.Check.Category -eq 'optional' -and $_.Detection.State -eq 'Improvable' }).Count
     }
+}
+
+# Título del veredicto y si se celebra. Sin fila de disco, el disco cuenta como leído.
+function Get-AfVerdict {
+    param([object[]]$Results = @())
+    $disk = @($Results | Where-Object { $_.Check.Id -eq 'hardware.disk-health' })[0]
+    if ($disk -and $disk.Detection.State -eq 'Manual') {
+        return [pscustomobject]@{ Title = (T 'Revisa el disco'); Celebrate = $false }
+    }
+    $reading = $disk -and $disk.Detection.Data -and $disk.Detection.Data.Async
+    $tuned = (Get-AfScore -Results $Results) -ge 0.999 -and (Get-AfSummary -Results $Results).Ready -eq 0 -and -not $reading
+    [pscustomobject]@{ Title = $(if ($tuned) { T 'Afinada' } else { T 'Afinación' }); Celebrate = [bool]$tuned }
 }
 
 # Respaldos: una sesión por cada vez que se aplica, en %ProgramData%\Afina\respaldos\<fecha>.json (diseño, sección 11).
@@ -2951,8 +3652,17 @@ function Save-AfSession {
     # Se escribe aparte y se reemplaza: un corte a mitad de escritura no deja el respaldo dañado.
     $temporary = $Session.Path + '.tmp'
     [System.IO.File]::WriteAllText($temporary, $json, (New-Object System.Text.UTF8Encoding($false)))
-    # [NullString]::Value: un $null de PowerShell llegaría a .NET como "" y Replace lo rechaza como ruta.
-    if ([System.IO.File]::Exists($Session.Path)) { [System.IO.File]::Replace($temporary, $Session.Path, [NullString]::Value) } else { [System.IO.File]::Move($temporary, $Session.Path) }
+    # Un antivirus o el indexador pueden tener el respaldo abierto un instante: hasta 3 intentos, solo ante IOException.
+    for ($attempt = 1; ; $attempt++) {
+        try {
+            # [NullString]::Value: un $null de PowerShell llegaría a .NET como "" y Replace lo rechaza como ruta.
+            if ([System.IO.File]::Exists($Session.Path)) { [System.IO.File]::Replace($temporary, $Session.Path, [NullString]::Value) } else { [System.IO.File]::Move($temporary, $Session.Path) }
+            return
+        } catch [System.IO.IOException] {
+            if ($attempt -ge 3) { throw }
+            Start-Sleep -Milliseconds 200
+        }
+    }
 }
 
 # Se escribe enseguida: si no se puede guardar el respaldo, no se aplica nada.
@@ -3290,6 +4000,13 @@ function Get-AfWindowedOptimizationsValue {
     $base + 'SwapEffectUpgradeEnable=1;'
 }
 
+# PC débil: 8 GB de RAM o menos, o Windows en un disco HDD.
+function Test-AfWeakPc {
+    param([Parameter(Mandatory)]$Inventory)
+    ($Inventory.Memory -and [double]$Inventory.Memory.TotalGB -gt 0 -and [double]$Inventory.Memory.TotalGB -le 8) -or
+    ($Inventory.Storage -and $Inventory.Storage.MediaType -eq 'HDD')
+}
+
 function Get-AfGamingChecks {
     @{
         Id = 'display.refresh'; Category = 'gaming'
@@ -3407,6 +4124,52 @@ function Get-AfGamingChecks {
             $path = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
             $current = [string](Get-AfRegistryValue -Path $path -Name 'DirectXUserGlobalSettings' -User $tx.User)
             Set-AfRegistryValue -Tx $tx -Path $path -Name 'DirectXUserGlobalSettings' -Type String -Value (Get-AfWindowedOptimizationsValue -Current $current) | Out-Null
+        }
+    }
+
+    @{
+        Id = 'gaming.mouse-acceleration'; Category = 'gaming'
+        Title = (T 'Aceleración del mouse apagada')
+        Why = (T '"Mejorar la precisión del puntero" mueve el cursor según la velocidad del mouse, y apuntar se vuelve menos predecible en los juegos.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: opciones del puntero del mouse'); SourceUrl = 'https://support.microsoft.com/en-us/windows/change-mouse-settings-e81356a4-0e74-fe38-7d01-9d79fbf8712b'; Undo = (T 'Se puede deshacer')
+        Reads = @('HKCU:\Control Panel\Mouse|MouseSpeed')
+        AppliesTo = { param($inv) $inv.User -and $inv.User.IsSameAsProcess -and $null -ne $inv.Registry['HKCU:\Control Panel\Mouse|MouseSpeed'] }
+        Detect = {
+            param($inv)
+            if ([string]$inv.Registry['HKCU:\Control Panel\Mouse|MouseSpeed'] -eq '0') { return New-AfDetection -State Ok -Current (T 'Apagada') }
+            New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') -Note (T 'Cambia cómo se siente el mouse') `
+                -What (T 'Se apaga "Mejorar la precisión del puntero". La velocidad del puntero no cambia.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfSystemParameter -Tx $tx -Name Mouse -Value @(0, 0, 0) | Out-Null
+            foreach ($name in 'MouseSpeed', 'MouseThreshold1', 'MouseThreshold2') {
+                Set-AfRegistryValue -Tx $tx -Path 'HKCU:\Control Panel\Mouse' -Name $name -Type String -Value '0' | Out-Null
+            }
+        }
+    }
+
+    @{
+        Id = 'gaming.visual-effects'; Category = 'gaming'
+        Title = (T 'Menos efectos visuales en esta PC')
+        Why = (T 'Con poca memoria o con disco HDD, las animaciones y la transparencia le quitan fluidez a Windows.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $false
+        Source = (T 'Microsoft: efectos visuales de Windows'); SourceUrl = 'https://support.microsoft.com/en-us/windows/experience/performance-optimization/tips-to-improve-pc-performance-in-windows'; Undo = (T 'Se puede deshacer')
+        Reads = @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize|EnableTransparency')
+        AppliesTo = { param($inv) $inv.User -and $inv.User.IsSameAsProcess -and $inv.Effects -and (Test-AfWeakPc -Inventory $inv) }
+        Detect = {
+            param($inv)
+            $transparency = $inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize|EnableTransparency'] -ne 0
+            if (-not $inv.Effects.ClientAreaAnimation -and -not $transparency) { return New-AfDetection -State Ok -Current (T 'Apagados') }
+            New-AfDetection -State Improvable -Current (T 'Activos') -Target (T 'Apagados') `
+                -What (T 'Se apagan "Efectos de animación" y "Efectos de transparencia" de Accesibilidad. El suavizado de fuentes se queda como está.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'EnableTransparency' -Type DWord -Value 0 | Out-Null
+            Set-AfSystemParameter -Tx $tx -Name ClientAreaAnimation -Value $false | Out-Null
+            Send-AfShellNotify -Area 'ImmersiveColorSet'
         }
     }
 
@@ -3533,6 +4296,25 @@ function Get-AfStartupChecks {
             foreach ($choice in @($detected.Data.Choices | Where-Object Selected)) { Disable-AfStartupEntry -Tx $tx -Entry $choice | Out-Null }
         }
     }
+
+    @{
+        Id = 'startup.edge-background'; Category = 'startup'
+        Title = (T 'Edge sigue activo en segundo plano')
+        Why = (T 'Edge se queda en memoria aunque cierres todas sus ventanas, y arranca con Windows para abrir más rápido.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: Aumento de inicio de Edge'); SourceUrl = 'https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies'; Undo = (T 'No cambia nada')
+        Reads = @('HKLM:\SOFTWARE\Policies\Microsoft\Edge|StartupBoostEnabled', 'HKLM:\SOFTWARE\Policies\Microsoft\Edge|BackgroundModeEnabled')
+        AppliesTo = { param($inv) $inv.Edge -and $inv.Edge.Installed }
+        Detect = {
+            param($inv)
+            $policy = $null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Edge|StartupBoostEnabled'] -or $null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Edge|BackgroundModeEnabled']
+            if ($policy) { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
+            if ($inv.Edge.HasWindow) { return New-AfDetection -State NotApplicable -Note (T 'Cierra Edge para revisarlo') }
+            if (-not $inv.Edge.Running) { return New-AfDetection -State Ok -Current (T 'Cerrado') }
+            New-AfDetection -State Manual -Current (T 'Edge corre sin ventanas') -Target (T 'Cerrado') `
+                -Steps @((T 'Abre Edge y entra a edge://settings/system.'), (T 'Apaga "Aumento de inicio".'), (T 'Apaga "Seguir ejecutando extensiones y aplicaciones en segundo plano".'))
+        }
+    }
 }
 
 function Get-AfEthernetPowerKeywords {
@@ -3623,6 +4405,28 @@ function Get-AfNetworkChecks {
             New-AfDetection -State Info -Current (T '2,4 GHz') -Steps @((T 'Si el router tiene una red de 5 GHz, conéctate a esa para jugar.'))
         }
     }
+
+    @{
+        Id = 'network.delivery-optimization'; Category = 'network'
+        Title = (T 'Optimización de entrega solo en la red local')
+        Why = (T 'En modo Internet, Windows sube partes de sus actualizaciones a otros equipos y gasta tu conexión.')
+        # A mano: Set-DODownloadMode deja el modo fijado por AdminProvider y no está documentado si Configuración vuelve a mandar.
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: Optimización de entrega'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/deployment/do/waas-delivery-optimization'; Undo = (T 'No cambia nada')
+        Reads = @('HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization|DODownloadMode')
+        AppliesTo = { param($inv) $inv.DeliveryOptimization -and $inv.DeliveryOptimization.Available }
+        Detect = {
+            param($inv)
+            if ($null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization|DODownloadMode']) { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
+            if (-not $inv.DeliveryOptimization.Mode) { return New-AfDetection -State NotApplicable }
+            if ([string]$inv.DeliveryOptimization.Mode -ne 'Internet') { return New-AfDetection -State Ok -Current (T 'Solo red local o sin compartir') }
+            # Con el modo Internet fijado por MDM o por el registro no se toca; con el modo ya en Lan no se mira el proveedor.
+            if ([string]$inv.DeliveryOptimization.Provider -in 'MdmProvider', 'RegistryProvider') { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
+            $open = if ($inv.Os.IsWin11) { (T 'Abre Configuración > Windows Update > Opciones avanzadas > Optimización de distribución.') } else { (T 'Abre Configuración > Actualización y seguridad > Optimización de distribución.') }
+            New-AfDetection -State Manual -Current (T 'Internet') -Target (T 'Red local') `
+                -Steps @($open, (T 'Elige "Dispositivos de mi red local" o apaga "Permitir descargas de otros dispositivos".'))
+        }
+    }
 }
 
 function Format-AfSize {
@@ -3642,9 +4446,8 @@ function Get-AfStorageChecks {
         AppliesTo = { param($inv) $inv.Storage -and $inv.Storage.SizeGB }
         Detect = {
             param($inv)
-            $free = [double]$inv.Storage.FreeGB
-            $current = (T '{0} GB libres') -f [math]::Round($free)
-            if ($free -ge 20 -and ($free / $inv.Storage.SizeGB) -ge 0.15) { return New-AfDetection -State Ok -Current $current }
+            $current = (T '{0} GB libres') -f [math]::Round([double]$inv.Storage.FreeGB)
+            if (-not (Test-AfLowDisk -Storage $inv.Storage)) { return New-AfDetection -State Ok -Current $current }
             New-AfDetection -State Info -Current $current -Steps @((T 'Borra los temporales (abajo) y desinstala los juegos que ya no usas.'))
         }
     }
@@ -3680,6 +4483,231 @@ function Get-AfStorageChecks {
             New-AfDetection -State Improvable -Current (T 'Apagado') -Target (T 'Activado') -What (T 'DisableDeleteNotify de NTFS pasa de 1 a 0.')
         }
         Apply = { param($inv, $detected, $tx) Set-AfTrim -Tx $tx -Enabled $true | Out-Null }
+    }
+
+    @{
+        Id = 'storage.hibernation'; Category = 'storage'
+        Title = (T 'Archivo de hibernación más chico')
+        Why = (T 'Con poco espacio libre, hiberfil.sys ocupa cerca de la mitad de la memoria RAM en el disco.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: powercfg y la hibernación'); SourceUrl = 'https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options'; Undo = (T 'Se puede deshacer')
+        AppliesTo = { param($inv) $inv.Hibernation -and $inv.Hibernation.Enabled -and $inv.Hibernation.Type -eq 'Full' -and (Test-AfLowDisk -Storage $inv.Storage) }
+        Detect = {
+            param($inv)
+            $size = Format-AfSize -Bytes ([double]$inv.Hibernation.FileBytes)
+            # Solo se reduce en un escritorio confirmado; laptop, tipo desconocido o sin dato: no se toca.
+            if (-not ($inv.Device -and $inv.Device.IsDesktop)) {
+                return New-AfDetection -State Info -Current $size -Note (T 'Solo se reduce en escritorios confirmados; en laptops y equipos sin identificar no se toca.')
+            }
+            New-AfDetection -State Improvable -Current ((T 'Completo, {0}') -f $size) -Target (T 'Reducido') -Note (T 'Si se va la luz mientras duerme, se pierde lo no guardado') `
+                -What (T 'El archivo baja de 40 % a 20 % de la RAM, cerca de la mitad. Se conserva el inicio rápido; se pierden hibernar y el sueño híbrido.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            if (-not ($inv.Device -and $inv.Device.IsDesktop)) { return }
+            Set-AfHibernationType -Tx $tx -Type Reduced | Out-Null
+        }
+    }
+
+    @{
+        Id = 'storage.storage-sense'; Category = 'storage'
+        Title = (T 'Sensor de almacenamiento activado')
+        Why = (T 'Borra temporales solo cuando queda poco espacio, para que Windows no se quede sin lugar para actualizarse.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $false
+        Source = (T 'Microsoft: Sensor de almacenamiento'); SourceUrl = 'https://support.microsoft.com/en-us/windows/manage-drive-space-with-storage-sense-654f6ada-7bfc-45e5-966b-e24aded96ad5'; Undo = (T 'Se puede deshacer')
+        Reads = @('HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy|01', 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\StorageSense|AllowStorageSenseGlobal')
+        Detect = {
+            param($inv)
+            if ($null -ne $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\StorageSense|AllowStorageSenseGlobal']) { return New-AfDetection -State Info -Note (T 'Lo fija una directiva') }
+            $enabled = $inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy|01']
+            # Sin la clave, el usuario nunca lo tocó: Windows lo enciende solo cuando falta espacio (Microsoft Learn y soporte).
+            if ($null -eq $enabled) { return New-AfDetection -State Ok -Current (T 'De fábrica') -Note (T 'Windows lo enciende solo cuando queda poco espacio') }
+            if ($enabled -eq 1) { return New-AfDetection -State Ok -Current (T 'Activado') }
+            New-AfDetection -State Improvable -Current (T 'Apagado') -Target (T 'Activado') `
+                -What (T 'Corre solo con poco espacio libre y solo sobre temporales. No toca la Papelera ni Descargas.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            $path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'
+            foreach ($pair in @(@('01', 1), @('2048', 0), @('04', 1), @('08', 0), @('32', 0))) {
+                Set-AfRegistryValue -Tx $tx -Path $path -Name $pair[0] -Type DWord -Value $pair[1] | Out-Null
+            }
+            Add-AfUnverifiedNote -Tx $tx -Os $inv.Os
+        }
+    }
+}
+
+function Get-AfMedian {
+    param([double[]]$Values)
+    $sorted = @($Values | Sort-Object)
+    $mid = [int][math]::Floor($sorted.Count / 2)
+    if ($sorted.Count % 2) { $sorted[$mid] } else { ($sorted[$mid - 1] + $sorted[$mid]) / 2 }
+}
+
+# Estado de un disco: 2 = Manual, 1 = Info, 0 = Ok. Los errores solos nunca pasan de Info.
+function Get-AfDiskState {
+    param([Parameter(Mandatory)]$Disk)
+    $name = $Disk.Name
+    $rank = 0
+    $line = $null
+    $health = [string]$Disk.Health
+    if ($health -and $health -notin 'Healthy', 'Unknown') {
+        $text = switch ($health) {
+            'Unhealthy' { T '{0}: Windows lo marca en mal estado' }
+            'Warning' { T '{0}: Windows lo marca con advertencia' }
+            default { T '{0}: Windows reporta un problema de salud' }
+        }
+        return @{ Rank = 2; Wear = -1; Line = ($text -f $name) }
+    }
+    $wear = $Disk.Wear
+    if ($null -ne $wear) {
+        if ($wear -ge 90) { return @{ Rank = 2; Wear = $wear; Line = ((T '{0}: desgaste {1} %') -f $name, $wear) } }
+        if ($wear -ge 70) { $rank = 1; $line = (T '{0}: desgaste {1} %') -f $name, $wear }
+    }
+    if (-not $rank) {
+        $errors = [long]$Disk.ReadErrors + [long]$Disk.WriteErrors
+        if ($errors -gt 0) { $rank = 1; $line = (T '{0}: errores sin corregir ({1})') -f $name, $errors }
+        elseif ($Disk.TemperatureMax -and $Disk.TemperatureMax -gt 0 -and $null -ne $Disk.Temperature -and $Disk.Temperature -ge $Disk.TemperatureMax) {
+            $rank = 1; $line = (T '{0}: temperatura en su máximo ({1} °C)') -f $name, $Disk.Temperature
+        }
+    }
+    if (-not $line) {
+        $line = if ($health -eq 'Healthy' -and $null -eq $wear) { (T 'Buena, sin datos de desgaste') }
+        elseif ($health -eq 'Healthy') { (T 'Buena, desgaste {0} %') -f $wear }
+        elseif ($null -ne $wear) { (T 'Desgaste {0} %') -f $wear }
+        else { (T 'Sin datos de desgaste') }
+    }
+    @{ Rank = $rank; Wear = $(if ($null -ne $wear) { $wear } else { -1 }); Line = $line }
+}
+
+function Get-AfDiskDetection {
+    param($Health)
+    $disks = @($Health.Disks | Where-Object { $_ })
+    $steps = @((T 'Respalda tus archivos ya.'), (T 'Cambia el disco cuanto antes.'))
+    if (-not $disks.Count) {
+        # Sin lista de discos, una falla predicha sigue contando.
+        if ($Health.PredictFailure) { return New-AfDetection -State Manual -Current (T 'Windows predice una falla de disco') -Steps $steps }
+        return New-AfDetection -State NotApplicable
+    }
+    $states = @($disks | ForEach-Object {
+            $state = Get-AfDiskState -Disk $_
+            # Con varios discos, cada línea dice de cuál habla.
+            if ($disks.Count -gt 1 -and -not $state.Line.StartsWith($_.Name + ':')) { $state.Line = '{0}: {1}' -f $_.Name, $state.Line }
+            $state
+        })
+    $worst = $states | Sort-Object @{ Expression = { $_.Rank }; Descending = $true }, @{ Expression = { $_.Wear }; Descending = $true } | Select-Object -First 1
+    $rank = $worst.Rank
+    $current = $worst.Line
+    if ($Health.PredictFailure) { $rank = 2; $current = (T 'Windows predice una falla de disco') }
+    $details = if ($states.Count -gt 1) { ($states | ForEach-Object { $_.Line }) -join '; ' }
+    $data = @{ Lines = @($states | ForEach-Object { $_.Line }) }
+    switch ($rank) {
+        2 { New-AfDetection -State Manual -Current $current -Note $details -Data $data -Steps $steps }
+        1 { New-AfDetection -State Info -Current $current -Note $details -Data $data -Steps @((T 'Mantén un respaldo al día y vigila el disco.')) }
+        default { New-AfDetection -State Ok -Current $current -Note $details -Data $data }
+    }
+}
+
+function Get-AfBatteryDetection {
+    param($Health)
+    if (-not $Health -or $Health.DesignMWh -le 0 -or $Health.FullMWh -le 0) { return New-AfDetection -State NotApplicable }
+    $percent = [int][math]::Min(100, [math]::Round(100.0 * $Health.FullMWh / $Health.DesignMWh, [MidpointRounding]::AwayFromZero))
+    $current = (T 'Conserva el {0} % de su capacidad') -f $percent
+    $note = if ($Health.Cycles -gt 0) { (T '{0} ciclos de carga') -f $Health.Cycles }
+    if ($percent -ge 80) { return New-AfDetection -State Ok -Current $current -Note $note -Data @{ Percent = $percent } }
+    if ($percent -ge 60) {
+        return New-AfDetection -State Info -Current $current -Note $note -Data @{ Percent = $percent } -Steps @((T 'La batería ya dura menos que cuando era nueva.'))
+    }
+    New-AfDetection -State Manual -Current $current -Note $note -Data @{ Percent = $percent } `
+        -Steps @((T 'La batería está muy gastada: conviene cambiarla.'), (T 'Mientras tanto, usa la laptop con el cargador conectado.'))
+}
+
+function Get-AfBootDetection {
+    param($Boots)
+    # Un lector sin salida entrega $null, y @($null) cuenta como un elemento.
+    $boots = @($Boots | Where-Object { $_ })
+    if (-not $boots.Count) { return New-AfDetection -State Info -Current (T 'Sin datos recientes') }
+    $seconds = [int][math]::Round((Get-AfMedian -Values @($boots | ForEach-Object { [double]$_.MainPathMs })) / 1000, [MidpointRounding]::AwayFromZero)
+    $last = ($boots | Sort-Object { $_.Time } -Descending | Select-Object -First 1).Time
+    $note = (T 'Último arranque medido: {0}') -f $last.ToString('g', (Get-AfCulture))
+    $current = (T '{0} s hasta el escritorio') -f $seconds
+    if ($seconds -le 60) { return New-AfDetection -State Ok -Current $current -Note $note -Data @{ Seconds = $seconds } }
+    New-AfDetection -State Info -Current $current -Note $note -Data @{ Seconds = $seconds } -Steps @((T 'Revisa los programas de la categoría Inicio: son lo que más alarga el arranque.'))
+}
+
+function Get-AfDiagnosticsChecks {
+    @{
+        Id = 'hardware.disk-health'; Category = 'hardware'
+        Title = (T 'Salud del disco')
+        Why = (T 'Un disco con desgaste alto o fallas puede dejar de funcionar sin aviso y llevarse tus archivos.')
+        Impact = 'High'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Contadores de confiabilidad del almacenamiento de Windows'); Undo = (T 'No cambia nada')
+        Reading = $true; Async = $true
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Revisando…') -Data @{ Async = $true } }
+        AsyncDetect = {
+            param($inv)
+            try { Get-AfDiskDetection -Health (Get-AfDiskHealth) } catch { New-AfDetection -State NotApplicable }
+        }
+    }
+
+    @{
+        Id = 'hardware.battery-health'; Category = 'hardware'
+        Title = (T 'Salud de la batería')
+        Why = (T 'Una batería gastada dura menos y puede limitar el rendimiento de la laptop.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Capacidad de diseño y de carga completa de la batería'); Undo = (T 'No cambia nada')
+        Reading = $true; Async = $true
+        AppliesTo = { param($inv) $inv.Device -and $inv.Device.IsLaptop }
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Revisando…') -Data @{ Async = $true } }
+        AsyncDetect = {
+            param($inv)
+            try { Get-AfBatteryDetection -Health (Get-AfBatteryHealth) } catch { New-AfDetection -State NotApplicable }
+        }
+    }
+
+    @{
+        Id = 'hardware.boot-time'; Category = 'hardware'
+        Title = (T 'Tiempo de arranque')
+        Why = (T 'Un arranque largo suele venir de programas que se abren con Windows.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Info'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Registro de rendimiento del arranque de Windows'); Undo = (T 'No cambia nada')
+        Reading = $true; Async = $true
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Revisando…') -Data @{ Async = $true } }
+        AsyncDetect = {
+            param($inv)
+            try { Get-AfBootDetection -Boots (Get-AfBootTimes -Max 5 -Days 30) } catch { New-AfDetection -State Info -Current (T 'Sin datos recientes') }
+        }
+    }
+
+    @{
+        Id = 'hardware.pagefile'; Category = 'hardware'
+        Title = (T 'Archivo de paginación')
+        Why = (T 'Si el archivo de paginación está apagado o es muy chico, los juegos y apps pesadas pueden cerrarse por falta de memoria.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $true
+        Source = (T 'Configuración del archivo de paginación de Windows'); Undo = (T 'Vuelve a la configuración anterior')
+        Reading = $true
+        Detect = {
+            param($inv)
+            $page = $inv.Pagefile
+            if (-not $page) { return New-AfDetection -State NotApplicable }
+            if ($page.Automatic) { return New-AfDetection -State Ok -Current (T 'Automático') }
+            $files = @($page.Files)
+            # MaximumSize = 0 significa que el sistema maneja el tamaño.
+            if ($files | Where-Object { $_.MaxMB -eq 0 }) { return New-AfDetection -State Ok -Current (T 'Lo maneja Windows') }
+            $totalMB = 0
+            foreach ($file in $files) { $totalMB += [int]$file.MaxMB }
+            if ($files.Count -and $totalMB -ge 4096) { return New-AfDetection -State Ok -Current ((T '{0} MB fijos') -f $totalMB) }
+            $current = if ($files.Count) { (T '{0} MB fijos') -f $totalMB } else { (T 'Apagado') }
+            # Sin dato de espacio no se afirma nada del disco: el arreglo se ofrece, pero sin marcar.
+            if ($null -eq $inv.Storage -or $null -eq $inv.Storage.FreeBytes) {
+                return New-AfDetection -State Improvable -Current $current -Target (T 'Automático') -Preselect $false -What (T 'Deja que Windows maneje el archivo de paginación. Pide reiniciar.')
+            }
+            if ([long]$inv.Storage.FreeBytes -lt 4GB) {
+                return New-AfDetection -State Manual -Current $current -Target (T 'Automático') -Steps @((T 'Libera espacio primero: hacen falta al menos 4 GB libres.'))
+            }
+            New-AfDetection -State Improvable -Current $current -Target (T 'Automático') -What (T 'Deja que Windows maneje el archivo de paginación. Pide reiniciar.')
+        }
+        Apply = { param($inv, $detected, $tx) Set-AfPagefileAuto -Tx $tx | Out-Null }
     }
 }
 
@@ -3909,6 +4937,49 @@ function Get-AfAdsReads {
 }
 
 function Get-AfOptionalChecks {
+    # Recall va primero: su lectura tarda unos 6 s y así corre antes que Windows Update.
+    @{
+        Id = 'cleanup.recall'; Category = 'optional'
+        Title = (T 'Recall apagado')
+        Why = (T 'Recall guarda capturas de lo que haces en pantalla para poder buscarlas después.')
+        Impact = 'Low'; Risk = 'Advanced'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: administrar Recall'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/manage-recall'
+        Undo = (T 'Se deshace el ajuste; las capturas borradas no vuelven')
+        Reads = @('HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI|DisableAIDataAnalysis')
+        Async = $true
+        AppliesTo = {
+            param($inv)
+            $build = [int]$inv.Os.Build
+            $ubr = [int]$inv.Os.Ubr
+            # Sin dato de memoria no se sabe si cumple: no se ofrece.
+            $gb = if ($inv.Memory) { [double]$inv.Memory.TotalGB } else { 0 }
+            [bool]($inv.Os.IsWin11 -and ($build -gt 26100 -or ($build -eq 26100 -and $ubr -ge 3915)) -and $gb -ge 16)
+        }
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Comprobando Recall…') -Data @{ Async = $true } }
+        AsyncDetect = {
+            param($inv)
+            $policyEdition = Test-AfPolicyEdition -Os $inv.Os
+            # Con la directiva puesta no hace falta la lectura lenta; en Home no se respeta, así que no cuenta.
+            if ($policyEdition -and $inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI|DisableAIDataAnalysis'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Apagado') }
+            try { $state = Get-AfRecallState } catch { return New-AfDetection -State NotApplicable -Note (T 'No se pudo leer el estado de Recall') }
+            if ($state -eq 'Absent') { return New-AfDetection -State NotApplicable }
+            if ($state -eq 'Disabled') { return New-AfDetection -State Ok -Current (T 'Apagado') }
+            # InstallState 1 solo dice que Recall está instalado, no que guarde capturas: se muestra como Disponible.
+            if (-not $policyEdition) {
+                return New-AfDetection -State Info -Current (T 'Disponible') -Steps @(
+                    (T 'Abre Configuración > Privacidad y seguridad > Recall y capturas.')
+                    (T 'Apaga Guardar capturas.')
+                )
+            }
+            New-AfDetection -State Improvable -Current (T 'Disponible') -Target (T 'Apagado') -Note (T 'Borra las capturas guardadas y no se recuperan') `
+                -What ((T 'Se apaga el análisis de lo que hay en pantalla con la directiva de Windows. Las capturas guardadas se borran y no se recuperan.') + ' ' + (T 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.'))
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI' -Name 'DisableAIDataAnalysis' -Type DWord -Value 1 | Out-Null
+        }
+    }
+
     @{
         Id = 'updates.windows'; Category = 'optional'
         Title = (T 'Actualizaciones de Windows')
@@ -4050,6 +5121,67 @@ function Get-AfOptionalChecks {
     }
 
     @{
+        Id = 'cleanup.widgets'; Category = 'optional'
+        Title = (T 'Widgets apagados')
+        Why = (T 'Los widgets y las noticias de la barra de tareas usan memoria y red en segundo plano.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $true
+        Source = (T 'Microsoft: política NewsAndInterests'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-newsandinterests'
+        Undo = (T 'Se puede deshacer')
+        Reads = @(
+            'HKLM:\SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests'
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|TaskbarDa'
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds|ShellFeedsTaskbarViewMode'
+        )
+        AppliesTo = { param($inv) $null -ne $inv.Apps }
+        Detect = {
+            param($inv)
+            $win11 = [bool]$inv.Os.IsWin11
+            if ($win11 -and -not $inv.Apps.HasWidgets) { return New-AfDetection -State NotApplicable }
+            if (-not $win11) {
+                if ($inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds|ShellFeedsTaskbarViewMode'] -eq 2) { return New-AfDetection -State Ok -Current (T 'Apagados') }
+                return New-AfDetection -State Info -Current (T 'Activos') -Steps @(
+                    (T 'Haz clic derecho en la barra de tareas.')
+                    (T 'Abre Noticias e intereses y elige Desactivar.')
+                )
+            }
+            if (Test-AfPolicyEdition -Os $inv.Os) {
+                # La directiva solo se respeta en Windows 11 Pro y superiores.
+                if ($inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests'] -eq 0) { return New-AfDetection -State Ok -Current (T 'Apagados') }
+                return New-AfDetection -State Improvable -Current (T 'Activos') -Target (T 'Apagados') `
+                    -What ((T 'Se apagan los widgets con la directiva de Windows. Pide reiniciar.') + ' ' + (T 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.'))
+            }
+            if ($inv.Registry['HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|TaskbarDa'] -eq 0) { return New-AfDetection -State Ok -Current (T 'Apagados') }
+            New-AfDetection -State Info -Current (T 'Activos') -Steps @(
+                (T 'Abre Configuración > Personalización > Barra de tareas.')
+                (T 'Apaga Widgets.')
+            )
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Dsh' -Name 'AllowNewsAndInterests' -Type DWord -Value 0 | Out-Null
+        }
+    }
+
+    @{
+        Id = 'cleanup.copilot'; Category = 'optional'
+        Title = (T 'Copilot quitado')
+        Why = (T 'La app de Copilot viene con Windows y se ejecuta en segundo plano.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: administrar Copilot'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/manage-windows-copilot'
+        Undo = (T 'Se vuelve a instalar; desde la Microsoft Store, con internet')
+        AppliesTo = { param($inv) $null -ne $inv.Apps }
+        Detect = {
+            param($inv)
+            # Se quita para la cuenta del proceso: con otra cuenta elevada no se podría volver a registrar para el dueño.
+            if ($inv.User -and -not $inv.User.IsSameAsProcess) { return New-AfDetection -State NotApplicable -Note (T 'Abre Afina con la cuenta del dueño para quitarlo') }
+            if (-not $inv.Apps.Copilot) { return New-AfDetection -State NotApplicable }
+            New-AfDetection -State Improvable -Current (T 'Instalado') -Target (T 'Quitado') `
+                -What (T 'Se quita la app de Copilot para esta cuenta con Remove-AppxPackage.')
+        }
+        Apply = { param($inv, $detected, $tx) Remove-AfAppxPackage -Tx $tx -App $inv.Apps.Copilot | Out-Null }
+    }
+
+    @{
         Id = 'cleanup.ads'; Category = 'optional'
         Title = (T 'Sin anuncios ni sugerencias de Windows')
         Why = (T 'Windows muestra sugerencias en Inicio, la pantalla de bloqueo y Configuración, e instala apps promocionadas.')
@@ -4104,6 +5236,195 @@ function Get-AfOptionalChecks {
             $level = $inv.Registry['HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection|AllowTelemetry']
             if ($null -eq $level -or $level -gt 1) { Set-AfRegistryValue -Tx $tx -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection' -Name 'AllowTelemetry' -Type DWord -Value 1 | Out-Null }
             Set-AfRegistryValue -Tx $tx -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Privacy' -Name 'TailoredExperiencesWithDiagnosticDataEnabled' -Type DWord -Value 0 | Out-Null
+        }
+    }
+}
+
+function Get-AfWindowsChecks {
+    $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+
+    @{
+        Id = 'windows.file-extensions'; Category = 'windows'
+        Title = (T 'Extensiones de archivo visibles')
+        Why = (T 'Ver la extensión ayuda a notar un archivo disfrazado, como factura.pdf.exe.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Microsoft: Explorador de archivos'); SourceUrl = 'https://support.microsoft.com/en-us/windows/experience/fileexplorer/file-explorer-in-windows'
+        Undo = (T 'Se puede deshacer')
+        Reads = @("$adv|HideFileExt")
+        Detect = {
+            param($inv)
+            $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+            if ($inv.Registry["$adv|HideFileExt"] -eq 0) { return New-AfDetection -State Ok -Current (T 'Visibles') }
+            New-AfDetection -State Improvable -Current (T 'Ocultas') -Target (T 'Visibles') `
+                -What (T 'El Explorador de archivos muestra la extensión de todos los archivos.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt' -Type DWord -Value 0 | Out-Null
+            Send-AfShellNotify -Area 'ShellState'
+        }
+    }
+
+    @{
+        Id = 'windows.end-task'; Category = 'windows'
+        Title = (T 'Finalizar tarea en la barra de tareas')
+        Why = (T 'Agrega "Finalizar tarea" al menú de cada app de la barra, para cerrar una que no responde sin abrir el Administrador de tareas.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $true
+        Source = (T 'Microsoft: configuración avanzada de Windows'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/advanced-settings/'
+        Undo = (T 'Se puede deshacer')
+        Reads = @("$adv\TaskbarDeveloperSettings|TaskbarEndTask")
+        AppliesTo = { param($inv) [bool]($inv.Os.IsWin11 -and [int]$inv.Os.Build -ge 22631) }
+        Detect = {
+            param($inv)
+            $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+            if ($inv.Registry["$adv\TaskbarDeveloperSettings|TaskbarEndTask"] -eq 1) { return New-AfDetection -State Ok -Current (T 'Activado') }
+            New-AfDetection -State Improvable -Current (T 'Apagado') -Target (T 'Activado') `
+                -What (T 'Se activa "Finalizar tarea" en Configuración > Sistema > Para programadores.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings' -Name 'TaskbarEndTask' -Type DWord -Value 1 | Out-Null
+            Add-AfUnverifiedNote -Tx $tx -Os $inv.Os
+        }
+    }
+
+    @{
+        Id = 'windows.battery-percent'; Category = 'windows'
+        Title = (T 'Porcentaje de batería en la barra')
+        Why = (T 'Muestra el porcentaje junto al icono de la batería, sin pasar el mouse por encima.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $true
+        Source = (T 'Microsoft: KB5067036'); SourceUrl = 'https://support.microsoft.com/help/5067036'
+        Undo = (T 'Se puede deshacer')
+        Reads = @("$adv|IsBatteryPercentageEnabled")
+        AppliesTo = { param($inv) [bool]($inv.Device.IsLaptop -and (Test-AfBatteryPercentBuild -Os $inv.Os)) }
+        Detect = {
+            param($inv)
+            $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+            if ($inv.Registry["$adv|IsBatteryPercentageEnabled"] -eq 1) { return New-AfDetection -State Ok -Current (T 'Visible') }
+            New-AfDetection -State Improvable -Current (T 'Oculto') -Target (T 'Visible') `
+                -What (T 'Se activa el porcentaje de batería en la bandeja del sistema.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            Set-AfRegistryValue -Tx $tx -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'IsBatteryPercentageEnabled' -Type DWord -Value 1 | Out-Null
+            Add-AfUnverifiedNote -Tx $tx -Os $inv.Os
+        }
+    }
+
+    @{
+        Id = 'windows.classic-menu'; Category = 'windows'
+        Title = (T 'Menú contextual clásico')
+        Why = (T 'Vuelve el menú de clic derecho completo de Windows 10, sin tener que pulsar "Mostrar más opciones".')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $true
+        Source = (T 'Pureinfotech (sin fuente de Microsoft)'); SourceUrl = 'https://pureinfotech.com/bring-back-classic-context-menu-windows-11/'
+        Undo = (T 'Se puede deshacer')
+        AppliesTo = { param($inv) [bool]$inv.Os.IsWin11 }
+        Detect = {
+            param($inv)
+            # Reads no admite el nombre vacío (valor por defecto): se lee la clave directo.
+            $both = $true
+            foreach ($path in @(
+                    'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32'
+                    'HKCU:\Software\Classes\CLSID\{51668040-5e31-4023-bbe3-149163bd80f1}\InprocServer32'
+                )) {
+                $state = Get-AfRegistryState -Path $path -Name '' -User $inv.User
+                if (-not ($state.Exists -and $state.Type -eq 'String' -and [string]$state.Value -eq '')) { $both = $false }
+            }
+            $note = T 'Una actualización de Windows puede volver a romperlo'
+            if ($both) { return New-AfDetection -State Ok -Current (T 'Clásico') -Note $note }
+            New-AfDetection -State Improvable -Current (T 'Nuevo') -Target (T 'Clásico') -Note $note `
+                -What (T 'Se crean dos claves vacías en tu usuario que devuelven el menú clásico. Pide reiniciar.')
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            foreach ($id in '{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}', '{51668040-5e31-4023-bbe3-149163bd80f1}') {
+                Set-AfRegistryValue -Tx $tx -Path "HKCU:\Software\Classes\CLSID\$id\InprocServer32" -Name '' -Type String -Value '' | Out-Null
+            }
+            Add-AfUnverifiedNote -Tx $tx -Os $inv.Os
+        }
+    }
+
+    @{
+        Id = 'windows.search-web'; Category = 'windows'
+        Title = (T 'Búsqueda sin resultados de internet')
+        Why = (T 'El cuadro de búsqueda de Windows manda lo que escribes a Bing y mezcla resultados de la web con los de tu PC.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $true
+        Source = (T 'Microsoft: política de búsqueda'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-search'
+        Undo = (T 'Se puede deshacer')
+        Reads = @(
+            'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search|ConnectedSearchUseWeb'
+            'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|DisableSearchBoxSuggestions'
+        )
+        Detect = {
+            param($inv)
+            # Las directivas no se respetan en Home: un valor olvidado ahí no cuenta como hecho.
+            if (-not (Test-AfPolicyEdition -Os $inv.Os)) {
+                return New-AfDetection -State Info -Current (T 'Activa') -Steps @(
+                    $(if ($inv.Os.IsWin11) { (T 'Abre Configuración > Privacidad y seguridad > Permisos de búsqueda.') } else { (T 'Abre Configuración > Búsqueda > Permisos e historial.') })
+                    (T 'Apaga "Búsqueda de contenido en la nube" y "Mostrar aspectos destacados de la búsqueda".')
+                    (T 'Esto no quita Bing del todo: Windows Home no tiene un ajuste para eso.')
+                )
+            }
+            if (Test-AfEnterpriseEdition -Os $inv.Os) {
+                if ($inv.Registry['HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search|ConnectedSearchUseWeb'] -eq 0) { return New-AfDetection -State Ok -Current (T 'Apagada') }
+                return New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') `
+                    -What ((T 'Se apaga la búsqueda web con la directiva de Windows. Pide reiniciar.') + ' ' + (T 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.'))
+            }
+            # La nota va siempre a la vista: Microsoft no documenta el efecto en Inicio y no debe darse por seguro.
+            $note = T 'El efecto en Inicio viene de la comunidad, no de Microsoft'
+            if ($inv.Registry['HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|DisableSearchBoxSuggestions'] -eq 1) { return New-AfDetection -State Ok -Current (T 'Apagada') -Note $note }
+            New-AfDetection -State Improvable -Current (T 'Activa') -Target (T 'Apagada') -Note $note `
+                -What ((T 'Se apagan las sugerencias del cuadro de búsqueda con la directiva de Windows. Microsoft solo documenta que quita las búsquedas recientes del Explorador; su efecto en Inicio viene de la comunidad.') + ' ' + (T 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.'))
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            if (Test-AfEnterpriseEdition -Os $inv.Os) {
+                Set-AfRegistryValue -Tx $tx -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search' -Name 'ConnectedSearchUseWeb' -Type DWord -Value 0 | Out-Null
+            } else {
+                Set-AfRegistryValue -Tx $tx -Path 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer' -Name 'DisableSearchBoxSuggestions' -Type DWord -Value 1 | Out-Null
+            }
+        }
+    }
+
+    @{
+        Id = 'windows.start-recommendations'; Category = 'windows'
+        Title = (T 'Inicio sin recomendaciones')
+        Why = (T 'El menú Inicio muestra apps sugeridas, sitios recomendados y avisos de la cuenta que casi nadie usa.')
+        Impact = 'Low'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $false; NeedsReboot = $true
+        Source = (T 'Microsoft: política de Inicio'); SourceUrl = 'https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-start'
+        Undo = (T 'Se puede deshacer')
+        Reads = @(
+            "$adv|Start_TrackProgs"
+            "$adv|Start_IrisRecommendations"
+            "$adv|Start_RecoPersonalizedSites"
+            "$adv|Start_AccountNotifications"
+            'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|HideRecommendedSection'
+        )
+        AppliesTo = { param($inv) [bool]$inv.Os.IsWin11 }
+        Detect = {
+            param($inv)
+            $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+            # Start_TrackDocs no se toca: también vacía los archivos recientes del Explorador y las Jump Lists.
+            $off = @('Start_TrackProgs', 'Start_IrisRecommendations', 'Start_RecoPersonalizedSites', 'Start_AccountNotifications' | Where-Object { $inv.Registry["$adv|$_"] -ne 0 }).Count -eq 0
+            $policyEdition = Test-AfPolicyEdition -Os $inv.Os
+            # La directiva solo se respeta fuera de Home.
+            if ($off -and (-not $policyEdition -or $inv.Registry['HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|HideRecommendedSection'] -eq 1)) {
+                return New-AfDetection -State Ok -Current (T 'Apagadas') -Note $(if (-not $policyEdition) { (T 'Inicio puede seguir mostrando archivos recientes') })
+            }
+            # Start_TrackProgs también apaga la lista de "Más usadas" y el historial de Ejecutar (Win+R).
+            $what = T 'Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio, y también la lista de "Más usadas" y el historial de Ejecutar (Win+R). No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.'
+            if ($policyEdition) { $what += ' ' + (T 'Configuración puede mostrar que una organización administra este ajuste hasta que lo deshagas.') }
+            New-AfDetection -State Improvable -Current (T 'Activas') -Target (T 'Apagadas') -Note $(if (-not $policyEdition) { (T 'Inicio puede seguir mostrando archivos recientes') }) -What $what
+        }
+        Apply = {
+            param($inv, $detected, $tx)
+            $path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+            foreach ($name in 'Start_TrackProgs', 'Start_IrisRecommendations', 'Start_RecoPersonalizedSites', 'Start_AccountNotifications') {
+                Set-AfRegistryValue -Tx $tx -Path $path -Name $name -Type DWord -Value 0 | Out-Null
+            }
+            if (Test-AfPolicyEdition -Os $inv.Os) {
+                Set-AfRegistryValue -Tx $tx -Path 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer' -Name 'HideRecommendedSection' -Type DWord -Value 1 | Out-Null
+            }
         }
     }
 }
@@ -4546,7 +5867,7 @@ function Get-AfWindowXaml {
       </Grid.ColumnDefinitions>
 
       <Border Grid.Column="0" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="14,22,14,12">
-        <DockPanel LastChildFill="False">
+        <DockPanel LastChildFill="True">
           <Grid DockPanel.Dock="Top" Margin="8,0,8,0">
             <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
             <StackPanel x:Name="PcCard" Opacity="0">
@@ -4555,12 +5876,12 @@ function Get-AfWindowXaml {
               <StackPanel x:Name="Specs" Margin="0,16,0,0"/>
             </StackPanel>
           </Grid>
-          <Grid x:Name="NavHost" DockPanel.Dock="Top" Margin="0,24,0,0">
+          <ScrollViewer x:Name="NavScroll" VerticalScrollBarVisibility="Auto" Focusable="False"><Grid x:Name="NavHost" Margin="0,24,0,0">
             <StackPanel x:Name="Nav"/>
             <Border x:Name="NavIndicator" Width="2" Height="32" CornerRadius="2" Background="{DynamicResource Red}" HorizontalAlignment="Left" VerticalAlignment="Top">
               <Border.RenderTransform><TranslateTransform x:Name="NavIndicatorTransform"/></Border.RenderTransform>
             </Border>
-          </Grid>
+          </Grid></ScrollViewer>
         </DockPanel>
       </Border>
 
@@ -4945,7 +6266,7 @@ function New-AfRowElement {
         $arrow.Margin = '7,0,7,0'
         [void]$sub.Children.Add($arrow)
         [void]$sub.Children.Add((New-AfText -Text $d.Target -Brush 'Text' -Display:$numeric))
-    } elseif ($d.Current -and $d.State -ne 'Ok') {
+    } elseif ($d.Current -and ($d.State -ne 'Ok' -or $check.Reading)) {
         [void]$sub.Children.Add((New-AfText -Text $d.Current))
     } else {
         $sub.Visibility = 'Collapsed'
@@ -5411,7 +6732,7 @@ function Show-AfSkeleton {
         $pc.Visibility = 'Visible'
     }
     $groups = $Window.FindName('Groups')
-    foreach ($category in Get-AfCategories) {
+    foreach ($category in @(Get-AfCategories | Where-Object { $_.Id -ne 'windows' })) {
         $group = New-Object System.Windows.Controls.StackPanel
         $group.Tag = 'skeleton:' + $category.Id
         $group.ClipToBounds = $true
@@ -5473,7 +6794,7 @@ function New-AfNav {
         }
         $iconHost = New-Object System.Windows.Controls.Grid
         $iconOff = New-AfIcon -Name $entry.Icon -Size 16 -Brush 'Text2'
-        $iconOn = New-AfIcon -Name $entry.Icon -Variant Fill -Size 16 -Brush 'Text'
+        $iconOn = New-AfIcon -Name $entry.Icon -Variant $(if ($entry.Icon -in (Get-AfFillIconNames)) { 'Fill' } else { 'Bold' }) -Size 16 -Brush 'Text'
         $iconOn.Visibility = 'Collapsed'
         [void]$iconHost.Children.Add($iconOff)
         [void]$iconHost.Children.Add($iconOn)
@@ -5505,7 +6826,7 @@ function New-AfNav {
 function Set-AfNavSpinners {
     param([Parameter(Mandatory)]$Window)
     foreach ($id in $Window.Tag.Nav.Keys) {
-        if ($id -eq 'all') { continue }
+        if ($id -in 'all', 'windows') { continue }
         $hostGrid = $Window.Tag.Nav[$id].CountHost
         $hostGrid.Children.Clear()
         [void]$hostGrid.Children.Add((New-AfSpinner -Size 12))
@@ -5514,7 +6835,7 @@ function Set-AfNavSpinners {
 
 function Get-AfPendingCount {
     param([string]$Category, [object[]]$Results = @())
-    if ($Category -eq 'ok') { return @($Results | Where-Object { $_.Detection.State -eq 'Ok' }).Count }
+    if ($Category -eq 'ok') { return @($Results | Where-Object { Test-AfOkRow $_ }).Count }
     @($Results | Where-Object { $_.Check.Category -eq $Category -and ($_.Detection.State -eq 'Manual' -or ($_.Detection.State -eq 'Improvable' -and $_.Check.Kind -eq 'Auto')) }).Count
 }
 
@@ -5526,6 +6847,8 @@ function Set-AfNavCount {
     $ref.Count = $Count
     $hostGrid = $ref.CountHost
     $hostGrid.Children.Clear()
+    # Ajustes de Windows no lleva número ni check: son opcionales.
+    if ($Category -eq 'windows') { return }
     if ($Count -gt 0 -or $Category -eq 'ok') {
         $text = New-AfText -Text ([string]$Count) -Size 12 -Brush $(if ($Category -eq 'ok') { 'Text3' } else { 'Text' }) -Display -Weight 'Medium'
         $text.HorizontalAlignment = 'Right'
@@ -5573,9 +6896,17 @@ function Set-AfNavActive {
         $ref.IconOff.Visibility = if ($on) { 'Collapsed' } else { 'Visible' }
         $ref.Label.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, $(if ($on) { 'Text' } else { 'Text2' }))
     }
+    if ($Window.Tag.Nav[$Filter]) { $Window.Tag.Nav[$Filter].Button.BringIntoView() }
     $index = @(Get-AfNavEntries).Id.IndexOf($Filter)
     $y = [math]::Max(0, $index) * 34
     Start-AfAnimation -Target $Window.FindName('NavIndicatorTransform') -Property ([System.Windows.Media.TranslateTransform]::YProperty) -To $y -DurationMs 200 -Ease InOut -Enabled $Motion | Out-Null
+}
+
+# El grupo windows solo se ve al elegirlo: en Todo no aparece, pero lo marcado se aplica igual.
+function Test-AfGroupVisible {
+    param([string]$Tag, [string]$Filter)
+    if ($Tag -eq 'windows') { return $Filter -eq 'windows' }
+    $Filter -eq 'all' -or $Tag -eq $Filter
 }
 
 function Set-AfFilter {
@@ -5589,7 +6920,7 @@ function Set-AfFilter {
     $state.Filter = $Filter
     Set-AfNavActive -Window $Window -Filter $Filter -Motion $state.Motion
     foreach ($group in $Window.FindName('Groups').Children) {
-        $show = $Filter -eq 'all' -or $group.Tag -eq $Filter
+        $show = Test-AfGroupVisible -Tag "$($group.Tag)" -Filter $Filter
         $group.Visibility = if ($show) { 'Visible' } else { 'Collapsed' }
         if ($group.Tag -eq 'ok' -and $Filter -eq 'ok') { Set-AfOkGroupOpen -Group $group -Open $true -Motion $false }
     }
@@ -5666,8 +6997,12 @@ function Update-AfEmptyState {
     $Window.FindName('PanelBorder').Visibility = if ($visible.Count) { 'Visible' } else { 'Collapsed' }
     $hasRows = @($visible | Where-Object { $_.Tag -ne 'ok' }).Count -gt 0
     $results = @($s.Results)
+    # Una lectura sana no cuenta como algo por hacer: con solo lecturas, Todo sigue mostrando "afinada".
+    $pending = @($visible | Where-Object { $_.Tag -ne 'ok' } | ForEach-Object { $_.Children } | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag -and $_.Tag.Check -and (Test-AfRowPending $_.Tag) }).Count -gt 0
     $card = $null
-    if ($s.Filter -eq 'all' -and -not $hasRows -and $results.Count) {
+    # Con el disco sin leer o en riesgo el veredicto no es "afinada": la tarjeta espera igual que la celebración.
+    $tuned = (Get-AfVerdict -Results @(Get-AfEffectiveResults -Window $Window)).Celebrate
+    if ($s.Filter -eq 'all' -and -not $pending -and $tuned -and $results.Count) {
         $card = New-AfStateCard -Icon 'check-circle' -Title (T 'Esta PC está afinada')
         foreach ($category in Get-AfCategories) {
             $count = @($results | Where-Object { $_.Check.Category -eq $category.Id }).Count
@@ -5844,6 +7179,21 @@ function Set-AfTextAnimated {
     Start-AfAnimation -Target $Block -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 220 -Ease Out -Enabled $Motion | Out-Null
 }
 
+# Título del veredicto; con -Celebrate, celebra una sola vez por análisis o aplicación.
+function Update-AfVerdict {
+    param([Parameter(Mandatory)]$Window, [switch]$Celebrate, [bool]$Motion = $false)
+    $s = $Window.Tag
+    $verdict = Get-AfVerdict -Results @(Get-AfEffectiveResults -Window $Window)
+    Set-AfTextAnimated -Block $Window.FindName('Title') -Text $verdict.Title -Motion $Motion
+    # El resumen sigue al título: si no, "Revisa el disco" convive con "ya está en orden".
+    if ($s.Phase -eq 'ready') { Set-AfSummary -Window $Window -Summary (Get-AfSummary -Results @(Get-AfEffectiveResults -Window $Window)) -Motion $s.Motion }
+    elseif ($s.Phase -eq 'done') { Set-AfDoneSummary -Window $Window }
+    if ($Celebrate -and $verdict.Celebrate -and -not $s.Celebrated) {
+        $s.Celebrated = $true
+        Start-AfCelebration -Window $Window -Motion $s.Motion
+    }
+}
+
 function Set-AfSummary {
     param([Parameter(Mandatory)]$Window, [Parameter(Mandatory)]$Summary, [bool]$Motion = $false)
     $block = $Window.FindName('Summary')
@@ -5885,7 +7235,7 @@ function Add-AfRowHandlers {
 
 function Add-AfCategoryGroup {
     param([Parameter(Mandatory)]$Window, [Parameter(Mandatory)]$Category, [object[]]$Results = @(), [bool]$Motion = $false)
-    $visible = @($Results | Where-Object { $_.Detection.State -in 'Improvable', 'Manual', 'Info', 'Error' })
+    $visible = @($Results | Where-Object { $_.Detection.State -in 'Improvable', 'Manual', 'Info', 'Error' -or ($_.Detection.State -eq 'Ok' -and $_.Check.Reading) })
     $groups = $Window.FindName('Groups')
     $skeleton = @($groups.Children | Where-Object { $_.Tag -eq ('skeleton:' + $Category.Id) })[0]
     if (-not $visible.Count) {
@@ -5896,7 +7246,7 @@ function Add-AfCategoryGroup {
     $first = @($groups.Children | Where-Object { $_.Tag -ne 'ok' -and "$($_.Tag)" -notlike 'skeleton*' }).Count -eq 0
     $group = New-AfGroupElement -Category $Category -Results $visible -First:$first
     $filter = $Window.Tag.Filter
-    $group.Visibility = if ($filter -eq 'all' -or $filter -eq $Category.Id) { 'Visible' } else { 'Collapsed' }
+    $group.Visibility = if (Test-AfGroupVisible -Tag $Category.Id -Filter $filter) { 'Visible' } else { 'Collapsed' }
     $okGroup = @($groups.Children | Where-Object { $_.Tag -eq 'ok' })[0]
     if ($skeleton) {
         # El grupo real entra en el lugar de su fantasma.
@@ -5930,7 +7280,7 @@ function Set-AfOkGroupOpen {
 
 function Add-AfOkGroup {
     param([Parameter(Mandatory)]$Window, [object[]]$Results = @(), [bool]$Motion = $false)
-    $ok = @($Results | Where-Object { $_.Detection.State -eq 'Ok' })
+    $ok = @($Results | Where-Object { Test-AfOkRow $_ })
     if (-not $ok.Count) { return }
     $groups = $Window.FindName('Groups')
     $Window.FindName('PanelBorder').Visibility = 'Visible'
@@ -6124,11 +7474,12 @@ function Set-AfFooter {
 }
 
 function Get-AfConfirmText {
-    param([int]$Count, [bool]$Network = $false, [bool]$Display = $false, [int]$Reboot = 0, [ValidateSet('create', 'enable', 'off', 'blocked')][string]$Restore = 'create', [bool]$Updates = $false, [int]$Advanced = 0)
+    param([int]$Count, [bool]$Network = $false, [bool]$Display = $false, [int]$Reboot = 0, [ValidateSet('create', 'enable', 'off', 'blocked')][string]$Restore = 'create', [bool]$Updates = $false, [int]$Advanced = 0, [bool]$DeletesRecall = $false)
     $parts = @()
     $parts += if ($Count -eq 1) { (T 'Se aplicará 1 cambio.') } else { (T 'Se aplicarán {0} cambios.') -f $Count }
     if ($Updates) { $parts += (T 'Las actualizaciones pueden tardar varios minutos.') }
     if ($Advanced -eq 1) { $parts += (T '1 cambio baja la seguridad de Windows.') } elseif ($Advanced -gt 1) { $parts += (T '{0} cambios bajan la seguridad de Windows.') -f $Advanced }
+    if ($DeletesRecall) { $parts += (T 'Borra las capturas guardadas de Recall y no se recuperan.') }
     if ($Display) { $parts += (T 'La pantalla cambia y pide confirmar.') }
     if ($Network) { $parts += (T 'La red se cortará unos segundos.') }
     if ($Reboot -gt 0) { $parts += (T 'Al final pide reiniciar.') }
@@ -6206,11 +7557,22 @@ function Set-AfReadyView {
     Stop-AfFollow -Window $Window
     $effective = @(Get-AfEffectiveResults -Window $Window)
     $summary = Get-AfSummary -Results $effective
-    $score = Get-AfScore -Results $effective
-    $Window.FindName('Title').Text = if ($summary.Ready -eq 0 -and $score -ge 0.999) { (T 'Afinada') } else { (T 'Afinación') }
+    Update-AfVerdict -Window $Window
     Set-AfSummary -Window $Window -Summary $summary -Motion $s.Motion
     Set-AfProgress -Window $Window -Fraction 0 -Motion $s.Motion
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize -Motion $s.Motion
+}
+
+function Set-AfDoneSummary {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $changes = @($s.Applied.Values)
+    $applied = @($changes | Where-Object { $_.Status -eq 'Applied' })
+    $notApplied = @($changes | Where-Object { $_.Status -in 'Failed', 'Reverted' }).Count
+    $reboot = @($applied | Where-Object { $_.NeedsReboot }).Count
+    $summary = Get-AfSummary -Results @(Get-AfEffectiveResults -Window $Window)
+    $text = Get-AfDoneText -Applied $applied.Count -Failed $notApplied -Reboot $reboot -Manual $summary.Manual
+    Set-AfLeadSummary -Window $Window -Lead $text.Lead -Rest $text.Rest -Motion $s.Motion
 }
 
 function Set-AfDoneView {
@@ -6220,15 +7582,7 @@ function Set-AfDoneView {
     $Window.FindName('Groups').IsHitTestVisible = $true
     Stop-AfFollow -Window $Window
     $changes = @($s.Applied.Values)
-    $applied = @($changes | Where-Object { $_.Status -eq 'Applied' })
-    $notApplied = @($changes | Where-Object { $_.Status -in 'Failed', 'Reverted' }).Count
-    $reboot = @($applied | Where-Object { $_.NeedsReboot }).Count
-    $effective = @(Get-AfEffectiveResults -Window $Window)
-    $summary = Get-AfSummary -Results $effective
-    $score = Get-AfScore -Results $effective
-    $text = Get-AfDoneText -Applied $applied.Count -Failed $notApplied -Reboot $reboot -Manual $summary.Manual
-    $Window.FindName('Title').Text = if ($summary.Ready -eq 0 -and $score -ge 0.999) { (T 'Afinada') } else { (T 'Afinación') }
-    Set-AfLeadSummary -Window $Window -Lead $text.Lead -Rest $text.Rest -Motion $s.Motion
+    Update-AfVerdict -Window $Window
     Set-AfProgress -Window $Window -Fraction 0 -Motion $s.Motion
     $extra = if (@($changes | Where-Object { Test-AfChangeUndoable -Change $_ }).Count) { (T 'Deshacer') } else { $null }
     $note = (T 'Valores originales guardados. Se puede deshacer desde Historial.')
@@ -6258,7 +7612,8 @@ function Enter-AfConfirm {
         Display = @($selected | Where-Object { $_.Check.Id -eq 'display.refresh' }).Count -gt 0
         Reboot = @($selected | Where-Object { $_.Check.NeedsReboot }).Count
         Updates = @($selected | Where-Object { $_.Check.Id -like 'updates.*' }).Count -gt 0
-        Advanced = @($selected | Where-Object { $_.Check.Risk -eq 'Advanced' }).Count
+        Advanced = @($selected | Where-Object { $_.Check.Risk -eq 'Advanced' -and $_.Check.Id -ne 'cleanup.recall' }).Count
+        DeletesRecall = @($selected | Where-Object { $_.Check.Id -eq 'cleanup.recall' }).Count -gt 0
     }
     $s.Phase = 'confirm'
     $Window.FindName('Groups').IsHitTestVisible = $false
@@ -6272,7 +7627,7 @@ function Get-AfConfirmNote {
     $c = $Window.Tag.Confirm
     $restore = $c.Restore
     if ($restore -eq 'enable' -and $Window.FindName('RestoreRow').Visibility -eq 'Visible' -and -not $Window.FindName('RestoreOption').IsChecked) { $restore = 'off' }
-    Get-AfConfirmText -Count $c.Count -Network $c.Network -Display $c.Display -Reboot $c.Reboot -Restore $restore -Updates ([bool]$c.Updates) -Advanced ([int]$c.Advanced)
+    Get-AfConfirmText -Count $c.Count -Network $c.Network -Display $c.Display -Reboot $c.Reboot -Restore $restore -Updates ([bool]$c.Updates) -Advanced ([int]$c.Advanced) -DeletesRecall ([bool]$c.DeletesRecall)
 }
 
 function Exit-AfConfirm {
@@ -6281,6 +7636,8 @@ function Exit-AfConfirm {
     $s.Phase = 'ready'
     $Window.FindName('Groups').IsHitTestVisible = $true
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize -Motion $s.Motion
+    # Lo que llegó mientras se confirmaba se evalúa ahora.
+    Update-AfVerdict -Window $Window -Celebrate
 }
 
 function Get-AfWorkerCode {
@@ -6497,10 +7854,11 @@ function Receive-AfApplyEvent {
             $s.SessionPath = $Item.SessionPath
             # Siguiendo, la vista vuelve a Todo; si la persona eligió otra, se queda ahí.
             if ($s.Follow) { Set-AfFilter -Window $Window -Filter 'all' }
+            $s.Celebrated = $false
             Set-AfDoneView -Window $Window
             $score = Get-AfScore -Results @(Get-AfEffectiveResults -Window $Window)
             Set-AfNeedle -Window $Window -Fraction $score -Motion $s.Motion -DurationMs 700 -Ease Out
-            if ($score -ge 0.999) { Start-AfCelebration -Window $Window -Motion $s.Motion }
+            Update-AfVerdict -Window $Window -Celebrate
             Write-AfLog -Level Info -Message "Sesión guardada en $($Item.SessionPath)"
         }
         'UndoStart' {
@@ -6743,6 +8101,8 @@ function Hide-AfHistory {
     }
     if ($s.PhaseBeforeHistory -eq 'done') { Set-AfDoneView -Window $Window } else { Set-AfReadyView -Window $Window }
     Update-AfEmptyState -Window $Window
+    # Lo que llegó mientras se veía el Historial se evalúa ahora.
+    Update-AfVerdict -Window $Window -Celebrate
 }
 
 # El análisis corre en un runspace aparte y solo encola eventos; la ventana los lee con un DispatcherTimer.
@@ -6771,7 +8131,10 @@ function Start-AfScanWorker {
                 }
                 $AfQueue.Enqueue([pscustomobject]@{ Type = 'Done' })
                 foreach ($check in @($catalog | Where-Object { $_.Async })) {
-                    try { $detection = & $check.AsyncDetect $inventory } catch { $detection = New-AfDetection -State Error -Note $_.Exception.Message }
+                    try {
+                        if ($check.AppliesTo -and -not (& $check.AppliesTo $inventory)) { continue }
+                        $detection = & $check.AsyncDetect $inventory
+                    } catch { $detection = New-AfDetection -State Error -Note $_.Exception.Message }
                     $AfQueue.Enqueue([pscustomobject]@{ Type = 'Async'; Id = $check.Id; Detection = $detection })
                 }
             } catch {
@@ -6854,10 +8217,12 @@ function Start-AfScan {
     $Window.FindName('PrimaryProgressScale').BeginAnimation([System.Windows.Media.ScaleTransform]::ScaleXProperty, $null)
     $Window.FindName('PrimaryProgressScale').ScaleX = 0
     $s.Pending = New-Object System.Collections.Queue
+    $s.AsyncHold = New-Object System.Collections.Queue
     $s.LastReveal = [datetime]::MinValue
     $s.Results = New-Object System.Collections.ArrayList
     $s.Filter = 'all'
     $s.StartedAt = Get-Date
+    $s.Celebrated = $false
     Set-AfNavActive -Window $Window -Filter 'all' -Motion $false
     $Window.FindName('Groups').Children.Clear()
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
@@ -6890,7 +8255,7 @@ function Update-AfAsyncResult {
             $result = [pscustomobject]@{ Check = $old.Check; Detection = $Detection; Weight = $old.Weight; Preselected = $false }
             $index = $Window.Tag.Results.IndexOf($old)
             if ($index -ge 0) { $Window.Tag.Results[$index] = $result }
-            if ($Detection.State -notin 'Improvable', 'Manual', 'Info', 'Error') {
+            if ($Detection.State -notin 'Improvable', 'Manual', 'Info', 'Error' -and -not ($Detection.State -eq 'Ok' -and $old.Check.Reading)) {
                 $group.Children.RemoveAt($i)
                 # Un grupo sin filas no queda como un encabezado suelto.
                 if (-not @($group.Children | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag }).Count) { $Window.FindName('Groups').Children.Remove($group) }
@@ -6904,6 +8269,8 @@ function Update-AfAsyncResult {
             Update-AfNavCounts -Window $Window -Results @($Window.Tag.Results) -Only @($old.Check.Category)
             Update-AfPrimary -Window $Window
             Update-AfEmptyState -Window $Window
+            # Una lectura tardía puede cambiar el veredicto, pero no mientras se aplica.
+            if ($Window.Tag.Phase -in 'ready', 'done') { Update-AfVerdict -Window $Window -Celebrate }
             return
         }
     }
@@ -6921,12 +8288,12 @@ function Complete-AfScan {
     Update-AfNavCounts -Window $Window -Results $results -Only @('ok') -Motion $s.Motion
     $summary = Get-AfSummary -Results $results
     $score = Get-AfScore -Results $results
-    Set-AfTextAnimated -Block $Window.FindName('Title') -Text $(if ($summary.Ready -eq 0 -and $score -ge 0.999) { (T 'Afinada') } else { (T 'Afinación') }) -Motion $s.Motion
+    Update-AfVerdict -Window $Window -Motion $s.Motion
     Set-AfSummary -Window $Window -Summary $summary -Motion $s.Motion
     $needle = $Window.FindName('Needle')
     Start-AfAnimation -Target $needle -Property ([System.Windows.UIElement]::OpacityProperty) -To 1 -DurationMs 200 -Ease Out -Enabled $s.Motion | Out-Null
     Set-AfNeedle -Window $Window -Fraction $score -Motion $s.Motion -DurationMs 700 -Ease Out
-    if ($score -ge 0.999) { Start-AfCelebration -Window $Window -Motion $s.Motion }
+    Update-AfVerdict -Window $Window -Celebrate
     Set-AfFooter -Window $Window -Note (Get-AfReadyNote) -NoteIcon 'shield-check' -Ghost (T 'Volver a analizar') -GhostIcon 'arrow-clockwise' -PrimaryOptimize
     Set-AfActionsVisible -Window $Window -Visible $true -Motion $s.Motion
     Update-AfEmptyState -Window $Window
@@ -6956,7 +8323,13 @@ function Receive-AfEvents {
             'Inventory' { $s.Inventory = $item.Inventory; Set-AfPcCard -Window $Window -Inventory $item.Inventory -Animate $s.Motion }
             'Category' { $s.Pending.Enqueue($item) }
             'Done' { $s.ScanDone = $true }
-            'Async' { Update-AfAsyncResult -Window $Window -Id $item.Id -Detection $item.Detection }
+            'Async' {
+                # Un resultado que llega antes de revelar las categorías espera: su fila aún no existe.
+                if ($s.Pending.Count -gt 0) {
+                    if (-not $s.AsyncHold) { $s.AsyncHold = New-Object System.Collections.Queue }
+                    $s.AsyncHold.Enqueue($item)
+                } else { Update-AfAsyncResult -Window $Window -Id $item.Id -Detection $item.Detection }
+            }
             'Error' {
                 $s.ScanDone = $true
                 Write-AfLog -Level Error -Message "El análisis falló: $($item.Message)"
@@ -6964,6 +8337,7 @@ function Receive-AfEvents {
             }
         }
     }
+    $revealed = $false
     if ($s.Pending.Count -gt 0) {
         $gap = if ($s.Motion) { 260 } else { 0 }
         if (((Get-Date) - $s.LastReveal).TotalMilliseconds -ge $gap) {
@@ -6973,9 +8347,15 @@ function Receive-AfEvents {
             Add-AfCategoryGroup -Window $Window -Category $category -Results $next.Results -Motion $s.Motion
             Update-AfNavCounts -Window $Window -Results @($s.Results) -Only @($next.Category) -Motion $s.Motion
             $s.LastReveal = Get-Date
+            $revealed = $true
         }
-    } elseif ($s.ScanDone -and $s.Phase -eq 'scanning') {
-        Complete-AfScan -Window $Window
+    }
+    if ($s.Pending.Count -eq 0) {
+        while ($s.AsyncHold -and $s.AsyncHold.Count -gt 0) {
+            $held = $s.AsyncHold.Dequeue()
+            Update-AfAsyncResult -Window $Window -Id $held.Id -Detection $held.Detection
+        }
+        if ($s.ScanDone -and $s.Phase -eq 'scanning' -and -not $revealed) { Complete-AfScan -Window $Window }
     }
 }
 
