@@ -1,51 +1,82 @@
 ﻿# Resumen (panel de inicio), logo, pantalla de entrada y barra lateral que se despliega.
 
-# Marca de Afina en una cuadrícula de 64: la escala de un afinador con la aguja roja al centro (afinado).
-# -Fixed usa colores fijos (para el icono de la ventana, que se dibuja fuera del árbol y no ve el tema).
+# Esfera de instrumento: marcas alrededor del centro, aguja roja que gira sobre él y un eje rojo.
+# Los ángulos se miden como en un reloj: 0 arriba y en sentido horario. -Fixed usa colores fijos (icono de la ventana).
+function New-AfDial {
+    param(
+        [double]$Width = 64, [double]$Height = 64, [double]$CenterY = -1,
+        [int]$Ticks = 12, [double]$Start = 0, [double]$Sweep = 360, [double]$Radius = 29,
+        [double]$MinorLength = 6, [double]$MinorWidth = 3, [double]$MinorOpacity = 0.55,
+        [int]$MajorEvery = 3, [double]$MajorLength = 9, [double]$MajorWidth = 4, [double]$MajorOpacity = 0.95,
+        [double]$HandLength = 24, [double]$HandTail = 8, [double]$HandWidth = 5, [double]$HubSize = 9, [double]$HandAngle = 45,
+        [switch]$Fixed
+    )
+    $cx = $Width / 2
+    $cy = if ($CenterY -ge 0) { $CenterY } else { $Height / 2 }
+    $canvas = New-Object System.Windows.Controls.Canvas
+    $canvas.Width = $Width
+    $canvas.Height = $Height
+    $paint = {
+        param($shape, [string]$Key)
+        if (-not $Fixed) { $shape.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, $Key); return }
+        $shape.Fill = switch ($Key) { 'Red' { New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(255, 59, 71)) } 'Bg' { New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(20, 20, 22)) } default { [System.Windows.Media.Brushes]::WhiteSmoke } }
+    }
+    $marks = New-Object System.Collections.ArrayList
+    $steps = if ($Sweep -ge 360) { $Ticks } else { [math]::Max(1, $Ticks - 1) }
+    for ($k = 0; $k -lt $Ticks; $k++) {
+        $major = $MajorEvery -gt 0 -and $k % $MajorEvery -eq 0
+        $length = if ($major) { $MajorLength } else { $MinorLength }
+        $thick = if ($major) { $MajorWidth } else { $MinorWidth }
+        $angle = $Start + $Sweep * $k / $steps
+        $tick = New-Object System.Windows.Shapes.Rectangle
+        $tick.Width = $thick
+        $tick.Height = $length
+        $tick.RadiusX = $thick / 2
+        $tick.RadiusY = $thick / 2
+        & $paint $tick 'Text'
+        $tick.Opacity = if ($major) { $MajorOpacity } else { $MinorOpacity }
+        [System.Windows.Controls.Canvas]::SetLeft($tick, $cx - $thick / 2)
+        [System.Windows.Controls.Canvas]::SetTop($tick, $cy - $Radius)
+        $tick.RenderTransform = New-Object System.Windows.Media.RotateTransform($angle, ($thick / 2), $Radius)
+        [void]$canvas.Children.Add($tick)
+        [void]$marks.Add([pscustomobject]@{ Shape = $tick; Angle = $angle; Major = $major; Base = $tick.Opacity })
+    }
+    # Aguja afinada hacia la punta, con una cola corta del otro lado del eje.
+    $hand = New-Object System.Windows.Shapes.Polygon
+    $w = $HandWidth
+    foreach ($p in @(@((-$w * 0.32), $HandTail), @(($w * 0.32), $HandTail), @(($w / 2), 0), @(($w * 0.14), (-$HandLength)), @((-$w * 0.14), (-$HandLength)), @((-$w / 2), 0))) {
+        $hand.Points.Add((New-Object System.Windows.Point(($cx + $p[0]), ($cy + $p[1]))))
+    }
+    & $paint $hand 'Red'
+    $hand.RenderTransform = New-Object System.Windows.Media.RotateTransform($HandAngle, $cx, $cy)
+    [void]$canvas.Children.Add($hand)
+    $hub = New-Object System.Windows.Controls.Grid
+    $hub.Width = $HubSize
+    $hub.Height = $HubSize
+    $outer = New-Object System.Windows.Shapes.Ellipse
+    & $paint $outer 'Red'
+    $inner = New-Object System.Windows.Shapes.Ellipse
+    $inner.Width = $HubSize * 0.42
+    $inner.Height = $HubSize * 0.42
+    & $paint $inner 'Bg'
+    [void]$hub.Children.Add($outer)
+    [void]$hub.Children.Add($inner)
+    [System.Windows.Controls.Canvas]::SetLeft($hub, $cx - $HubSize / 2)
+    [System.Windows.Controls.Canvas]::SetTop($hub, $cy - $HubSize / 2)
+    $hub.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+    $hub.RenderTransform = New-Object System.Windows.Media.ScaleTransform(1, 1)
+    [void]$canvas.Children.Add($hub)
+    $canvas.Tag = [pscustomobject]@{ Ticks = $marks; Hand = $hand; Hub = $hub; Center = (New-Object System.Windows.Point($cx, $cy)) }
+    $canvas
+}
+
+# Marca de Afina: la esfera negra de un cronógrafo con doce marcas y la aguja roja apuntando arriba a la derecha.
 function New-AfLogoMark {
     param([double]$Size = 64, [switch]$Fixed)
-    $canvas = New-Object System.Windows.Controls.Canvas
-    $canvas.Width = 64
-    $canvas.Height = 64
-    $bars = New-Object System.Collections.ArrayList
-    # Marcas de afuera hacia adentro a cada lado: mayor, menor, media.
-    foreach ($tick in @(@(6, 18), @(15, 11), @(24, 14), @(36, 14), @(45, 11), @(54, 18))) {
-        $bar = New-Object System.Windows.Shapes.Rectangle
-        $bar.Width = 4
-        $bar.Height = $tick[1]
-        $bar.RadiusX = 1.5
-        $bar.RadiusY = 1.5
-        $bar.Opacity = if ($tick[1] -eq 18) { 0.95 } else { 0.6 }
-        if ($Fixed) { $bar.Fill = [System.Windows.Media.Brushes]::WhiteSmoke } else { $bar.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Text') }
-        [System.Windows.Controls.Canvas]::SetLeft($bar, $tick[0])
-        [System.Windows.Controls.Canvas]::SetTop($bar, 52 - $tick[1])
-        $bar.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 1)
-        $bar.RenderTransform = New-Object System.Windows.Media.ScaleTransform(1, 1)
-        [void]$canvas.Children.Add($bar)
-        [void]$bars.Add($bar)
-    }
-    $needle = New-Object System.Windows.Controls.Canvas
-    $line = New-Object System.Windows.Shapes.Rectangle
-    $line.Width = 4
-    $line.Height = 47
-    $line.RadiusX = 2
-    $line.RadiusY = 2
-    [System.Windows.Controls.Canvas]::SetLeft($line, 30)
-    [System.Windows.Controls.Canvas]::SetTop($line, 9)
-    $head = New-Object System.Windows.Shapes.Polygon
-    $head.Points = [System.Windows.Media.PointCollection]::Parse('26.5,2 37.5,2 32,8.5')
-    foreach ($shape in $line, $head) {
-        if ($Fixed) { $shape.Fill = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(255, 59, 71)) } else { $shape.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Red') }
-        [void]$needle.Children.Add($shape)
-    }
-    # Gira sobre su base, como la aguja de un afinador que se asienta.
-    $needle.RenderTransform = New-Object System.Windows.Media.RotateTransform(0, 32, 56)
-    [void]$canvas.Children.Add($needle)
-    $canvas.Tag = @{ Bars = $bars; Needle = $needle }
     $box = New-Object System.Windows.Controls.Viewbox
     $box.Width = $Size
     $box.Height = $Size
-    $box.Child = $canvas
+    $box.Child = New-AfDial -Fixed:$Fixed
     $box
 }
 
@@ -56,7 +87,7 @@ function New-AfLogoImage {
     $tile.Height = 64
     $tile.CornerRadius = 14
     $tile.Background = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(20, 20, 22))
-    $mark = New-AfLogoMark -Size 48 -Fixed
+    $mark = New-AfLogoMark -Size 52 -Fixed
     $mark.HorizontalAlignment = 'Center'
     $mark.VerticalAlignment = 'Center'
     $tile.Child = $mark
@@ -68,18 +99,60 @@ function New-AfLogoImage {
     $bitmap
 }
 
-# Pantalla de entrada: se prepara antes de mostrar la ventana y se anima con el primer cuadro.
+# Recorrido de una curva suave (seno): de 0 a 1 en el tiempo t de 0 a 1, y al revés.
+function Get-AfSweepAt { param([double]$T) (1 - [math]::Cos([math]::PI * $T)) / 2 }
+function Get-AfSweepTime { param([double]$Fraction) [math]::Acos(1 - 2 * [math]::Max(0.0, [math]::Min(1.0, $Fraction))) / [math]::PI }
+
+function New-AfKeyFrame {
+    param([double]$Value, [double]$At, [string]$Ease)
+    $time = [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds($At))
+    if ($Ease) { New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame($Value, $time, (New-AfKeySpline -Ease $Ease)) } else { New-Object System.Windows.Media.Animation.LinearDoubleKeyFrame($Value, $time) }
+}
+
+# Pantalla de entrada: una esfera grande que se arma en el centro de la ventana, la aguja da una vuelta completa
+# y se asienta; después la esfera se achica a la izquierda del nombre, que entra letra por letra.
 function Initialize-AfSplash {
     param([Parameter(Mandatory)]$Window, [bool]$Motion = $false)
-    $mark = New-AfLogoMark -Size 84
-    $Window.FindName('SplashMarkHost').Child = $mark
+    $dial = New-AfDial -Width 360 -Height 360 -Ticks 60 -Radius 168 -MinorLength 14 -MinorWidth 2.4 -MinorOpacity 0.3 -MajorEvery 5 -MajorLength 30 -MajorWidth 5.5 -MajorOpacity 0.95 -HandLength 146 -HandTail 34 -HandWidth 9 -HubSize 24
+    # Bisel: un aro fino que se dibuja en sentido horario desde arriba.
+    $ring = New-Object System.Windows.Shapes.Path
+    $ring.Data = [System.Windows.Media.Geometry]::Parse('M180,2 A178,178 0 1 1 179.99,2')
+    $ring.StrokeThickness = 1.5
+    $ring.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Line2')
+    $ring.StrokeDashArray = New-Object System.Windows.Media.DoubleCollection
+    $ringLength = 2 * [math]::PI * 178 / 1.5
+    $ring.StrokeDashArray.Add($ringLength)
+    $ring.StrokeDashArray.Add($ringLength)
+    $dial.Children.Insert(0, $ring)
+    $box = New-Object System.Windows.Controls.Viewbox
+    $box.Child = $dial
+    $Window.FindName('SplashDialHost').Child = $box
+    $letters = $Window.FindName('SplashLetters')
+    $letters.Children.Clear()
+    foreach ($char in 'Afina'.ToCharArray()) {
+        $letter = New-Object System.Windows.Controls.TextBlock
+        $letter.Text = [string]$char
+        $letter.FontSize = 68
+        $letter.FontWeight = 'Light'
+        $letter.SetResourceReference([System.Windows.Controls.TextBlock]::FontFamilyProperty, 'DisplayFont')
+        $letter.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, 'Text')
+        $letter.RenderTransform = New-Object System.Windows.Media.TranslateTransform(0, 0)
+        [void]$letters.Children.Add($letter)
+    }
     $Window.FindName('SplashVersion').Text = 'v' + (Get-AfVersion)
-    $Window.Tag.SplashParts = $mark.Child.Tag
+    $Window.Tag.SplashParts = [pscustomobject]@{ Dial = $dial.Tag; Ring = $ring; RingLength = $ringLength }
     if (-not $Motion) { return }
-    foreach ($bar in $mark.Child.Tag.Bars) { $bar.RenderTransform.ScaleY = 0 }
-    $mark.Child.Tag.Needle.Opacity = 0
-    $mark.Child.Tag.Needle.RenderTransform.Angle = -28
-    foreach ($name in 'SplashName', 'SplashTag', 'SplashVersion') { $Window.FindName($name).Opacity = 0 }
+    # Todo empieza escondido; Start-AfSplash lo arma con el primer cuadro.
+    foreach ($tick in $dial.Tag.Ticks) { $tick.Shape.Opacity = 0 }
+    $dial.Tag.Hand.Opacity = 0
+    $dial.Tag.Hand.RenderTransform.Angle = 0
+    $dial.Tag.Hub.RenderTransform.ScaleX = 0
+    $dial.Tag.Hub.RenderTransform.ScaleY = 0
+    $ring.StrokeDashOffset = $ringLength
+    foreach ($letter in $letters.Children) { $letter.Opacity = 0 }
+    foreach ($name in 'SplashTag', 'SplashVersion') { $Window.FindName($name).Opacity = 0 }
+    # El Resumen entra después, pieza por pieza (Start-AfHomeEntrance).
+    foreach ($element in @(Get-AfHomeEntranceElements -Window $Window)) { $element.Opacity = 0 }
 }
 
 function Start-AfSplash {
@@ -89,29 +162,76 @@ function Start-AfSplash {
     if ($splash.Visibility -ne 'Visible') { return }
     $splash.Add_MouseLeftButtonUp({ param($sender, $e) Hide-AfSplash -Window ([System.Windows.Window]::GetWindow($sender)) })
     $parts = $s.SplashParts
+    $hold = 1000
     if ($s.Motion -and $parts) {
-        # Las marcas suben de adentro hacia afuera; la aguja entra torcida y se asienta al centro.
-        $order = @(2, 1, 0, 0, 1, 2)
-        for ($k = 0; $k -lt $parts.Bars.Count; $k++) {
-            Start-AfAnimation -Target $parts.Bars[$k].RenderTransform -Property ([System.Windows.Media.ScaleTransform]::ScaleYProperty) -From 0 -To 1 -DurationMs 460 -DelayMs (120 + 90 * $order[$k]) -Ease Out | Out-Null
+        $hold = 3150
+        $dial = $parts.Dial
+        # La esfera empieza grande y centrada en la ventana; al final vuelve a su lugar junto al nombre.
+        $splash.UpdateLayout()
+        $dialHost = $Window.FindName('SplashDialHost')
+        $origin = $dialHost.TranslatePoint((New-Object System.Windows.Point(0, 0)), $splash)
+        $big = [math]::Min(3.2, [math]::Max(1.6, ($splash.ActualHeight * 0.6) / $dialHost.ActualHeight))
+        $scale = New-Object System.Windows.Media.ScaleTransform($big, $big)
+        $move = New-Object System.Windows.Media.TranslateTransform(($splash.ActualWidth / 2 - ($origin.X + $dialHost.ActualWidth / 2)), ($splash.ActualHeight / 2 - ($origin.Y + $dialHost.ActualHeight / 2)))
+        $group = New-Object System.Windows.Media.TransformGroup
+        $group.Children.Add($scale)
+        $group.Children.Add($move)
+        $dialHost.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+        $dialHost.RenderTransform = $group
+        Start-AfAnimation -Target $parts.Ring -Property ([System.Windows.Shapes.Shape]::StrokeDashOffsetProperty) -From $parts.RingLength -To 0 -DurationMs 900 -Ease Out | Out-Null
+        # Las marcas aparecen en sentido horario; la aguja da una vuelta y cuarto, y cada marca brilla cuando pasa.
+        $sweepStart = 520
+        $sweepMs = 1050
+        $rest = 405
+        foreach ($tick in $dial.Ticks) {
+            $appear = 60 + 9 * [math]::Round($tick.Angle / 6)
+            $frames = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+            [void]$frames.KeyFrames.Add((New-AfKeyFrame -Value 0 -At 0))
+            [void]$frames.KeyFrames.Add((New-AfKeyFrame -Value 0 -At $appear))
+            [void]$frames.KeyFrames.Add((New-AfKeyFrame -Value $tick.Base -At ($appear + 220) -Ease Out))
+            foreach ($pass in @($tick.Angle, ($tick.Angle + 360))) {
+                if ($pass -gt $rest) { continue }
+                $at = $sweepStart + $sweepMs * (Get-AfSweepTime -Fraction ($pass / $rest))
+                [void]$frames.KeyFrames.Add((New-AfKeyFrame -Value $tick.Base -At ([math]::Max($appear + 230, $at - 40))))
+                [void]$frames.KeyFrames.Add((New-AfKeyFrame -Value 1 -At ([math]::Max($appear + 240, $at))))
+                [void]$frames.KeyFrames.Add((New-AfKeyFrame -Value $tick.Base -At ([math]::Max($appear + 250, $at) + 560) -Ease Out))
+            }
+            $tick.Shape.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $frames)
         }
-        Start-AfAnimation -Target $parts.Needle -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 200 -DelayMs 300 -Ease Out | Out-Null
-        $settle = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
-        $settle.BeginTime = [TimeSpan]::FromMilliseconds(300)
-        foreach ($frame in @(@(-28, 0), @(14, 380), @(-6, 640), @(2, 840), @(0, 1000))) {
-            [void]$settle.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame($frame[0], [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds($frame[1])), (New-AfKeySpline -Ease InOut))))
+        $hand = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+        $hand.BeginTime = [TimeSpan]::FromMilliseconds($sweepStart)
+        for ($i = 0; $i -le 24; $i++) { [void]$hand.KeyFrames.Add((New-AfKeyFrame -Value ($rest * (Get-AfSweepAt -T ($i / 24))) -At ($sweepMs * $i / 24))) }
+        # Un tic mecánico al llegar: se pasa un poco y vuelve.
+        [void]$hand.KeyFrames.Add((New-AfKeyFrame -Value ($rest + 5) -At ($sweepMs + 70) -Ease Out))
+        [void]$hand.KeyFrames.Add((New-AfKeyFrame -Value $rest -At ($sweepMs + 240) -Ease Out))
+        $dial.Hand.RenderTransform.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $hand)
+        Start-AfAnimation -Target $dial.Hand -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 220 -DelayMs ($sweepStart - 120) -Ease Out | Out-Null
+        foreach ($axis in [System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty) {
+            $pop = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+            $pop.BeginTime = [TimeSpan]::FromMilliseconds($sweepStart - 140)
+            [void]$pop.KeyFrames.Add((New-AfKeyFrame -Value 1.25 -At 220 -Ease Out))
+            [void]$pop.KeyFrames.Add((New-AfKeyFrame -Value 1 -At 420 -Ease Out))
+            $dial.Hub.RenderTransform.BeginAnimation($axis, $pop)
         }
-        $parts.Needle.RenderTransform.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $settle)
-        $name = $Window.FindName('SplashName')
-        $shift = New-Object System.Windows.Media.TranslateTransform(0, 12)
-        $name.RenderTransform = $shift
-        Start-AfAnimation -Target $name -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 520 -DelayMs 520 -Ease Out | Out-Null
-        Start-AfAnimation -Target $shift -Property ([System.Windows.Media.TranslateTransform]::YProperty) -From 12 -To 0 -DurationMs 620 -DelayMs 520 -Ease Out | Out-Null
-        Start-AfAnimation -Target $Window.FindName('SplashTag') -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 520 -DelayMs 760 -Ease Out | Out-Null
-        Start-AfAnimation -Target $Window.FindName('SplashVersion') -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 520 -DelayMs 900 -Ease Out | Out-Null
+        # La esfera se achica hacia su lugar y entra el nombre, letra por letra.
+        $settleAt = $sweepStart + $sweepMs + 220
+        foreach ($axis in [System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty) {
+            Start-AfAnimation -Target $scale -Property $axis -To 1 -DurationMs 720 -DelayMs $settleAt -Ease InOut | Out-Null
+        }
+        Start-AfAnimation -Target $move -Property ([System.Windows.Media.TranslateTransform]::XProperty) -To 0 -DurationMs 720 -DelayMs $settleAt -Ease InOut | Out-Null
+        Start-AfAnimation -Target $move -Property ([System.Windows.Media.TranslateTransform]::YProperty) -To 0 -DurationMs 720 -DelayMs $settleAt -Ease InOut | Out-Null
+        $k = 0
+        foreach ($letter in $Window.FindName('SplashLetters').Children) {
+            $delay = $settleAt + 380 + 70 * $k
+            Start-AfAnimation -Target $letter -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 380 -DelayMs $delay -Ease Out | Out-Null
+            Start-AfAnimation -Target $letter.RenderTransform -Property ([System.Windows.Media.TranslateTransform]::YProperty) -From 26 -To 0 -DurationMs 620 -DelayMs $delay -Ease Out | Out-Null
+            $k++
+        }
+        Start-AfAnimation -Target $Window.FindName('SplashTag') -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 520 -DelayMs ($settleAt + 760) -Ease Out | Out-Null
+        Start-AfAnimation -Target $Window.FindName('SplashVersion') -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 520 -DelayMs ($settleAt + 860) -Ease Out | Out-Null
     }
     $timer = New-Object System.Windows.Threading.DispatcherTimer
-    $timer.Interval = [TimeSpan]::FromMilliseconds($(if ($s.Motion) { 2300 } else { 900 }))
+    $timer.Interval = [TimeSpan]::FromMilliseconds($hold)
     $timer.Tag = $Window
     $timer.Add_Tick({ param($sender, $e) $sender.Stop(); Hide-AfSplash -Window $sender.Tag })
     $timer.Start()
@@ -120,7 +240,8 @@ function Start-AfSplash {
 function Hide-AfSplash {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
-    if ($s.SplashGone) { return }
+    # SplashPinned: la deja fija para capturarla (tools\Show-AfDemo.ps1 -AutoPlay).
+    if ($s.SplashGone -or $s.SplashPinned) { return }
     $s.SplashGone = $true
     $splash = $Window.FindName('Splash')
     if (-not $s.Motion) { $splash.Visibility = 'Collapsed'; return }
@@ -129,14 +250,37 @@ function Hide-AfSplash {
     $content = $Window.FindName('SplashContent')
     $content.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
     $content.RenderTransform = $zoom
-    Start-AfAnimation -Target $zoom -Property ([System.Windows.Media.ScaleTransform]::ScaleXProperty) -To 1.04 -DurationMs 420 -Ease Out | Out-Null
-    Start-AfAnimation -Target $zoom -Property ([System.Windows.Media.ScaleTransform]::ScaleYProperty) -To 1.04 -DurationMs 420 -Ease Out | Out-Null
-    Start-AfAnimation -Target $splash -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 420 -Ease Out | Out-Null
+    Start-AfAnimation -Target $zoom -Property ([System.Windows.Media.ScaleTransform]::ScaleXProperty) -To 0.94 -DurationMs 460 -Ease Out | Out-Null
+    Start-AfAnimation -Target $zoom -Property ([System.Windows.Media.ScaleTransform]::ScaleYProperty) -To 0.94 -DurationMs 460 -Ease Out | Out-Null
+    Start-AfAnimation -Target $splash -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 460 -Ease Out | Out-Null
+    Start-AfHomeEntrance -Window $Window -DelayMs 140
     $timer = New-Object System.Windows.Threading.DispatcherTimer
-    $timer.Interval = [TimeSpan]::FromMilliseconds(440)
+    $timer.Interval = [TimeSpan]::FromMilliseconds(480)
     $timer.Tag = $splash
     $timer.Add_Tick({ param($sender, $e) $sender.Stop(); $sender.Tag.Visibility = 'Collapsed' })
     $timer.Start()
+}
+
+# Lo que entra pieza por pieza al aparecer el Resumen: encabezado, tarjetas, acciones y estadísticas.
+function Get-AfHomeEntranceElements {
+    param([Parameter(Mandatory)]$Window)
+    foreach ($name in 'PcHeader', 'HeroCard', 'ProfileCard', 'QuickLabel') { $Window.FindName($name) }
+    foreach ($card in $Window.FindName('Quick').Children) { $card }
+    $Window.FindName('LiveHeader')
+    foreach ($tile in $Window.FindName('Live').Children) { $tile }
+}
+
+function Start-AfHomeEntrance {
+    param([Parameter(Mandatory)]$Window, [int]$DelayMs = 0)
+    $k = 0
+    foreach ($element in @(Get-AfHomeEntranceElements -Window $Window)) {
+        $shift = New-Object System.Windows.Media.TranslateTransform(0, 18)
+        $element.RenderTransform = $shift
+        $delay = $DelayMs + 55 * $k
+        Start-AfAnimation -Target $element -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 420 -DelayMs $delay -Ease Out | Out-Null
+        Start-AfAnimation -Target $shift -Property ([System.Windows.Media.TranslateTransform]::YProperty) -From 18 -To 0 -DurationMs 560 -DelayMs $delay -Ease Out | Out-Null
+        $k++
+    }
 }
 
 # Barra lateral: solo iconos; al pasar el mouse se despliega sobre el contenido con nombres y números.
@@ -235,9 +379,9 @@ function Initialize-AfHome {
     }
     if (-not $s.LiveHistory) { $s.LiveHistory = @{ Cpu = New-Object System.Collections.ArrayList; Mem = New-Object System.Collections.ArrayList; Disk = New-Object System.Collections.ArrayList; Net = New-Object System.Collections.ArrayList } }
     New-AfRadar -Window $Window
+    Initialize-AfHeroDial -Window $Window
     if (-not $s.HomeReady) {
         $s.HomeReady = $true
-        $Window.FindName('HeroMeter').Add_SizeChanged({ param($sender, $e) Update-AfHeroLayout -Window ([System.Windows.Window]::GetWindow($sender)) })
         $Window.FindName('HeroButton').Add_Click({ param($sender, $e) Set-AfFilter -Window ([System.Windows.Window]::GetWindow($sender)) -Filter 'all' })
     }
     Update-AfLiveTiles -Window $Window
@@ -476,89 +620,113 @@ function Set-AfSpark {
     $Tile.Dot.Visibility = 'Visible'
 }
 
-# Medidor grande del Resumen: 48 barras que suben de izquierda a derecha; la última es roja, como la marca final del medidor.
-function Update-AfHeroLayout {
+# Medidor principal: una esfera de 270° con 44 marcas que se encienden hasta la fracción y la aguja roja.
+# Mientras analiza, un destello recorre el aro exterior y las marcas siguen el avance.
+function Initialize-AfHeroDial {
     param([Parameter(Mandatory)]$Window)
-    $meter = $Window.FindName('HeroMeter')
-    $width = $meter.ActualWidth
-    $height = $meter.ActualHeight
-    if ($width -le 0 -or $height -le 0) { return }
-    $n = 48
-    $gap = if ($width / $n -ge 7) { 3 } else { 2 }
-    $barWidth = ($width - $gap * ($n - 1)) / $n
-    foreach ($canvasName in 'HeroBars', 'HeroLit') {
-        $canvas = $Window.FindName($canvasName)
-        if ($canvas.Children.Count -ne $n) {
-            $canvas.Children.Clear()
-            for ($i = 0; $i -lt $n; $i++) {
-                $bar = New-Object System.Windows.Shapes.Rectangle
-                $bar.RadiusX = 1.5
-                $bar.RadiusY = 1.5
-                $brush = if ($i -eq $n - 1) { 'Red' } elseif ($canvasName -eq 'HeroLit') { 'BarLit' } else { 'Tick' }
-                $bar.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, $brush)
-                if ($canvasName -eq 'HeroLit') { $bar.Opacity = 0 }
-                [void]$canvas.Children.Add($bar)
-            }
-        }
-        for ($i = 0; $i -lt $n; $i++) {
-            $bar = $canvas.Children[$i]
-            $bar.Width = [math]::Max(1.0, $barWidth)
-            $bar.Height = 10 + ($height - 22) * [math]::Pow($i / ($n - 1), 1.35)
-            [System.Windows.Controls.Canvas]::SetLeft($bar, $i * ($barWidth + $gap))
-            [System.Windows.Controls.Canvas]::SetTop($bar, $height - $bar.Height)
-        }
+    $hostGrid = $Window.FindName('HeroDialHost')
+    $old = @($hostGrid.Children | Where-Object { $_ -is [System.Windows.Controls.Canvas] })
+    foreach ($canvas in $old) { $hostGrid.Children.Remove($canvas) }
+    $dial = New-AfDial -Width 212 -Height 200 -CenterY 102 -Ticks 44 -Start -135 -Sweep 270 -Radius 90 -MinorLength 13 -MinorWidth 4 -MinorOpacity 0.12 -MajorEvery 0 -HandLength 60 -HandTail 14 -HandWidth 6 -HubSize 15 -HandAngle -135
+    $dial.IsHitTestVisible = $false
+    $last = $dial.Tag.Ticks[$dial.Tag.Ticks.Count - 1].Shape
+    $last.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Red')
+    $last.Opacity = 1
+    $arc = 'M{0},{1} A100,100 0 1 1 {2},{1}' -f (106 - 70.71).ToString([System.Globalization.CultureInfo]::InvariantCulture), (102 + 70.71).ToString([System.Globalization.CultureInfo]::InvariantCulture), (106 + 70.71).ToString([System.Globalization.CultureInfo]::InvariantCulture)
+    $track = New-Object System.Windows.Shapes.Path
+    $track.Data = [System.Windows.Media.Geometry]::Parse($arc)
+    $track.StrokeThickness = 1.5
+    $track.StrokeStartLineCap = 'Round'
+    $track.StrokeEndLineCap = 'Round'
+    $track.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Line2')
+    $comet = New-Object System.Windows.Shapes.Path
+    $comet.Data = $track.Data
+    $comet.StrokeThickness = 2.5
+    $comet.StrokeStartLineCap = 'Round'
+    $comet.StrokeEndLineCap = 'Round'
+    $comet.StrokeDashCap = 'Round'
+    $comet.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Text')
+    $length = (2 * [math]::PI * 100 * 0.75) / 2.5
+    $comet.StrokeDashArray = New-Object System.Windows.Media.DoubleCollection
+    $comet.StrokeDashArray.Add(14)
+    $comet.StrokeDashArray.Add($length + 14)
+    $comet.Opacity = 0
+    $dial.Children.Insert(0, $track)
+    $dial.Children.Insert(1, $comet)
+    foreach ($label in @(@('Desafinado', 42), @('Afinado', 170))) {
+        $text = New-AfText -Text (T $label[0]) -Size 11.5 -Brush 'Text3'
+        $text.TextWrapping = 'NoWrap'
+        $text.Measure((New-Object System.Windows.Size([double]::PositiveInfinity, [double]::PositiveInfinity)))
+        [System.Windows.Controls.Canvas]::SetLeft($text, $label[1] - $text.DesiredSize.Width / 2)
+        [System.Windows.Controls.Canvas]::SetTop($text, 182)
+        [void]$dial.Children.Add($text)
     }
-    $Window.Tag.HeroStep = $barWidth + $gap
-    $Window.Tag.HeroBarWidth = $barWidth
-    $Window.FindName('HeroNeedleLine').Height = $height - 6
-    [System.Windows.Controls.Canvas]::SetTop($Window.FindName('HeroNeedleHead'), 3 - $height)
-    $needle = $Window.FindName('HeroNeedleTransform')
-    $needle.BeginAnimation([System.Windows.Media.TranslateTransform]::XProperty, $null)
-    $needle.X = Get-AfHeroNeedleX -Window $Window -Fraction ([double]$Window.Tag.HeroF)
-    Set-AfHeroFraction -Window $Window -Fraction ([double]$Window.Tag.HeroF) -Motion $false -Force
+    $hostGrid.Children.Insert(0, $dial)
+    $Window.Tag.HeroDial = [pscustomobject]@{ Ticks = $dial.Tag.Ticks; Hand = $dial.Tag.Hand; Comet = $comet; CometLength = $length; Fraction = 0.0 }
 }
 
-function Get-AfHeroNeedleX {
-    param([Parameter(Mandatory)]$Window, [double]$Fraction)
-    $index = [math]::Round([math]::Max(0.0, [math]::Min(1.0, $Fraction)) * 47)
-    $index * [double]$Window.Tag.HeroStep + [double]$Window.Tag.HeroBarWidth / 2 - 1
-}
-
-# Enciende las barras hasta la fracción, una tras otra; la aguja va al mismo lugar.
+# Enciende las marcas hasta la fracción (más claras hacia el final) y lleva la aguja al mismo lugar.
 function Set-AfHeroFraction {
-    param([Parameter(Mandatory)]$Window, [double]$Fraction, [bool]$Motion = $false, [switch]$Force, [switch]$HideNeedle)
-    $s = $Window.Tag
-    $previous = [double]$s.HeroF
-    $s.HeroF = $Fraction
-    $lit = $Window.FindName('HeroLit').Children
-    if (-not $lit.Count) { return }
-    $upTo = [math]::Round([math]::Max(0.0, [math]::Min(1.0, $Fraction)) * 47)
-    $from = [math]::Round([math]::Max(0.0, [math]::Min(1.0, $previous)) * 47)
-    for ($i = 0; $i -lt $lit.Count; $i++) {
-        $target = if ($i -le $upTo -and $Fraction -gt 0) { 1 } else { 0 }
-        $bar = $lit[$i]
-        if (-not $Force -and $bar.Opacity -eq $target) { continue }
-        $delay = if ($Motion) { [math]::Abs($i - $from) * 14 } else { 0 }
-        Start-AfAnimation -Target $bar -Property ([System.Windows.UIElement]::OpacityProperty) -To $target -DurationMs 220 -DelayMs $delay -Ease Out -Enabled $Motion | Out-Null
+    param([Parameter(Mandatory)]$Window, [double]$Fraction, [bool]$Motion = $false, [switch]$Force, [switch]$Scanning)
+    $dial = $Window.Tag.HeroDial
+    if (-not $dial) { return }
+    $f = [math]::Max(0.0, [math]::Min(1.0, $Fraction))
+    $previous = [double]$dial.Fraction
+    $dial.Fraction = $f
+    $count = $dial.Ticks.Count
+    $upTo = [math]::Round($f * ($count - 1))
+    $from = [math]::Round($previous * ($count - 1))
+    for ($i = 0; $i -lt $count - 1; $i++) {
+        $target = if ($i -le $upTo -and $f -gt 0) { 0.4 + 0.6 * $i / ($count - 1) } else { 0.12 }
+        $shape = $dial.Ticks[$i].Shape
+        if (-not $Force -and [math]::Abs($shape.Opacity - $target) -lt 0.01) { continue }
+        $delay = if ($Motion) { [math]::Abs($i - $from) * 16 } else { 0 }
+        Start-AfAnimation -Target $shape -Property ([System.Windows.UIElement]::OpacityProperty) -To $target -DurationMs 260 -DelayMs $delay -Ease Out -Enabled $Motion | Out-Null
     }
-    $needle = $Window.FindName('HeroNeedle')
-    Start-AfAnimation -Target $needle -Property ([System.Windows.UIElement]::OpacityProperty) -To $(if ($HideNeedle) { 0 } else { 1 }) -DurationMs 260 -Ease Out -Enabled $Motion | Out-Null
-    if ($s.HeroStep) {
-        Start-AfAnimation -Target $Window.FindName('HeroNeedleTransform') -Property ([System.Windows.Media.TranslateTransform]::XProperty) -To (Get-AfHeroNeedleX -Window $Window -Fraction $Fraction) -DurationMs 700 -Ease Out -Enabled $Motion | Out-Null
+    Start-AfAnimation -Target $dial.Hand.RenderTransform -Property ([System.Windows.Media.RotateTransform]::AngleProperty) -To (-135 + 270 * $f) -DurationMs $(if ($Scanning) { 520 } else { 900 }) -Ease $(if ($Scanning) { 'Out' } else { 'InOut' }) -Enabled $Motion | Out-Null
+    Set-AfHeroScanning -Window $Window -On ([bool]$Scanning) -Motion $Motion
+}
+
+# El destello del aro y el barrido del radar: solo mientras analiza y con animaciones.
+function Set-AfHeroScanning {
+    param([Parameter(Mandatory)]$Window, [bool]$On, [bool]$Motion = $false)
+    $s = $Window.Tag
+    $on = $On -and $Motion
+    if ([bool]$s.ScanFx -eq $on) { return }
+    $s.ScanFx = $on
+    $dial = $s.HeroDial
+    $beam = if ($s.Radar) { $s.Radar.Beam } else { $null }
+    if ($on) {
+        if ($dial) {
+            $run = New-Object System.Windows.Media.Animation.DoubleAnimation(14, (-$dial.CometLength), (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(1500))))
+            $run.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+            $dial.Comet.BeginAnimation([System.Windows.Shapes.Shape]::StrokeDashOffsetProperty, $run)
+            Start-AfAnimation -Target $dial.Comet -Property ([System.Windows.UIElement]::OpacityProperty) -To 0.9 -DurationMs 300 -Ease Out | Out-Null
+        }
+        if ($beam) {
+            $spin = New-Object System.Windows.Media.Animation.DoubleAnimation(0, 360, (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(2200))))
+            $spin.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+            $beam.RenderTransform.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $spin)
+            Start-AfAnimation -Target $beam -Property ([System.Windows.UIElement]::OpacityProperty) -To 1 -DurationMs 300 -Ease Out | Out-Null
+        }
+    } else {
+        if ($dial) { Start-AfAnimation -Target $dial.Comet -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 400 -Ease Out -Enabled $Motion | Out-Null }
+        if ($beam) { Start-AfAnimation -Target $beam -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 500 -Ease Out -Enabled $Motion | Out-Null }
     }
 }
 
-# Al quedar afinada, una ola recorre las barras encendidas.
+# Al quedar afinada, una ola recorre las marcas encendidas.
 function Start-AfHeroCelebration {
     param([Parameter(Mandatory)]$Window)
+    $dial = $Window.Tag.HeroDial
+    if (-not $dial) { return }
     $i = 0
-    foreach ($bar in $Window.FindName('HeroLit').Children) {
+    foreach ($tick in @($dial.Ticks | Select-Object -SkipLast 1)) {
         $wave = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
-        $wave.BeginTime = [TimeSpan]::FromMilliseconds($i * 12)
-        $wave.Duration = New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(520))
-        [void]$wave.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame(0.3, [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds(180)), (New-AfKeySpline -Ease Out))))
-        [void]$wave.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame(1, [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds(520)), (New-AfKeySpline -Ease Out))))
-        $bar.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $wave)
+        $wave.BeginTime = [TimeSpan]::FromMilliseconds($i * 14)
+        [void]$wave.KeyFrames.Add((New-AfKeyFrame -Value 1 -At 140 -Ease Out))
+        [void]$wave.KeyFrames.Add((New-AfKeyFrame -Value $tick.Shape.Opacity -At 620 -Ease Out))
+        $tick.Shape.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $wave)
         $i++
     }
 }
@@ -607,7 +775,7 @@ function Update-AfHome {
         $Window.FindName('HeroText').Text = if ($done -gt 0) { (T '{0} de {1} categorías revisadas') -f $done, $total } elseif ($s.PartPhrase) { $s.PartPhrase } else { (T 'Revisando el hardware…') }
         $button.Opacity = 0
         $button.IsHitTestVisible = $false
-        Set-AfHeroFraction -Window $Window -Fraction ($done / [math]::Max(1.0, $total)) -Motion $motion -HideNeedle
+        Set-AfHeroFraction -Window $Window -Fraction ($done / [math]::Max(1.0, $total)) -Motion $motion -Scanning
     } else {
         $summary = Get-AfSummary -Results $results
         $verdict = Get-AfVerdict -Results $results
@@ -666,6 +834,27 @@ function New-AfRadar {
         $spoke.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Line')
         [void]$canvas.Children.Add($spoke)
     }
+    # Barrido de radar mientras analiza: una cuña que gira con el borde delantero marcado.
+    $beam = New-Object System.Windows.Controls.Canvas
+    $wedge = New-Object System.Windows.Shapes.Path
+    $inv = [System.Globalization.CultureInfo]::InvariantCulture
+    # Radio 64, el mismo de $r (escrito en el trazado).
+    $wedge.Data = [System.Windows.Media.Geometry]::Parse(('M{0},{1} L{2},{3} A64,64 0 0 1 {0},{4} Z' -f $cx.ToString($inv), $cy.ToString($inv), ($cx - 0.866 * $r).ToString($inv), ($cy - 0.5 * $r).ToString($inv), ($cy - $r).ToString($inv)))
+    $wedge.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'BeamFill')
+    $edge = New-Object System.Windows.Shapes.Line
+    $edge.X1 = $cx
+    $edge.Y1 = $cy
+    $edge.X2 = $cx
+    $edge.Y2 = $cy - $r
+    $edge.StrokeThickness = 1.2
+    $edge.Opacity = 0.75
+    $edge.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Text')
+    [void]$beam.Children.Add($wedge)
+    [void]$beam.Children.Add($edge)
+    $beam.RenderTransform = New-Object System.Windows.Media.RotateTransform(0, $cx, $cy)
+    $beam.Opacity = 0
+    $beam.IsHitTestVisible = $false
+    [void]$canvas.Children.Add($beam)
     $shape = New-Object System.Windows.Shapes.Polygon
     $shape.StrokeThickness = 1.5
     $shape.StrokeLineJoin = 'Round'
@@ -679,6 +868,8 @@ function New-AfRadar {
         $dot = New-Object System.Windows.Shapes.Ellipse
         $dot.Width = 7
         $dot.Height = 7
+        $dot.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+        $dot.RenderTransform = New-Object System.Windows.Media.ScaleTransform(1, 1)
         $dot.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Text')
         [void]$canvas.Children.Add($dot)
         $dots += $dot
@@ -701,7 +892,7 @@ function New-AfRadar {
         [void]$canvas.Children.Add($label)
         $labels += $label
     }
-    $Window.Tag.Radar = @{ Shape = $shape; Dots = $dots; Labels = $labels; Values = @(0, 0, 0, 0, 0, 0); Center = (New-Object System.Windows.Point($cx, $cy)); Radius = $r }
+    $Window.Tag.Radar = @{ Shape = $shape; Dots = $dots; Labels = $labels; Beam = $beam; Seen = @($false, $false, $false, $false, $false, $false); Values = @(0, 0, 0, 0, 0, 0); Center = (New-Object System.Windows.Point($cx, $cy)); Radius = $r }
     Set-AfRadarShape -Window $Window -Values @(0, 0, 0, 0, 0, 0)
 }
 
@@ -734,6 +925,16 @@ function Update-AfRadar {
         $counted = @($mine | Where-Object { Test-AfCountsForScore $_ })
         $seen = $mine.Count -gt 0 -or $s.Phase -ne 'scanning'
         $target[$k] = if (-not $seen) { 0 } else { Get-AfScore -Results $mine }
+        # Cada categoría que llega hace saltar su punto.
+        if ($seen -and -not $radar.Seen[$k] -and $Motion) {
+            foreach ($axis in [System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty) {
+                $pop = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+                [void]$pop.KeyFrames.Add((New-AfKeyFrame -Value 1.9 -At 160 -Ease Out))
+                [void]$pop.KeyFrames.Add((New-AfKeyFrame -Value 1 -At 460 -Ease Out))
+                $radar.Dots[$k].RenderTransform.BeginAnimation($axis, $pop)
+            }
+        }
+        $radar.Seen[$k] = $seen
         $pending = Get-AfPendingCount -Category $id -Results $Results
         $radar.Dots[$k].SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, $(if ($pending -gt 0) { 'Red' } else { 'Text' }))
         $ok = @($counted | Where-Object { $_.Detection.State -eq 'Ok' }).Count

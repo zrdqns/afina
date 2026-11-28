@@ -63,10 +63,11 @@ Describe 'Resumen' {
             $s.Phase = 'scanning'
             $s.Revealed = 3
             Update-AfHome -Window $window
-            $lit = @($window.FindName('HeroLit').Children | Where-Object { $_.Opacity -eq 1 }).Count
-            # 3 de 9 categorías: la tercera parte de las 48 barras (y la primera), no una sola.
-            $lit | Should -BeGreaterThan 14
-            $lit | Should -BeLessThan 20
+            $lit = @($s.HeroDial.Ticks | Select-Object -SkipLast 1 | Where-Object { $_.Shape.Opacity -gt 0.3 }).Count
+            # 3 de 9 categorías: la tercera parte de las 43 marcas (más la primera), no una sola.
+            $lit | Should -BeGreaterThan 12
+            $lit | Should -BeLessThan 18
+            $s.HeroDial.Hand.RenderTransform.Angle | Should -Be (-135 + 270 * 3 / 9)
             $window.FindName('HeroUnit').Text | Should -Be 'revisados'
         } finally { $window.Close() }
     }

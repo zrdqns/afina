@@ -143,7 +143,7 @@
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
-            <Border x:Name="Bd" CornerRadius="8" Background="{TemplateBinding Background}" Padding="12,0,10,0">
+            <Border x:Name="Bd" CornerRadius="8" Background="{TemplateBinding Background}" Padding="10,0,10,0">
               <ContentPresenter VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
@@ -351,7 +351,7 @@
 
       <ScrollViewer x:Name="HomeScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
         <StackPanel Margin="28,22,28,26">
-          <Grid MinHeight="62">
+          <Grid x:Name="PcHeader" MinHeight="62">
             <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
             <StackPanel x:Name="PcCard" Opacity="0">
               <StackPanel Orientation="Horizontal">
@@ -367,65 +367,46 @@
               <ColumnDefinition Width="14"/>
               <ColumnDefinition Width="*" MinWidth="250"/>
             </Grid.ColumnDefinitions>
-            <Border Style="{StaticResource Card}" Padding="22,18,22,18">
+            <Border x:Name="HeroCard" Style="{StaticResource Card}" Padding="16,16,22,18">
               <Grid>
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="*"/>
-                  <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal">
-                  <Path x:Name="HeroIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text2}" VerticalAlignment="Center"/>
-                  <TextBlock Text="Afinación" Style="{StaticResource CardTitle}"/>
-                </StackPanel>
-                <Grid Grid.Row="1" Margin="0,12,0,0">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" MinWidth="168"/>
-                    <ColumnDefinition Width="*"/>
-                  </Grid.ColumnDefinitions>
-                  <StackPanel VerticalAlignment="Bottom" Margin="0,0,24,0">
-                    <StackPanel Orientation="Horizontal">
-                      <TextBlock x:Name="HeroNumber" Text="0" FontFamily="{DynamicResource DisplayFont}" FontSize="60" FontWeight="Light"/>
-                      <TextBlock x:Name="HeroUnit" Margin="10,0,0,14" FontSize="13" Foreground="{DynamicResource Text2}" VerticalAlignment="Bottom"/>
-                    </StackPanel>
-                    <TextBlock x:Name="HeroTitle" Margin="0,2,0,0" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextWrapping="Wrap" MaxWidth="230" HorizontalAlignment="Left"/>
-                    <TextBlock x:Name="HeroText" Margin="0,5,0,0" FontSize="12.5" Foreground="{DynamicResource Text2}" TextWrapping="Wrap" MaxWidth="230" HorizontalAlignment="Left"/>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid x:Name="HeroDialHost" Width="212" Height="200" VerticalAlignment="Center">
+                  <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,20" IsHitTestVisible="False">
+                    <TextBlock x:Name="HeroNumber" Text="0" FontFamily="{DynamicResource DisplayFont}" FontSize="40" FontWeight="Light" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="HeroUnit" FontSize="12" Foreground="{DynamicResource Text2}" HorizontalAlignment="Center" Margin="0,-3,0,0"/>
                   </StackPanel>
-                  <Grid Grid.Column="1">
-                    <Grid.RowDefinitions>
-                      <RowDefinition Height="*"/>
-                      <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid x:Name="HeroMeter" MinHeight="104" Margin="0,8,0,0">
-                      <Canvas x:Name="HeroBars"/>
-                      <Canvas x:Name="HeroLit" IsHitTestVisible="False"/>
-                      <Canvas x:Name="HeroNeedle" Width="2" HorizontalAlignment="Left" VerticalAlignment="Bottom" Height="0" Opacity="0" IsHitTestVisible="False">
-                        <Canvas.RenderTransform><TranslateTransform x:Name="HeroNeedleTransform"/></Canvas.RenderTransform>
-                        <Rectangle x:Name="HeroNeedleLine" Width="2" RadiusX="1" RadiusY="1" Fill="{DynamicResource Red}" Canvas.Bottom="-4"/>
-                        <Polygon x:Name="HeroNeedleHead" Points="-3,0 5,0 1,6" Fill="{DynamicResource Red}"/>
-                      </Canvas>
-                    </Grid>
-                    <Grid Grid.Row="1" Margin="0,8,0,0">
-                      <TextBlock Text="Desafinado" FontSize="11.5" Foreground="{DynamicResource Text3}"/>
-                      <TextBlock Text="Afinado" FontSize="11.5" Foreground="{DynamicResource Text3}" HorizontalAlignment="Right"/>
-                    </Grid>
-                  </Grid>
                 </Grid>
-                <DockPanel Grid.Row="2" Margin="0,18,0,0">
-                  <Button x:Name="HeroButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Opacity="0">
+                <Grid Grid.Column="1" Margin="20,2,0,0">
+                  <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                  </Grid.RowDefinitions>
+                  <StackPanel Orientation="Horizontal">
+                    <Path x:Name="HeroIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text2}" VerticalAlignment="Center"/>
+                    <TextBlock Text="Afinación" Style="{StaticResource CardTitle}"/>
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,12,0,12">
+                    <TextBlock x:Name="HeroTitle" FontFamily="{DynamicResource DisplayFont}" FontSize="21" FontWeight="Medium" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="HeroText" Margin="0,6,0,0" FontSize="13" Foreground="{DynamicResource Text2}" TextWrapping="Wrap"/>
+                    <DockPanel Margin="0,14,0,0">
+                      <Path x:Name="HeroNoteIcon" DockPanel.Dock="Left" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text3}" VerticalAlignment="Top" Margin="0,1,8,0"/>
+                      <TextBlock Text="Se crea un punto de restauración antes de aplicar" FontSize="12" Foreground="{DynamicResource Text3}" TextWrapping="Wrap"/>
+                    </DockPanel>
+                  </StackPanel>
+                  <Button x:Name="HeroButton" Grid.Row="2" HorizontalAlignment="Left" Style="{StaticResource PrimaryButton}" Opacity="0">
                     <StackPanel Orientation="Horizontal">
                       <TextBlock x:Name="HeroButtonText" Text="Ver el detalle" VerticalAlignment="Center"/>
                       <Path x:Name="HeroButtonIcon" Width="13" Height="13" Margin="8,0,0,0" Stretch="Uniform" Fill="White" VerticalAlignment="Center"/>
                     </StackPanel>
                   </Button>
-                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                    <Path x:Name="HeroNoteIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text3}" VerticalAlignment="Center"/>
-                    <TextBlock Text="Se crea un punto de restauración antes de aplicar" Margin="8,0,0,0" FontSize="12" Foreground="{DynamicResource Text3}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                  </StackPanel>
-                </DockPanel>
+                </Grid>
               </Grid>
             </Border>
-            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="18,18,18,12">
+            <Border x:Name="ProfileCard" Grid.Column="2" Style="{StaticResource Card}" Padding="18,18,18,12">
               <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
                   <Path x:Name="ProfileIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text2}" VerticalAlignment="Center"/>
@@ -437,9 +418,9 @@
               </DockPanel>
             </Border>
           </Grid>
-          <TextBlock Text="Acciones rápidas" Style="{StaticResource SectionLabel}"/>
+          <TextBlock x:Name="QuickLabel" Text="Acciones rápidas" Style="{StaticResource SectionLabel}"/>
           <UniformGrid x:Name="Quick" Rows="1" Margin="-6,0,-6,0"/>
-          <DockPanel Margin="2,24,0,10">
+          <DockPanel x:Name="LiveHeader" Margin="2,24,0,10">
             <TextBlock x:Name="LiveNote" DockPanel.Dock="Right" Text="Se actualiza cada segundo" FontSize="11.5" Foreground="{DynamicResource Text3}" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal">
               <Ellipse x:Name="LiveDot" Width="6" Height="6" Fill="{DynamicResource Red}" VerticalAlignment="Center" Margin="0,1,8,0"/>
@@ -509,11 +490,13 @@
       </Grid>
     </Border>
 
-    <Grid x:Name="Splash" Grid.RowSpan="3" Panel.ZIndex="100" Background="{DynamicResource Bg}">
-      <StackPanel x:Name="SplashContent" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,24">
-        <Border x:Name="SplashMarkHost" Width="84" Height="84" HorizontalAlignment="Center"/>
-        <TextBlock x:Name="SplashName" Text="Afina" FontFamily="{DynamicResource DisplayFont}" FontSize="46" FontWeight="Light" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-        <TextBlock x:Name="SplashTag" Text="Análisis y optimización de Windows" FontSize="13" Foreground="{DynamicResource Text2}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+    <Grid x:Name="Splash" Grid.RowSpan="3" Panel.ZIndex="100" Background="{DynamicResource Bg}" ClipToBounds="True">
+      <StackPanel x:Name="SplashContent" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20">
+        <Border x:Name="SplashDialHost" Width="132" Height="132" VerticalAlignment="Center"/>
+        <StackPanel VerticalAlignment="Center" Margin="30,0,0,8">
+          <StackPanel x:Name="SplashLetters" Orientation="Horizontal"/>
+          <TextBlock x:Name="SplashTag" Text="Análisis y optimización de Windows" FontSize="14" Foreground="{DynamicResource Text2}" Margin="4,0,0,0"/>
+        </StackPanel>
       </StackPanel>
       <TextBlock x:Name="SplashVersion" FontFamily="{DynamicResource DisplayFont}" FontSize="12" Foreground="{DynamicResource Text3}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,26"/>
     </Grid>
@@ -588,7 +571,12 @@ function Set-AfTheme {
     $fade = { param($top, $bottom) $b = New-Object System.Windows.Media.LinearGradientBrush; $b.StartPoint = '0,0'; $b.EndPoint = '0,1'; [void]$b.GradientStops.Add((New-Object System.Windows.Media.GradientStop($top, 0))); [void]$b.GradientStops.Add((New-Object System.Windows.Media.GradientStop($bottom, 1))); $b }
     $alpha = { param($a) [System.Windows.Media.Color]::FromArgb($a, $text.R, $text.G, $text.B) }
     $dictionary.Add('CardBg', $(if ($Theme -eq 'Black') { & $fade $dictionary['Raised'].Color $dictionary['Panel'].Color } else { $dictionary['Panel'] }))
-    $dictionary.Add('BarLit', (& $fade (& $alpha 235) (& $alpha 110)))
+    $beam = New-Object System.Windows.Media.LinearGradientBrush
+    $beam.StartPoint = '0,0.7'
+    $beam.EndPoint = '1,0.3'
+    [void]$beam.GradientStops.Add((New-Object System.Windows.Media.GradientStop((& $alpha 0), 0)))
+    [void]$beam.GradientStops.Add((New-Object System.Windows.Media.GradientStop((& $alpha 70), 1)))
+    $dictionary.Add('BeamFill', $beam)
     $dictionary.Add('SparkFill', (& $fade (& $alpha 46) (& $alpha 0)))
     $dictionary.Add('RadarFill', (New-Object System.Windows.Media.SolidColorBrush((& $alpha 28))))
     $Window.Resources.MergedDictionaries.Clear()

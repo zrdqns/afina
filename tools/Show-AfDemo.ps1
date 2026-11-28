@@ -60,8 +60,17 @@ if ($AutoPlay) {
                 $st.Busy = $true
                 $shoot = { param($name) if (-not $st.Shots[$name]) { $st.Shots[$name] = $true; Save-AfWindowSnapshot -Window $w -Path (Join-Path $Global:AfDemoOut "demo-$name.png") } }
                 try {
-                # La pantalla de entrada, con la marca y el nombre ya a la vista.
-                if (-not $st.Shots['entrada'] -and $w.FindName('Splash').Visibility -eq 'Visible' -and $w.FindName('SplashTag').Opacity -ge 0.99) { & $shoot 'entrada' }
+                # La pantalla de entrada: queda fija mientras se captura a mitad del giro y ya armada.
+                if ($w.FindName('Splash').Visibility -eq 'Visible' -and -not $w.Tag.SplashGone) {
+                    $w.Tag.SplashPinned = $true
+                    if (-not $st.Shots['entrada-giro'] -and ((Get-Date) - $st.Start).TotalMilliseconds -ge 700) { & $shoot 'entrada-giro' }
+                    if ($st.Shots['entrada-giro'] -and $w.FindName('SplashTag').Opacity -ge 0.99) {
+                        & $shoot 'entrada'
+                        $w.Tag.SplashPinned = $false
+                        Hide-AfSplash -Window $w
+                    }
+                    return
+                }
                 if ($w.FindName('Splash').Visibility -eq 'Visible') { return }
                 switch ($w.Tag.Phase) {
                     'scanning' {

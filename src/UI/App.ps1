@@ -209,15 +209,20 @@ function New-AfNav {
         $iconOn.Visibility = 'Collapsed'
         [void]$iconHost.Children.Add($iconOff)
         [void]$iconHost.Children.Add($iconOn)
-        # Con la barra cerrada, un punto en el icono dice que la categoría tiene algo por hacer.
-        $dot = New-Object System.Windows.Shapes.Ellipse
-        $dot.Width = 5
-        $dot.Height = 5
+        # Con la barra cerrada, un punto rojo en la esquina del icono dice que la categoría tiene algo por hacer.
+        # Va dentro de los 20 px del icono: afuera lo recortaba la columna del número, que no cabe con la barra cerrada.
+        $iconHost.Width = 20
+        $iconHost.Height = 20
+        $dot = New-Object System.Windows.Controls.Border
+        $dot.Width = 8
+        $dot.Height = 8
+        $dot.CornerRadius = 4
+        $dot.BorderThickness = 1.5
         $dot.HorizontalAlignment = 'Right'
         $dot.VerticalAlignment = 'Top'
-        $dot.Margin = '0,-3,-5,0'
         $dot.Visibility = 'Collapsed'
-        $dot.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Text')
+        $dot.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Red')
+        $dot.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Rail')
         [void]$iconHost.Children.Add($dot)
         $label = New-AfText -Text $entry.Name -Size 13 -Brush 'Text2'
         $label.Margin = '10,0,0,0'
