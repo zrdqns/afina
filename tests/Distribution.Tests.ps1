@@ -18,8 +18,8 @@
             }).AddArgument($listener).AddArgument($ContentType).AddArgument($Body)
         [pscustomobject]@{ Listener = $listener; Url = "http://localhost:$port/Afina.ps1"; PowerShell = $ps; Handle = $ps.BeginInvoke() }
     }
-    function Get-AfServedText([string]$ContentType) {
-        $bytes = [System.IO.File]::ReadAllBytes((Join-Path $script:root 'dist\Afina.ps1'))
+    function Get-AfServedText([string]$ContentType, [string]$Path = 'dist\Afina.ps1') {
+        $bytes = [System.IO.File]::ReadAllBytes((Join-Path $script:root $Path))
         $server = Start-AfTestServer -ContentType $ContentType -Body $bytes
         try { Invoke-RestMethod -Uri $server.Url -UseBasicParsing -TimeoutSec 20 } finally { $server.Listener.Stop(); $server.PowerShell.Dispose() }
     }
@@ -30,8 +30,23 @@
 Describe 'Línea de internet (irm | iex)' {
     It 'irm entrega el build intacto como texto UTF-8 (raw de GitHub)' {
         $text = Get-AfServedText -ContentType 'text/plain; charset=utf-8'
-        $text.Contains('Afina 0.5.0: análisis y optimización de Windows') | Should -BeTrue
+        $text.Contains('Afina 0.6.0: análisis y optimización de Windows') | Should -BeTrue
         { [scriptblock]::Create($text) } | Should -Not -Throw
+    }
+
+    # La línea corta (irm zrdqns.github.io/afina | iex) baja web\index.html desde GitHub Pages, que lo sirve como HTML en UTF-8.
+    # Para el navegador es una página; para PowerShell, un comentario y una sola orden: bajar el build de main y correrlo.
+    It 'la página de la línea corta solo carga el build de main' {
+        $text = Get-AfServedText -ContentType 'text/html; charset=utf-8' -Path 'web\index.html'
+        $tokens = $null
+        $errors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseInput($text, [ref]$tokens, [ref]$errors)
+        @($errors) | Should -BeNullOrEmpty
+        $statements = @($ast.EndBlock.Statements)
+        $statements.Count | Should -Be 1
+        $statements[0].Extent.Text | Should -Be 'irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex'
+        # Sin BOM: irm dejaría U+FEFF antes del "<#" que abre el comentario.
+        [System.IO.File]::ReadAllBytes((Join-Path $script:root 'web\index.html'))[0] | Should -Be ([byte][char]'<')
     }
 
     # Con BOM, irm deja U+FEFF pegado al primer "#": el comentario y el bloque param se leen como comandos.

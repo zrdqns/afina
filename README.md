@@ -11,8 +11,10 @@ Analiza Windows y lo deja afinado para juegos y rendimiento. Cada cambio se pued
 **Desde internet.** En PowerShell abierto como administrador (clic derecho en Inicio > Terminal o Windows PowerShell, como administrador):
 
 ```powershell
-irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex
+irm zrdqns.github.io/afina | iex
 ```
+
+Si esa dirección no responde, la completa hace lo mismo: `irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex`
 
 **Desde una USB.** Descarga `Afina.cmd` y `Afina.ps1` del [último release](https://github.com/zrdqns/afina/releases/latest), déjalos en la misma carpeta y abre `Afina.cmd`.
 
@@ -21,7 +23,9 @@ Afina no se instala. Desde la USB pide permisos de administrador por su cuenta.
 ## Qué hace
 
 - Analiza sola el hardware y la configuración de Windows, sin cambiar nada, en menos de 30 segundos.
-- Muestra qué conviene mejorar por categoría: energía, juegos y gráficos, red, inicio, almacenamiento, seguridad, hardware y opcional (actualizaciones, avanzado y limpieza). Cada recomendación dice por qué, su impacto, su riesgo y su fuente.
+- Abre en un resumen con el estado de la PC, su uso en vivo y un perfil por categoría.
+- Muestra qué conviene mejorar por categoría: energía, juegos y gráficos, red, inicio, almacenamiento, seguridad, diagnóstico, ajustes de Windows y opcional (actualizaciones, avanzado y limpieza). Cada recomendación dice por qué, su impacto, su riesgo y su fuente.
+- Repara lo que dejan otros "optimizadores": servicios de Windows deshabilitados y "aceleradores" o limpiadores que conviene desinstalar.
 - Aplica solo lo que elijas. Antes crea un punto de restauración (si Windows lo permite) y guarda el valor original de cada cambio.
 - En Historial se deshace una sesión completa o cambio por cambio, incluso después de reiniciar. Lo que no se puede deshacer va marcado, como borrar temporales o instalar actualizaciones.
 
@@ -55,8 +59,10 @@ Scans Windows and tunes it for gaming and performance. Every change can be undon
 **From the internet.** In PowerShell opened as administrator (right-click Start > Terminal or Windows PowerShell, as administrator):
 
 ```powershell
-irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex
+irm zrdqns.github.io/afina | iex
 ```
+
+If that address doesn't answer, the full one does the same: `irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex`
 
 **From a USB drive.** Download `Afina.cmd` and `Afina.ps1` from the [latest release](https://github.com/zrdqns/afina/releases/latest), keep them in the same folder and open `Afina.cmd`.
 
@@ -65,7 +71,9 @@ Afina doesn't install. From the USB drive it asks for administrator rights on it
 ## What it does
 
 - Scans the hardware and Windows settings on its own, without changing anything, in under 30 seconds.
-- Shows what's worth improving by category: power, gaming and graphics, network, startup, storage, security, hardware and optional (updates, advanced and cleanup). Each recommendation says why, its impact, its risk and its source.
+- Opens on a summary with the PC's state, its live usage and a profile by category.
+- Shows what's worth improving by category: power, gaming and graphics, network, startup, storage, security, diagnostics, Windows settings and optional (updates, advanced and cleanup). Each recommendation says why, its impact, its risk and its source.
+- Repairs what other "optimizers" leave behind: disabled Windows services, and "boosters" or cleaners worth uninstalling.
 - Applies only what you choose. First it creates a restore point (if Windows allows it) and saves the original value of every change.
 - History undoes a whole session or one change at a time, even after a restart. Whatever can't be undone is marked, such as deleting temporary files or installing updates.
 

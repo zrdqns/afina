@@ -1,4 +1,4 @@
-﻿# Afina 0.5.0: análisis y optimización de Windows. Generado por build.ps1; no editar a mano.
+﻿# Afina 0.6.0: análisis y optimización de Windows. Generado por build.ps1; no editar a mano.
 # Iconos: Phosphor Icons (https://phosphoricons.com), licencia MIT.
 param(
     [switch]$Scan,
@@ -18,7 +18,7 @@ if ([string]$ExecutionContext.SessionState.LanguageMode -ne 'FullLanguage') {
 }
 
 $Global:AfCodeBlock = {
-function Get-AfVersion { '0.5.0' }
+function Get-AfVersion { '0.6.0' }
 
 # Traducciones al inglés. Cada línea: el texto en español tal cual está en el código (distingue mayúsculas), "==>" y su traducción.
 # Lo usa Get-AfText (alias T) en Core\Localization.ps1; tests\Translations.Tests.ps1 vigila que no falte ninguna.
