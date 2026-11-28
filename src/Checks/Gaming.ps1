@@ -246,4 +246,31 @@ function Get-AfGamingChecks {
             New-AfDetection -State Info -Steps @((T 'Abre Configuración, Sistema, Pantalla, Gráficos.'), (T 'Elige cada juego y márcalo en Alto rendimiento.'), (T 'En NVIDIA App o en el panel de la gráfica, revisa que la dedicada sea la preferida.'))
         }
     }
+
+    @{
+        Id = 'gpu.rebar'; Category = 'gaming'
+        Title = (T 'Resizable BAR activo')
+        Why = (T 'Con Resizable BAR el procesador usa toda la memoria de la gráfica de una vez; en muchos juegos sube los FPS.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Tamaño de la ventana de memoria de la gráfica'); Undo = (T 'No cambia nada')
+        # Solo escritorios con una gráfica que lo admite (RTX 30 o más nueva, RX 6000 o más nueva, Intel Arc): en laptops lo decide el fabricante.
+        AppliesTo = { param($inv) $inv.Device -and -not $inv.Device.IsLaptop -and [bool](Get-AfRebarGpu -Inventory $inv) }
+        Detect = {
+            param($inv)
+            $gpu = Get-AfRebarGpu -Inventory $inv
+            if ($gpu.WindowMB -ge 1024) { return New-AfDetection -State Ok -Current (T 'Activo') }
+            # Windows en modo heredado (BIOS con CSM): sin UEFI la opción no se puede usar.
+            $steps = if ($inv.Device.Firmware -eq 'BIOS') {
+                @((T 'Windows arranca en modo heredado: Resizable BAR necesita UEFI.'), (T 'Antes de apagar CSM hay que convertir el disco a GPT con mbr2gpt; al revés, Windows no arranca.'))
+            } else {
+                @((T 'Entra a la BIOS: pulsa Supr o F2 al encender la PC.'), (T 'Activa Above 4G Decoding y Re-Size BAR Support (en AMD puede llamarse Smart Access Memory).'), (T 'Si no aparece, actualiza la BIOS de la placa.'))
+            }
+            New-AfDetection -State Manual -Title (T 'Resizable BAR apagado') -Current $gpu.Name -Steps $steps
+        }
+    }
+}
+
+function Get-AfRebarGpu {
+    param($Inventory)
+    @($Inventory.Gpus | Where-Object { $_.IsDiscrete -and $null -ne $_.WindowMB -and $_.Name -match 'RTX\s?(30|40|50)\d{2}|RX\s?(6|7|9)\d{3}|Arc\b' })[0]
 }

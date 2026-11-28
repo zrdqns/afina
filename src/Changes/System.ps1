@@ -165,3 +165,48 @@ function Get-AfHibernationTypeState {
     param([Parameter(Mandatory)]$Record, $User)
     (Get-AfHibernationInfo).Type
 }
+
+# --- Inicio de un servicio ---
+# Lo cambia sc.exe: el administrador de servicios respeta los permisos de cada uno (la clave de DPS solo deja leer a los administradores).
+
+function ConvertTo-AfServiceMode {
+    param([int]$Start, [bool]$Delayed)
+    switch ($Start) { 2 { if ($Delayed) { 'delayed-auto' } else { 'auto' } } 3 { 'demand' } 4 { 'disabled' } default { $null } }
+}
+
+# El inicio diferido solo cuenta en los automáticos. $null si el servicio no existe.
+function Get-AfServiceStart {
+    param([Parameter(Mandatory)][string]$Name)
+    $key = "HKLM:\SYSTEM\CurrentControlSet\Services\$Name"
+    $start = Get-AfRegistryValue -Path $key -Name 'Start'
+    if ($null -eq $start) { return $null }
+    [pscustomobject]@{ Start = [int]$start; Delayed = ([int]$start -eq 2 -and (Get-AfRegistryValue -Path $key -Name 'DelayedAutostart') -eq 1) }
+}
+
+function Invoke-AfServiceStart {
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Mode)
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\sc.exe') -Arguments ('config "{0}" start= {1}' -f $Name, $Mode) -TimeoutMs 15000
+    if ($result.TimedOut -or $result.ExitCode -ne 0) {
+        Write-AfLog -Level Warn -Message ('sc config {0} {1}: código {2}. {3}' -f $Name, $Mode, $result.ExitCode, $result.Output)
+        throw (New-AfApplyError -Reason (T 'Windows no dejó cambiar el servicio'))
+    }
+}
+
+function Set-AfServiceStart {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Mode)
+    $previous = Get-AfServiceStart -Name $Name
+    if (-not $previous -or (ConvertTo-AfServiceMode -Start $previous.Start -Delayed $previous.Delayed) -eq $Mode) { return $false }
+    Invoke-AfServiceStart -Name $Name -Mode $Mode
+    Add-AfTxRecord -Tx $Tx -Record @{ Kind = 'ServiceStart'; Name = $Name; Previous = $previous; New = $Mode }
+    $true
+}
+
+function Restore-AfServiceStart {
+    param([Parameter(Mandatory)]$Record, $User)
+    Invoke-AfServiceStart -Name $Record.Name -Mode (ConvertTo-AfServiceMode -Start ([int]$Record.Previous.Start) -Delayed ([bool]$Record.Previous.Delayed))
+}
+
+function Get-AfServiceStartState {
+    param([Parameter(Mandatory)]$Record, $User)
+    Get-AfServiceStart -Name $Record.Name
+}

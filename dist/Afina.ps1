@@ -756,6 +756,53 @@ Microsoft: política de Inicio==>Microsoft: Start policy
 Apagadas==>Off
 Activas==>On
 Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio, y también la lista de "Más usadas" y el historial de Ejecutar (Win+R). No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.==>Recommended programs, suggested sites and account notices are turned off in Start, along with the "Most used" list and the Run (Win+R) history. Recent files are not touched. On Pro and above the Recommended section is also hidden.
+# Servicios deshabilitados, Resizable BAR, juegos en disco mecánico y programas que estorban
+Windows no dejó cambiar el servicio==>Windows didn't allow changing the service
+Impresión==>Printing
+Xbox (Game Pass, mandos)==>Xbox (Game Pass, controllers)
+Ubicación==>Location
+Historial de archivos==>File History
+Solucionador de problemas==>Troubleshooters
+Tarjetas inteligentes==>Smart cards
+Capturas de Game Bar==>Game Bar captures
+Como vienen en Windows==>As Windows ships them
+1 función de Windows deshabilitada==>1 Windows feature disabled
+{0} funciones de Windows deshabilitadas==>{0} Windows features disabled
+Qué habilitar==>What to enable
+Vuelve a habilitar lo elegido con el inicio que trae Windows. Pide reiniciar.==>Enables what you picked again, with the startup type Windows ships with. Asks to restart.
+Servicios de Windows habilitados==>Windows services enabled
+Algunos "optimizadores" deshabilitan servicios que Windows necesita: después no se puede imprimir, actualizar o jugar con Game Pass.==>Some "optimizers" disable services Windows needs: afterwards you can't print, update or play with Game Pass.
+Inicio de fábrica de los servicios de Windows 10 y 11==>Default startup of Windows 10 and 11 services
+Resizable BAR activo==>Resizable BAR on
+Con Resizable BAR el procesador usa toda la memoria de la gráfica de una vez; en muchos juegos sube los FPS.==>With Resizable BAR the processor uses all of the graphics card's memory at once; in many games it raises FPS.
+Tamaño de la ventana de memoria de la gráfica==>Size of the graphics card's memory window
+Activo==>On
+Windows arranca en modo heredado: Resizable BAR necesita UEFI.==>Windows boots in legacy mode: Resizable BAR needs UEFI.
+Antes de apagar CSM hay que convertir el disco a GPT con mbr2gpt; al revés, Windows no arranca.==>Before turning CSM off, the disk has to be converted to GPT with mbr2gpt; the other way around, Windows won't boot.
+Entra a la BIOS: pulsa Supr o F2 al encender la PC.==>Enter the BIOS: press Del or F2 when the PC turns on.
+Activa Above 4G Decoding y Re-Size BAR Support (en AMD puede llamarse Smart Access Memory).==>Turn on Above 4G Decoding and Re-Size BAR Support (on AMD it may be called Smart Access Memory).
+Si no aparece, actualiza la BIOS de la placa.==>If it isn't there, update the motherboard BIOS.
+Resizable BAR apagado==>Resizable BAR off
+Sin "aceleradores" ni limpiadores==>No "boosters" or cleaners
+Los actualizadores de drivers pueden instalar drivers equivocados, y los limpiadores y "aceleradores" corren de fondo sin hacer la PC más rápida.==>Driver updaters can install the wrong drivers, and cleaners and "boosters" run in the background without making the PC faster.
+Programas instalados==>Installed programs
+Ninguno==>None
+{0} instalado==>{0} installed
+{0} programas que estorban==>{0} programs getting in the way
+Abre Configuración > Aplicaciones > Aplicaciones instaladas.==>Open Settings > Apps > Installed apps.
+Desinstala {0}.==>Uninstall {0}.
+{0} está apagado: si era una prueba que venció, desinstálalo y Microsoft Defender se activa solo.==>{0} is off: if it was an expired trial, uninstall it and Microsoft Defender turns on by itself.
+Juegos en SSD==>Games on SSD
+En un disco mecánico los juegos tardan mucho más en cargar y los mundos abiertos dan tirones.==>On a hard drive, games take much longer to load and open worlds stutter.
+Bibliotecas de Steam y Epic Games==>Steam and Epic Games libraries
+Ninguno en disco mecánico==>None on a hard drive
+1 juego en disco mecánico==>1 game on a hard drive
+{0} juegos en disco mecánico==>{0} games on a hard drive
+Con un SSD estos juegos cargarían mucho más rápido.==>With an SSD these games would load much faster.
+Primero libera espacio en el SSD: ahora no entra ninguno de estos juegos.==>First free up space on the SSD: none of these games fits right now.
+En Steam: clic derecho en el juego > Propiedades > Archivos instalados > Mover carpeta de instalación, y elige el SSD.==>In Steam: right-click the game > Properties > Installed Files > Move install folder, and pick the SSD.
+En Epic Games no se pueden mover: desinstálalo e instálalo de nuevo en el SSD.==>Epic Games can't move them: uninstall it and install it again on the SSD.
+{0} GB libres en el SSD==>{0} GB free on the SSD
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }
@@ -1272,6 +1319,52 @@ namespace Afina {
                 return null;
             }
         }
+
+        [DllImport("kernel32.dll")] static extern bool GetFirmwareType(out int type);
+
+        // 1 = BIOS heredado, 2 = UEFI, 0 = no se sabe.
+        public static int FirmwareType() {
+            int type;
+            try { return GetFirmwareType(out type) ? type : 0; } catch (EntryPointNotFoundException) { return 0; }
+        }
+
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Locate_DevNodeW(out uint devInst, string deviceId, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Get_First_Log_Conf(out IntPtr logConf, uint devInst, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Get_Next_Res_Des(out IntPtr next, IntPtr current, uint forResource, out uint resourceId, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Get_Res_Des_Data_Size(out uint size, IntPtr resDes, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Get_Res_Des_Data(IntPtr resDes, byte[] buffer, uint length, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Free_Res_Des_Handle(IntPtr resDes);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Free_Log_Conf_Handle(IntPtr logConf);
+
+        // Ventana de memoria más grande que Windows le asignó a un dispositivo PCI, en MB (-1 si no se pudo leer).
+        // Recorre la configuración asignada (2): memoria (1) y memoria grande, la de más de 4 GB (7). Base y fin están en los bytes 8 y 16.
+        public static long LargestWindowMB(string instanceId) {
+            uint dev;
+            if (CM_Locate_DevNodeW(out dev, instanceId, 0) != 0) return -1;
+            IntPtr conf;
+            if (CM_Get_First_Log_Conf(out conf, dev, 2) != 0) return -1;
+            ulong largest = 0;
+            try {
+                foreach (uint type in new uint[] { 1, 7 }) {
+                    IntPtr current = conf, next;
+                    uint id;
+                    while (CM_Get_Next_Res_Des(out next, current, type, out id, 0) == 0) {
+                        if (current != conf) CM_Free_Res_Des_Handle(current);
+                        current = next;
+                        uint size;
+                        if (CM_Get_Res_Des_Data_Size(out size, current, 0) != 0 || size < 24) continue;
+                        byte[] data = new byte[size];
+                        if (CM_Get_Res_Des_Data(current, data, size, 0) != 0) continue;
+                        ulong start = BitConverter.ToUInt64(data, 8), end = BitConverter.ToUInt64(data, 16);
+                        if (end > start && end - start + 1 > largest) largest = end - start + 1;
+                    }
+                    if (current != conf) CM_Free_Res_Des_Handle(current);
+                }
+            } finally {
+                CM_Free_Log_Conf_Handle(conf);
+            }
+            return (long)(largest / (1024 * 1024));
+        }
     }
 }
 '@
@@ -1311,6 +1404,20 @@ function Invoke-AfDisplayModeChange {
     param([Parameter(Mandatory)][string]$DeviceName, [int]$Width, [int]$Height, [int]$Hz)
     if (-not (Initialize-AfNative)) { return -1 }
     [Afina.Native]::ChangeMode($DeviceName, $Width, $Height, $Hz)
+}
+
+# Con Resizable BAR la ventana de la gráfica es casi toda su memoria; sin él, 256 MB. $null si no se pudo leer.
+function Get-AfGpuWindowMB {
+    param([string]$PnpId)
+    if (-not $PnpId -or -not (Initialize-AfNative)) { return $null }
+    $mb = [Afina.Native]::LargestWindowMB($PnpId)
+    if ($mb -ge 0) { $mb }
+}
+
+# 'UEFI', 'BIOS' (modo heredado) o $null si no se sabe.
+function Get-AfFirmwareType {
+    if (-not (Initialize-AfNative)) { return $null }
+    switch ([Afina.Native]::FirmwareType()) { 1 { 'BIOS' } 2 { 'UEFI' } default { $null } }
 }
 
 function Test-AfOnAcPower {
@@ -1616,6 +1723,26 @@ function Set-AfRegistryValue {
         Kind = 'RegistryValue'; Path = $Path; Name = $Name; KeyExisted = $before.KeyExists; CreatedKeys = $created
         Previous = [pscustomobject]@{ Exists = $before.Exists; Type = $before.Type; Value = $before.Value }
         New = [pscustomobject]@{ Exists = $true; Type = $Type; Value = $target }
+    }
+    $true
+}
+
+# Borra un valor que dejó otro programa (p. ej. una directiva). Deshacer lo vuelve a escribir.
+function Remove-AfRegistryValue {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Name)
+    $before = Get-AfRegistryState -Path $Path -Name $Name -User $Tx.User
+    if (-not $before.Exists) { return $false }
+    $resolved = Resolve-AfRegistryPath -Path $Path -User $Tx.User
+    try {
+        Remove-ItemProperty -LiteralPath $resolved -Name $Name -Force -ErrorAction Stop
+    } catch {
+        Write-AfLog -Level Warn -Message "Registro $resolved\$Name`: $($_.Exception.Message)"
+        throw (New-AfApplyError -Reason (T 'Windows no dejó escribir en el registro'))
+    }
+    Add-AfTxRecord -Tx $Tx -Record @{
+        Kind = 'RegistryValue'; Path = $Path; Name = $Name; KeyExisted = $true; CreatedKeys = @()
+        Previous = [pscustomobject]@{ Exists = $true; Type = $before.Type; Value = $before.Value }
+        New = [pscustomobject]@{ Exists = $false; Type = $null; Value = $null }
     }
     $true
 }
@@ -2552,6 +2679,51 @@ function Get-AfHibernationTypeState {
     (Get-AfHibernationInfo).Type
 }
 
+# --- Inicio de un servicio ---
+# Lo cambia sc.exe: el administrador de servicios respeta los permisos de cada uno (la clave de DPS solo deja leer a los administradores).
+
+function ConvertTo-AfServiceMode {
+    param([int]$Start, [bool]$Delayed)
+    switch ($Start) { 2 { if ($Delayed) { 'delayed-auto' } else { 'auto' } } 3 { 'demand' } 4 { 'disabled' } default { $null } }
+}
+
+# El inicio diferido solo cuenta en los automáticos. $null si el servicio no existe.
+function Get-AfServiceStart {
+    param([Parameter(Mandatory)][string]$Name)
+    $key = "HKLM:\SYSTEM\CurrentControlSet\Services\$Name"
+    $start = Get-AfRegistryValue -Path $key -Name 'Start'
+    if ($null -eq $start) { return $null }
+    [pscustomobject]@{ Start = [int]$start; Delayed = ([int]$start -eq 2 -and (Get-AfRegistryValue -Path $key -Name 'DelayedAutostart') -eq 1) }
+}
+
+function Invoke-AfServiceStart {
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Mode)
+    $result = Invoke-AfProcess -FilePath (Join-Path $env:SystemRoot 'System32\sc.exe') -Arguments ('config "{0}" start= {1}' -f $Name, $Mode) -TimeoutMs 15000
+    if ($result.TimedOut -or $result.ExitCode -ne 0) {
+        Write-AfLog -Level Warn -Message ('sc config {0} {1}: código {2}. {3}' -f $Name, $Mode, $result.ExitCode, $result.Output)
+        throw (New-AfApplyError -Reason (T 'Windows no dejó cambiar el servicio'))
+    }
+}
+
+function Set-AfServiceStart {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Mode)
+    $previous = Get-AfServiceStart -Name $Name
+    if (-not $previous -or (ConvertTo-AfServiceMode -Start $previous.Start -Delayed $previous.Delayed) -eq $Mode) { return $false }
+    Invoke-AfServiceStart -Name $Name -Mode $Mode
+    Add-AfTxRecord -Tx $Tx -Record @{ Kind = 'ServiceStart'; Name = $Name; Previous = $previous; New = $Mode }
+    $true
+}
+
+function Restore-AfServiceStart {
+    param([Parameter(Mandatory)]$Record, $User)
+    Invoke-AfServiceStart -Name $Record.Name -Mode (ConvertTo-AfServiceMode -Start ([int]$Record.Previous.Start) -Delayed ([bool]$Record.Previous.Delayed))
+}
+
+function Get-AfServiceStartState {
+    param([Parameter(Mandatory)]$Record, $User)
+    Get-AfServiceStart -Name $Record.Name
+}
+
 # Lectores de salidas de comandos. Solo usan posiciones, números y palabras que no cambian con el idioma.
 
 # powercfg /q <plan> <subgrupo> <ajuste>: los dos últimos 0x... son CA y CC, en ese orden.
@@ -2720,6 +2892,7 @@ function Get-AfDeviceInfo {
         # Solo con chasis de escritorio conocido, sin chasis de laptop y con la lectura de baterías hecha y vacía.
         IsDesktop = (-not $hasLaptopChassis) -and $batteryRead -and $battery.Count -eq 0 -and @($enclosure.ChassisTypes | Where-Object { $desktopChassis -contains [int]$_ }).Count -gt 0
         OnBattery = $battery.Count -gt 0 -and [int]$battery[0].BatteryStatus -eq 1
+        Firmware = Get-AfFirmwareType
     }
 }
 
@@ -2760,6 +2933,7 @@ function Get-AfGpuInfo {
             DriverVersion = [string]$gpu.DriverVersion
             DriverDate = $gpu.DriverDate
             WddmVersion = Get-AfWddmVersion -DriverVersion $gpu.DriverVersion
+            WindowMB = Get-AfGpuWindowMB -PnpId $pnp
         }
     }
 }
@@ -3315,6 +3489,89 @@ function Get-AfEdgeInfo {
 
 function Get-AfEffectsInfo {
     @{ ClientAreaAnimation = [bool](Get-AfSystemParameterValue -Name ClientAreaAnimation) }
+}
+
+# --- Juegos instalados (Steam y Epic): se leen sus archivos de texto, sin abrir los programas ---
+
+function Get-AfSteamLibraryPaths {
+    param([string]$Text)
+    foreach ($m in [regex]::Matches([string]$Text, '"path"\s+"([^"]+)"')) { $m.Groups[1].Value.Replace('\\', '\') }
+}
+
+function ConvertFrom-AfSteamManifest {
+    param([string]$Text)
+    $field = { param($Key) $m = [regex]::Match($Text, '"' + $Key + '"\s+"([^"]*)"', 'IgnoreCase'); if ($m.Success) { $m.Groups[1].Value } }
+    [pscustomobject]@{ AppId = (& $field 'appid'); Name = (& $field 'name'); InstallDir = (& $field 'installdir'); Bytes = [long](& $field 'SizeOnDisk') }
+}
+
+function Get-AfSteamPath {
+    param($User)
+    $path = Get-AfRegistryValue -Path 'HKLM:\SOFTWARE\WOW6432Node\Valve\Steam' -Name 'InstallPath'
+    if (-not $path) { $path = Get-AfRegistryValue -Path 'HKCU:\Software\Valve\Steam' -Name 'SteamPath' -User $User }
+    if ($path) { ([string]$path).Replace('/', '\') }
+}
+
+function Get-AfGameInstalls {
+    param($User, [string]$SteamPath = (Get-AfSteamPath -User $User), [string]$EpicPath = (Join-Path $env:ProgramData 'Epic\EpicGamesLauncher\Data\Manifests'))
+    $games = New-Object System.Collections.ArrayList
+    if ($SteamPath -and [System.IO.Directory]::Exists($SteamPath)) {
+        $libraries = @($SteamPath)
+        $vdf = [System.IO.Path]::Combine($SteamPath, 'steamapps\libraryfolders.vdf')
+        if ([System.IO.File]::Exists($vdf)) { $libraries += @(Get-AfSteamLibraryPaths -Text ([System.IO.File]::ReadAllText($vdf))) }
+        foreach ($library in @($libraries | ForEach-Object { $_.TrimEnd('\') } | Sort-Object -Unique)) {
+            # Path.Combine y no Join-Path: una biblioteca en un disco que ya no está (D:) haría fallar a Join-Path.
+            $apps = [System.IO.Path]::Combine($library, 'steamapps')
+            if (-not [System.IO.Directory]::Exists($apps)) { continue }
+            foreach ($file in [System.IO.Directory]::GetFiles($apps, 'appmanifest_*.acf')) {
+                $app = ConvertFrom-AfSteamManifest -Text ([System.IO.File]::ReadAllText($file))
+                # 228980 son los redistribuibles de Steamworks, no un juego.
+                if (-not $app.Name -or $app.AppId -eq '228980') { continue }
+                [void]$games.Add([pscustomobject]@{ Name = $app.Name; Path = [System.IO.Path]::Combine($apps, 'common', $app.InstallDir); Bytes = $app.Bytes; Launcher = 'Steam' })
+            }
+        }
+    }
+    if ($EpicPath -and [System.IO.Directory]::Exists($EpicPath)) {
+        foreach ($file in [System.IO.Directory]::GetFiles($EpicPath, '*.item')) {
+            $item = try { [System.IO.File]::ReadAllText($file) | ConvertFrom-Json } catch { $null }
+            if (-not $item -or -not $item.DisplayName -or -not $item.InstallLocation) { continue }
+            # Epic también guarda aquí Unreal Engine y otras herramientas.
+            if ($item.AppCategories -and @($item.AppCategories) -notcontains 'games') { continue }
+            [void]$games.Add([pscustomobject]@{ Name = [string]$item.DisplayName; Path = [string]$item.InstallLocation; Bytes = [long]$item.InstallSize; Launcher = 'Epic' })
+        }
+    }
+    @($games)
+}
+
+# Discos fijos por letra: tipo (HDD, SSD o Unspecified) y espacio libre.
+function Get-AfDriveKinds {
+    $media = @{}
+    try { foreach ($disk in @(Get-PhysicalDisk -ErrorAction Stop)) { $media[[string]$disk.DeviceId] = [string]$disk.MediaType } } catch { }
+    $drives = @{}
+    foreach ($volume in @(Get-CimInstance -ClassName Win32_LogicalDisk -Filter 'DriveType=3' -OperationTimeoutSec 15 -ErrorAction SilentlyContinue)) {
+        $letter = ([string]$volume.DeviceID).TrimEnd(':').ToUpperInvariant()
+        $type = try { $media[[string](Get-Partition -DriveLetter $letter -ErrorAction Stop | Select-Object -First 1).DiskNumber] } catch { $null }
+        $drives[$letter] = [pscustomobject]@{ MediaType = $type; FreeBytes = [long]$volume.FreeSpace }
+    }
+    $drives
+}
+
+# Nombres de Programas instalados (sin los componentes del sistema), de la máquina y del usuario.
+function Get-AfInstalledPrograms {
+    param($User, [string[]]$Roots)
+    if (-not $Roots) {
+        $Roots = @(
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
+            'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+            (Resolve-AfRegistryPath -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -User $User)
+        )
+    }
+    $names = foreach ($root in $Roots) {
+        foreach ($key in @(Get-ChildItem -LiteralPath $root -ErrorAction SilentlyContinue)) {
+            $name = $key.GetValue('DisplayName')
+            if ($name -and $key.GetValue('SystemComponent') -ne 1) { ([string]$name).Trim() }
+        }
+    }
+    @($names | Select-Object -Unique)
 }
 
 # Convierte un contador sin lanzar: lo que no cabe en Int64 (UInt64 basura) o no es número queda en $null.
@@ -4263,6 +4520,33 @@ function Get-AfGamingChecks {
             New-AfDetection -State Info -Steps @((T 'Abre Configuración, Sistema, Pantalla, Gráficos.'), (T 'Elige cada juego y márcalo en Alto rendimiento.'), (T 'En NVIDIA App o en el panel de la gráfica, revisa que la dedicada sea la preferida.'))
         }
     }
+
+    @{
+        Id = 'gpu.rebar'; Category = 'gaming'
+        Title = (T 'Resizable BAR activo')
+        Why = (T 'Con Resizable BAR el procesador usa toda la memoria de la gráfica de una vez; en muchos juegos sube los FPS.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Tamaño de la ventana de memoria de la gráfica'); Undo = (T 'No cambia nada')
+        # Solo escritorios con una gráfica que lo admite (RTX 30 o más nueva, RX 6000 o más nueva, Intel Arc): en laptops lo decide el fabricante.
+        AppliesTo = { param($inv) $inv.Device -and -not $inv.Device.IsLaptop -and [bool](Get-AfRebarGpu -Inventory $inv) }
+        Detect = {
+            param($inv)
+            $gpu = Get-AfRebarGpu -Inventory $inv
+            if ($gpu.WindowMB -ge 1024) { return New-AfDetection -State Ok -Current (T 'Activo') }
+            # Windows en modo heredado (BIOS con CSM): sin UEFI la opción no se puede usar.
+            $steps = if ($inv.Device.Firmware -eq 'BIOS') {
+                @((T 'Windows arranca en modo heredado: Resizable BAR necesita UEFI.'), (T 'Antes de apagar CSM hay que convertir el disco a GPT con mbr2gpt; al revés, Windows no arranca.'))
+            } else {
+                @((T 'Entra a la BIOS: pulsa Supr o F2 al encender la PC.'), (T 'Activa Above 4G Decoding y Re-Size BAR Support (en AMD puede llamarse Smart Access Memory).'), (T 'Si no aparece, actualiza la BIOS de la placa.'))
+            }
+            New-AfDetection -State Manual -Title (T 'Resizable BAR apagado') -Current $gpu.Name -Steps $steps
+        }
+    }
+}
+
+function Get-AfRebarGpu {
+    param($Inventory)
+    @($Inventory.Gpus | Where-Object { $_.IsDiscrete -and $null -ne $_.WindowMB -and $_.Name -match 'RTX\s?(30|40|50)\d{2}|RX\s?(6|7|9)\d{3}|Arc\b' })[0]
 }
 
 function Join-AfNames {
@@ -4343,6 +4627,43 @@ function Get-AfStartupChecks {
                 -Steps @((T 'Abre Edge y entra a edge://settings/system.'), (T 'Apaga "Aumento de inicio".'), (T 'Apaga "Seguir ejecutando extensiones y aplicaciones en segundo plano".'))
         }
     }
+
+    @{
+        Id = 'startup.junk'; Category = 'startup'
+        Title = (T 'Sin "aceleradores" ni limpiadores')
+        Why = (T 'Los actualizadores de drivers pueden instalar drivers equivocados, y los limpiadores y "aceleradores" corren de fondo sin hacer la PC más rápida.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Programas instalados'); Undo = (T 'No cambia nada')
+        Reading = $true; Async = $true
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Revisando…') -Data @{ Async = $true } }
+        AsyncDetect = {
+            param($inv)
+            $antivirus = if ($inv.Security) { @($inv.Security.Antivirus) } else { @() }
+            Get-AfJunkDetection -Programs @(Get-AfInstalledPrograms -User $inv.User) -Antivirus $antivirus
+        }
+    }
+}
+
+# "Aceleradores", limpiadores y actualizadores de drivers conocidos (lista cerrada), por el nombre en Programas instalados.
+function Get-AfJunkPattern {
+    '^(Driver ?(Booster|Easy|Genius|Reviver|Support|Max)|DriverPack|Auslogics (Driver Updater|BoostSpeed)|Outbyte (Driver Updater|PC Repair)|(Avast|AVG) (Driver Updater|Cleanup|TuneUp)|CCleaner|Advanced SystemCare|Wise (Care 365|Registry Cleaner)|Glary Utilities|Restoro|Reimage|Fortect|Ashampoo WinOptimizer|Norton Utilities)'
+}
+
+function Get-AfJunkDetection {
+    param([string[]]$Programs = @(), [object[]]$Antivirus = @())
+    $junk = @($Programs | Where-Object { $_ -match (Get-AfJunkPattern) } | Select-Object -Unique)
+    # Un antivirus apagado que sigue instalado (como una prueba vencida). Un registro viejo sin el programa no cuenta.
+    $off = @($Antivirus | Where-Object { $_ -and -not $_.IsDefender -and -not $_.Enabled } | Where-Object {
+            $brand = @(([string]$_.Name).Split(' '))[0]
+            $brand -and @($Programs | Where-Object { $_ -like "$brand*" }).Count
+        } | ForEach-Object { [string]$_.Name } | Select-Object -Unique)
+    $names = @($junk) + @($off)
+    if (-not $names.Count) { return New-AfDetection -State Ok -Current (T 'Ninguno') }
+    $title = if ($names.Count -eq 1) { (T '{0} instalado') -f $names[0] } else { (T '{0} programas que estorban') -f $names.Count }
+    $steps = @((T 'Abre Configuración > Aplicaciones > Aplicaciones instaladas.'))
+    if ($junk.Count) { $steps += (T 'Desinstala {0}.') -f (Join-AfNames $junk) }
+    if ($off.Count) { $steps += (T '{0} está apagado: si era una prueba que venció, desinstálalo y Microsoft Defender se activa solo.') -f (Join-AfNames $off) }
+    New-AfDetection -State Manual -Title $title -Current (Join-AfNames $names) -Steps $steps -Data @{ Programs = $names }
 }
 
 function Get-AfEthernetPowerKeywords {
@@ -4563,6 +4884,35 @@ function Get-AfStorageChecks {
             Add-AfUnverifiedNote -Tx $tx -Os $inv.Os
         }
     }
+
+    @{
+        Id = 'storage.games-hdd'; Category = 'storage'
+        Title = (T 'Juegos en SSD')
+        Why = (T 'En un disco mecánico los juegos tardan mucho más en cargar y los mundos abiertos dan tirones.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Bibliotecas de Steam y Epic Games'); Undo = (T 'No cambia nada')
+        Reading = $true; Async = $true
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Revisando…') -Data @{ Async = $true } }
+        AsyncDetect = { param($inv) Get-AfGamesHddDetection -Games @(Get-AfGameInstalls -User $inv.User) -Drives (Get-AfDriveKinds) }
+    }
+}
+
+function Get-AfGamesHddDetection {
+    param([object[]]$Games = @(), [hashtable]$Drives = @{})
+    $games = @($Games | Where-Object { $_ -and $_.Path -match '^[A-Za-z]:' })
+    if (-not $games.Count) { return New-AfDetection -State NotApplicable }
+    $slow = @($games | Where-Object { $drive = $Drives[$_.Path.Substring(0, 1).ToUpperInvariant()]; $drive -and $drive.MediaType -eq 'HDD' })
+    if (-not $slow.Count) { return New-AfDetection -State Ok -Current (T 'Ninguno en disco mecánico') }
+    $title = if ($slow.Count -eq 1) { (T '1 juego en disco mecánico') } else { (T '{0} juegos en disco mecánico') -f $slow.Count }
+    $names = Join-AfNames @($slow | Select-Object -First 3 | ForEach-Object { $_.Name })
+    $ssd = @($Drives.Values | Where-Object { $_.MediaType -eq 'SSD' })
+    if (-not $ssd.Count) { return New-AfDetection -State Info -Title $title -Current $names -Steps @((T 'Con un SSD estos juegos cargarían mucho más rápido.')) }
+    $free = [long]($ssd | Measure-Object -Property FreeBytes -Maximum).Maximum
+    $steps = @()
+    if (([long]($slow | Measure-Object -Property Bytes -Minimum).Minimum) -gt $free) { $steps += (T 'Primero libera espacio en el SSD: ahora no entra ninguno de estos juegos.') }
+    if (@($slow | Where-Object { $_.Launcher -eq 'Steam' }).Count) { $steps += (T 'En Steam: clic derecho en el juego > Propiedades > Archivos instalados > Mover carpeta de instalación, y elige el SSD.') }
+    if (@($slow | Where-Object { $_.Launcher -eq 'Epic' }).Count) { $steps += (T 'En Epic Games no se pueden mover: desinstálalo e instálalo de nuevo en el SSD.') }
+    New-AfDetection -State Manual -Title $title -Current $names -Note ((T '{0} GB libres en el SSD') -f [math]::Floor($free / 1GB)) -Steps $steps -Data @{ Games = @($slow.Name) }
 }
 
 function Get-AfMedian {
@@ -4663,6 +5013,60 @@ function Get-AfBootDetection {
     New-AfDetection -State Info -Current $current -Note $note -Data @{ Seconds = $seconds } -Steps @((T 'Revisa los programas de la categoría Inicio: son lo que más alarga el arranque.'))
 }
 
+# Servicios que los "optimizadores" deshabilitan y Windows necesita, con el inicio que traen Windows 10 y 11.
+# Se cambian con sc.exe y solo si están deshabilitados: nunca se apaga ni se pasa a manual ninguno.
+function Get-AfServiceGroups {
+    @(
+        @{ Id = 'print'; Label = (T 'Impresión'); Services = [ordered]@{ Spooler = 'auto' } }
+        @{ Id = 'update'; Label = 'Windows Update'; Services = [ordered]@{ wuauserv = 'demand'; UsoSvc = 'delayed-auto'; BITS = 'demand' } }
+        @{ Id = 'store'; Label = 'Microsoft Store'; Services = [ordered]@{ ClipSVC = 'demand'; InstallService = 'demand'; wlidsvc = 'demand' } }
+        @{ Id = 'xbox'; Label = (T 'Xbox (Game Pass, mandos)'); Services = [ordered]@{ XblAuthManager = 'demand'; XblGameSave = 'demand'; XboxNetApiSvc = 'demand'; XboxGipSvc = 'demand' } }
+        @{ Id = 'bluetooth'; Label = 'Bluetooth'; Services = [ordered]@{ bthserv = 'demand' } }
+        @{ Id = 'location'; Label = (T 'Ubicación'); Services = [ordered]@{ lfsvc = 'demand' } }
+        @{ Id = 'history'; Label = (T 'Historial de archivos'); Services = [ordered]@{ fhsvc = 'demand' } }
+        @{ Id = 'troubleshoot'; Label = (T 'Solucionador de problemas'); Services = [ordered]@{ DPS = 'auto'; diagsvc = 'demand' } }
+        @{ Id = 'smartcard'; Label = (T 'Tarjetas inteligentes'); Services = [ordered]@{ SCardSvr = 'demand' } }
+        # La directiva AllowGameDVR = 0 apaga las capturas de Game Bar: solo se borra, nunca se escribe.
+        @{ Id = 'captures'; Label = (T 'Capturas de Game Bar'); Services = [ordered]@{}; Policy = $true }
+    )
+}
+
+function Get-AfGameDvrPolicy { @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR'; Name = 'AllowGameDVR' } }
+
+function Get-AfServiceRepairReads {
+    foreach ($group in Get-AfServiceGroups) { foreach ($name in $group.Services.Keys) { "HKLM:\SYSTEM\CurrentControlSet\Services\$name|Start" } }
+    $policy = Get-AfGameDvrPolicy
+    '{0}|{1}' -f $policy.Path, $policy.Name
+}
+
+function Get-AfServiceRepairDetection {
+    param([hashtable]$Registry = @{})
+    $policy = Get-AfGameDvrPolicy
+    $choices = @(foreach ($group in Get-AfServiceGroups) {
+            $off = @(foreach ($name in $group.Services.Keys) {
+                    if ($Registry["HKLM:\SYSTEM\CurrentControlSet\Services\$name|Start"] -eq 4) { [pscustomobject]@{ Name = $name; Mode = $group.Services[$name] } }
+                })
+            $blocked = [bool]$group.Policy -and $Registry[('{0}|{1}' -f $policy.Path, $policy.Name)] -eq 0
+            if ($off.Count -or $blocked) {
+                # Selected empieza igual que Preselected: la fila viene marcada y la interfaz solo lo cambia si el usuario toca una opción.
+                [pscustomobject]@{ Name = $group.Id; Label = $group.Label; Path = (@($off.Name) -join ', '); Services = $off; Policy = $blocked; Preselected = $true; Selected = $true }
+            }
+        })
+    if (-not $choices.Count) { return New-AfDetection -State Ok -Current (T 'Como vienen en Windows') }
+    $title = if ($choices.Count -eq 1) { (T '1 función de Windows deshabilitada') } else { (T '{0} funciones de Windows deshabilitadas') -f $choices.Count }
+    New-AfDetection -State Improvable -Title $title -Current (Join-AfNames @($choices.Label)) -Target (T 'Como vienen en Windows') `
+        -Data @{ Choices = $choices; ChoicesLabel = (T 'Qué habilitar') } -What (T 'Vuelve a habilitar lo elegido con el inicio que trae Windows. Pide reiniciar.')
+}
+
+function Repair-AfServiceChoice {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)]$Choice)
+    foreach ($service in @($Choice.Services | Where-Object { $_ })) { Set-AfServiceStart -Tx $Tx -Name $service.Name -Mode $service.Mode | Out-Null }
+    if ($Choice.Policy) {
+        $policy = Get-AfGameDvrPolicy
+        Remove-AfRegistryValue -Tx $Tx -Path $policy.Path -Name $policy.Name | Out-Null
+    }
+}
+
 function Get-AfDiagnosticsChecks {
     @{
         Id = 'hardware.disk-health'; Category = 'hardware'
@@ -4736,6 +5140,21 @@ function Get-AfDiagnosticsChecks {
             New-AfDetection -State Improvable -Current $current -Target (T 'Automático') -What (T 'Deja que Windows maneje el archivo de paginación. Pide reiniciar.')
         }
         Apply = { param($inv, $detected, $tx) Set-AfPagefileAuto -Tx $tx | Out-Null }
+    }
+
+    @{
+        Id = 'hardware.services'; Category = 'hardware'
+        Title = (T 'Servicios de Windows habilitados')
+        Why = (T 'Algunos "optimizadores" deshabilitan servicios que Windows necesita: después no se puede imprimir, actualizar o jugar con Game Pass.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $true
+        Source = (T 'Inicio de fábrica de los servicios de Windows 10 y 11'); Undo = (T 'Se puede deshacer')
+        Reads = @(Get-AfServiceRepairReads)
+        AppliesTo = { param($inv) $null -ne $inv.Registry }
+        Detect = { param($inv) Get-AfServiceRepairDetection -Registry $inv.Registry }
+        Apply = {
+            param($inv, $detected, $tx)
+            foreach ($choice in @($detected.Data.Choices | Where-Object { $_.Selected })) { Repair-AfServiceChoice -Tx $tx -Choice $choice }
+        }
     }
 }
 

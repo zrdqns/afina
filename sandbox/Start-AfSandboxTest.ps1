@@ -63,6 +63,7 @@ if (-not (Test-Path -LiteralPath $reportPath)) {
 $report = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($reportPath))
 'Afina {0} en Windows {1}, administrador: {2}' -f $report.Version, $report.Os, $report.Admin
 'Desafinado: ' + (@($report.Detuned) -join '; ')
+'Inicio de fábrica distinto a la tabla de servicios: ' + (@($report.ServiceDefaults | Where-Object { -not $_.Same } | ForEach-Object { '{0} ({1}; tabla: {2})' -f $_.Name, $_.Actual, $_.Expected }) -join ', ')
 'Cambios:'
 @($report.Changes) | Format-Table Id, Status, StateAfter, Records, Message -AutoSize | Out-String -Width 220
 'Deshacer:'

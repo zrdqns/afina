@@ -96,6 +96,60 @@ function Get-AfBootDetection {
     New-AfDetection -State Info -Current $current -Note $note -Data @{ Seconds = $seconds } -Steps @((T 'Revisa los programas de la categoría Inicio: son lo que más alarga el arranque.'))
 }
 
+# Servicios que los "optimizadores" deshabilitan y Windows necesita, con el inicio que traen Windows 10 y 11.
+# Se cambian con sc.exe y solo si están deshabilitados: nunca se apaga ni se pasa a manual ninguno.
+function Get-AfServiceGroups {
+    @(
+        @{ Id = 'print'; Label = (T 'Impresión'); Services = [ordered]@{ Spooler = 'auto' } }
+        @{ Id = 'update'; Label = 'Windows Update'; Services = [ordered]@{ wuauserv = 'demand'; UsoSvc = 'delayed-auto'; BITS = 'demand' } }
+        @{ Id = 'store'; Label = 'Microsoft Store'; Services = [ordered]@{ ClipSVC = 'demand'; InstallService = 'demand'; wlidsvc = 'demand' } }
+        @{ Id = 'xbox'; Label = (T 'Xbox (Game Pass, mandos)'); Services = [ordered]@{ XblAuthManager = 'demand'; XblGameSave = 'demand'; XboxNetApiSvc = 'demand'; XboxGipSvc = 'demand' } }
+        @{ Id = 'bluetooth'; Label = 'Bluetooth'; Services = [ordered]@{ bthserv = 'demand' } }
+        @{ Id = 'location'; Label = (T 'Ubicación'); Services = [ordered]@{ lfsvc = 'demand' } }
+        @{ Id = 'history'; Label = (T 'Historial de archivos'); Services = [ordered]@{ fhsvc = 'demand' } }
+        @{ Id = 'troubleshoot'; Label = (T 'Solucionador de problemas'); Services = [ordered]@{ DPS = 'auto'; diagsvc = 'demand' } }
+        @{ Id = 'smartcard'; Label = (T 'Tarjetas inteligentes'); Services = [ordered]@{ SCardSvr = 'demand' } }
+        # La directiva AllowGameDVR = 0 apaga las capturas de Game Bar: solo se borra, nunca se escribe.
+        @{ Id = 'captures'; Label = (T 'Capturas de Game Bar'); Services = [ordered]@{}; Policy = $true }
+    )
+}
+
+function Get-AfGameDvrPolicy { @{ Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR'; Name = 'AllowGameDVR' } }
+
+function Get-AfServiceRepairReads {
+    foreach ($group in Get-AfServiceGroups) { foreach ($name in $group.Services.Keys) { "HKLM:\SYSTEM\CurrentControlSet\Services\$name|Start" } }
+    $policy = Get-AfGameDvrPolicy
+    '{0}|{1}' -f $policy.Path, $policy.Name
+}
+
+function Get-AfServiceRepairDetection {
+    param([hashtable]$Registry = @{})
+    $policy = Get-AfGameDvrPolicy
+    $choices = @(foreach ($group in Get-AfServiceGroups) {
+            $off = @(foreach ($name in $group.Services.Keys) {
+                    if ($Registry["HKLM:\SYSTEM\CurrentControlSet\Services\$name|Start"] -eq 4) { [pscustomobject]@{ Name = $name; Mode = $group.Services[$name] } }
+                })
+            $blocked = [bool]$group.Policy -and $Registry[('{0}|{1}' -f $policy.Path, $policy.Name)] -eq 0
+            if ($off.Count -or $blocked) {
+                # Selected empieza igual que Preselected: la fila viene marcada y la interfaz solo lo cambia si el usuario toca una opción.
+                [pscustomobject]@{ Name = $group.Id; Label = $group.Label; Path = (@($off.Name) -join ', '); Services = $off; Policy = $blocked; Preselected = $true; Selected = $true }
+            }
+        })
+    if (-not $choices.Count) { return New-AfDetection -State Ok -Current (T 'Como vienen en Windows') }
+    $title = if ($choices.Count -eq 1) { (T '1 función de Windows deshabilitada') } else { (T '{0} funciones de Windows deshabilitadas') -f $choices.Count }
+    New-AfDetection -State Improvable -Title $title -Current (Join-AfNames @($choices.Label)) -Target (T 'Como vienen en Windows') `
+        -Data @{ Choices = $choices; ChoicesLabel = (T 'Qué habilitar') } -What (T 'Vuelve a habilitar lo elegido con el inicio que trae Windows. Pide reiniciar.')
+}
+
+function Repair-AfServiceChoice {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)]$Choice)
+    foreach ($service in @($Choice.Services | Where-Object { $_ })) { Set-AfServiceStart -Tx $Tx -Name $service.Name -Mode $service.Mode | Out-Null }
+    if ($Choice.Policy) {
+        $policy = Get-AfGameDvrPolicy
+        Remove-AfRegistryValue -Tx $Tx -Path $policy.Path -Name $policy.Name | Out-Null
+    }
+}
+
 function Get-AfDiagnosticsChecks {
     @{
         Id = 'hardware.disk-health'; Category = 'hardware'
@@ -169,5 +223,20 @@ function Get-AfDiagnosticsChecks {
             New-AfDetection -State Improvable -Current $current -Target (T 'Automático') -What (T 'Deja que Windows maneje el archivo de paginación. Pide reiniciar.')
         }
         Apply = { param($inv, $detected, $tx) Set-AfPagefileAuto -Tx $tx | Out-Null }
+    }
+
+    @{
+        Id = 'hardware.services'; Category = 'hardware'
+        Title = (T 'Servicios de Windows habilitados')
+        Why = (T 'Algunos "optimizadores" deshabilitan servicios que Windows necesita: después no se puede imprimir, actualizar o jugar con Game Pass.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Auto'; Preselect = $true; NeedsReboot = $true
+        Source = (T 'Inicio de fábrica de los servicios de Windows 10 y 11'); Undo = (T 'Se puede deshacer')
+        Reads = @(Get-AfServiceRepairReads)
+        AppliesTo = { param($inv) $null -ne $inv.Registry }
+        Detect = { param($inv) Get-AfServiceRepairDetection -Registry $inv.Registry }
+        Apply = {
+            param($inv, $detected, $tx)
+            foreach ($choice in @($detected.Data.Choices | Where-Object { $_.Selected })) { Repair-AfServiceChoice -Tx $tx -Choice $choice }
+        }
     }
 }

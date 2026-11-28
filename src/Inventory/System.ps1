@@ -55,5 +55,6 @@ function Get-AfDeviceInfo {
         # Solo con chasis de escritorio conocido, sin chasis de laptop y con la lectura de baterías hecha y vacía.
         IsDesktop = (-not $hasLaptopChassis) -and $batteryRead -and $battery.Count -eq 0 -and @($enclosure.ChassisTypes | Where-Object { $desktopChassis -contains [int]$_ }).Count -gt 0
         OnBattery = $battery.Count -gt 0 -and [int]$battery[0].BatteryStatus -eq 1
+        Firmware = Get-AfFirmwareType
     }
 }

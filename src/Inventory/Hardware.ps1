@@ -35,6 +35,7 @@ function Get-AfGpuInfo {
             DriverVersion = [string]$gpu.DriverVersion
             DriverDate = $gpu.DriverDate
             WddmVersion = Get-AfWddmVersion -DriverVersion $gpu.DriverVersion
+            WindowMB = Get-AfGpuWindowMB -PnpId $pnp
         }
     }
 }

@@ -92,7 +92,11 @@ $script:AfSandboxValues = @(
     'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search|ConnectedSearchUseWeb'
     'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|DisableSearchBoxSuggestions'
     'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer|HideRecommendedSection'
+    'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR|AllowGameDVR'
 )
+
+# Servicios que un "optimizador" deshabilita en la prueba (la revisión hardware.services los tiene que devolver).
+$script:AfSandboxServices = @('Spooler', 'UsoSvc', 'XblAuthManager', 'XboxGipSvc', 'bthserv', 'fhsvc', 'DPS')
 
 # Características sin importancia para la ida y vuelta de la pieza WindowsFeature (se usa la primera apagada con su contenido).
 $script:AfSandboxFeatures = @('TelnetClient', 'TFTP')
@@ -157,6 +161,12 @@ function Get-AfSandboxState {
         $state['Defender|DisableRealtimeMonitoring'] = [string]$mp.DisableRealtimeMonitoring
     } catch { $state['Defender'] = '(sin datos)' }
     try { $state['Disco|TRIM'] = [string](Get-AfTrimEnabled) } catch { $state['Disco|TRIM'] = '(sin datos)' }
+    foreach ($group in Get-AfServiceGroups) {
+        foreach ($name in $group.Services.Keys) {
+            $start = Get-AfServiceStart -Name $name
+            $state["Servicio|$name"] = if ($start) { ConvertTo-AfServiceMode -Start $start.Start -Delayed $start.Delayed } else { '(no existe)' }
+        }
+    }
     # Sin administrador DISM no responde: queda "(sin datos)" igual antes y después.
     foreach ($feature in $script:AfSandboxFeatures) { $state["Característica|$feature"] = try { (Get-AfFeatureInfo -Name $feature).Raw } catch { '(sin datos)' } }
     foreach ($display in @(Get-AfDisplayModes)) { $state["Pantalla|$($display.DeviceName)"] = '{0}x{1}@{2}' -f $display.Width, $display.Height, $display.Hz }
@@ -238,6 +248,15 @@ function Set-AfSandboxDetuned {
         $policy = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'
         if (-not (Test-Path -LiteralPath $policy)) { New-Item -Path $policy -Force | Out-Null }
         New-ItemProperty -LiteralPath $policy -Name '01' -PropertyType DWord -Value 0 -Force | Out-Null
+    }
+    # $service y no $name: dentro de $step, $name sería su parámetro $Name (PowerShell no distingue mayúsculas).
+    foreach ($service in $script:AfSandboxServices) {
+        & $step "Servicio $service deshabilitado" { $r = Invoke-AfProcess -FilePath 'sc.exe' -Arguments "config $service start= disabled"; if ($r.ExitCode -ne 0) { throw "sc $($r.ExitCode)" } }
+    }
+    & $step 'Directiva AllowGameDVR = 0' {
+        $dvr = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR'
+        if (-not (Test-Path -LiteralPath $dvr)) { New-Item -Path $dvr -Force | Out-Null }
+        New-ItemProperty -LiteralPath $dvr -Name 'AllowGameDVR' -PropertyType DWord -Value 0 -Force | Out-Null
     }
     & $step 'Archivo de paginación fijo' {
         Set-AfPagefileAutomatic -Value $false

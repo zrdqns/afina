@@ -65,6 +65,26 @@ function Set-AfRegistryValue {
     $true
 }
 
+# Borra un valor que dejó otro programa (p. ej. una directiva). Deshacer lo vuelve a escribir.
+function Remove-AfRegistryValue {
+    param([Parameter(Mandatory)]$Tx, [Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Name)
+    $before = Get-AfRegistryState -Path $Path -Name $Name -User $Tx.User
+    if (-not $before.Exists) { return $false }
+    $resolved = Resolve-AfRegistryPath -Path $Path -User $Tx.User
+    try {
+        Remove-ItemProperty -LiteralPath $resolved -Name $Name -Force -ErrorAction Stop
+    } catch {
+        Write-AfLog -Level Warn -Message "Registro $resolved\$Name`: $($_.Exception.Message)"
+        throw (New-AfApplyError -Reason (T 'Windows no dejó escribir en el registro'))
+    }
+    Add-AfTxRecord -Tx $Tx -Record @{
+        Kind = 'RegistryValue'; Path = $Path; Name = $Name; KeyExisted = $true; CreatedKeys = @()
+        Previous = [pscustomobject]@{ Exists = $true; Type = $before.Type; Value = $before.Value }
+        New = [pscustomobject]@{ Exists = $false; Type = $null; Value = $null }
+    }
+    $true
+}
+
 function Restore-AfRegistryValue {
     param([Parameter(Mandatory)]$Record, $User)
     $resolved = Resolve-AfRegistryPath -Path $Record.Path -User $User

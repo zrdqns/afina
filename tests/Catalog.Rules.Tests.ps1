@@ -58,6 +58,21 @@
         foreach ($row in $script:allowedRows) { $seen.ContainsKey("$($row.Path)|$($row.Name)") | Should -BeTrue -Because "nunca se escribió $($row.Name)" }
     }
 
+    It 'la reparación de servicios solo borra la directiva de Game Bar: nunca escribe directivas ni apaga servicios' {
+        Mock Set-AfRegistryValue { $true }
+        Mock Remove-AfRegistryValue { $true }
+        Mock Set-AfServiceStart { $true }
+        $registry = @{ 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR|AllowGameDVR' = 0 }
+        foreach ($read in @(($script:catalog | Where-Object Id -eq 'hardware.services').Reads)) { if ($read -like '*\Services\*') { $registry[$read] = 4 } }
+        $result = Invoke-AfCheck -Check ($script:catalog | Where-Object Id -eq 'hardware.services') -Inventory (New-AfFakeInventory -Override @{ Registry = $registry })
+        foreach ($choice in @($result.Detection.Data.Choices)) { $choice.Selected = $true }
+        & $result.Check.Apply $null $result.Detection (New-AfTransaction)
+        Should -Invoke Set-AfRegistryValue -Times 0 -Exactly
+        Should -Invoke Remove-AfRegistryValue -Times 1 -Exactly -ParameterFilter { $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR' -and $Name -eq 'AllowGameDVR' }
+        Should -Invoke Set-AfServiceStart -Times 0 -Exactly -ParameterFilter { $Mode -notin 'auto', 'delayed-auto', 'demand' }
+        Should -Invoke Set-AfServiceStart -Times 17 -Exactly
+    }
+
     It 'nada toca lo que no se recomienda' {
         $script:code | Should -Not -Match '(?i)Set-Service|Disable-NetAdapterBinding|teredo|WSearch|SvcHostSplitThresholdInKB|e9a42b02-d5df-448d-aa00-03f14749eb61|OneDriveSetup'
     }

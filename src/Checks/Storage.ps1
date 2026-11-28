@@ -104,4 +104,33 @@ function Get-AfStorageChecks {
             Add-AfUnverifiedNote -Tx $tx -Os $inv.Os
         }
     }
+
+    @{
+        Id = 'storage.games-hdd'; Category = 'storage'
+        Title = (T 'Juegos en SSD')
+        Why = (T 'En un disco mecánico los juegos tardan mucho más en cargar y los mundos abiertos dan tirones.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Bibliotecas de Steam y Epic Games'); Undo = (T 'No cambia nada')
+        Reading = $true; Async = $true
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Revisando…') -Data @{ Async = $true } }
+        AsyncDetect = { param($inv) Get-AfGamesHddDetection -Games @(Get-AfGameInstalls -User $inv.User) -Drives (Get-AfDriveKinds) }
+    }
+}
+
+function Get-AfGamesHddDetection {
+    param([object[]]$Games = @(), [hashtable]$Drives = @{})
+    $games = @($Games | Where-Object { $_ -and $_.Path -match '^[A-Za-z]:' })
+    if (-not $games.Count) { return New-AfDetection -State NotApplicable }
+    $slow = @($games | Where-Object { $drive = $Drives[$_.Path.Substring(0, 1).ToUpperInvariant()]; $drive -and $drive.MediaType -eq 'HDD' })
+    if (-not $slow.Count) { return New-AfDetection -State Ok -Current (T 'Ninguno en disco mecánico') }
+    $title = if ($slow.Count -eq 1) { (T '1 juego en disco mecánico') } else { (T '{0} juegos en disco mecánico') -f $slow.Count }
+    $names = Join-AfNames @($slow | Select-Object -First 3 | ForEach-Object { $_.Name })
+    $ssd = @($Drives.Values | Where-Object { $_.MediaType -eq 'SSD' })
+    if (-not $ssd.Count) { return New-AfDetection -State Info -Title $title -Current $names -Steps @((T 'Con un SSD estos juegos cargarían mucho más rápido.')) }
+    $free = [long]($ssd | Measure-Object -Property FreeBytes -Maximum).Maximum
+    $steps = @()
+    if (([long]($slow | Measure-Object -Property Bytes -Minimum).Minimum) -gt $free) { $steps += (T 'Primero libera espacio en el SSD: ahora no entra ninguno de estos juegos.') }
+    if (@($slow | Where-Object { $_.Launcher -eq 'Steam' }).Count) { $steps += (T 'En Steam: clic derecho en el juego > Propiedades > Archivos instalados > Mover carpeta de instalación, y elige el SSD.') }
+    if (@($slow | Where-Object { $_.Launcher -eq 'Epic' }).Count) { $steps += (T 'En Epic Games no se pueden mover: desinstálalo e instálalo de nuevo en el SSD.') }
+    New-AfDetection -State Manual -Title $title -Current $names -Note ((T '{0} GB libres en el SSD') -f [math]::Floor($free / 1GB)) -Steps $steps -Data @{ Games = @($slow.Name) }
 }

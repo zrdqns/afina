@@ -208,6 +208,52 @@ namespace Afina {
                 return null;
             }
         }
+
+        [DllImport("kernel32.dll")] static extern bool GetFirmwareType(out int type);
+
+        // 1 = BIOS heredado, 2 = UEFI, 0 = no se sabe.
+        public static int FirmwareType() {
+            int type;
+            try { return GetFirmwareType(out type) ? type : 0; } catch (EntryPointNotFoundException) { return 0; }
+        }
+
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Locate_DevNodeW(out uint devInst, string deviceId, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Get_First_Log_Conf(out IntPtr logConf, uint devInst, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Get_Next_Res_Des(out IntPtr next, IntPtr current, uint forResource, out uint resourceId, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Get_Res_Des_Data_Size(out uint size, IntPtr resDes, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Get_Res_Des_Data(IntPtr resDes, byte[] buffer, uint length, uint flags);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Free_Res_Des_Handle(IntPtr resDes);
+        [DllImport("cfgmgr32.dll")] static extern int CM_Free_Log_Conf_Handle(IntPtr logConf);
+
+        // Ventana de memoria más grande que Windows le asignó a un dispositivo PCI, en MB (-1 si no se pudo leer).
+        // Recorre la configuración asignada (2): memoria (1) y memoria grande, la de más de 4 GB (7). Base y fin están en los bytes 8 y 16.
+        public static long LargestWindowMB(string instanceId) {
+            uint dev;
+            if (CM_Locate_DevNodeW(out dev, instanceId, 0) != 0) return -1;
+            IntPtr conf;
+            if (CM_Get_First_Log_Conf(out conf, dev, 2) != 0) return -1;
+            ulong largest = 0;
+            try {
+                foreach (uint type in new uint[] { 1, 7 }) {
+                    IntPtr current = conf, next;
+                    uint id;
+                    while (CM_Get_Next_Res_Des(out next, current, type, out id, 0) == 0) {
+                        if (current != conf) CM_Free_Res_Des_Handle(current);
+                        current = next;
+                        uint size;
+                        if (CM_Get_Res_Des_Data_Size(out size, current, 0) != 0 || size < 24) continue;
+                        byte[] data = new byte[size];
+                        if (CM_Get_Res_Des_Data(current, data, size, 0) != 0) continue;
+                        ulong start = BitConverter.ToUInt64(data, 8), end = BitConverter.ToUInt64(data, 16);
+                        if (end > start && end - start + 1 > largest) largest = end - start + 1;
+                    }
+                    if (current != conf) CM_Free_Res_Des_Handle(current);
+                }
+            } finally {
+                CM_Free_Log_Conf_Handle(conf);
+            }
+            return (long)(largest / (1024 * 1024));
+        }
     }
 }
 '@
@@ -247,6 +293,20 @@ function Invoke-AfDisplayModeChange {
     param([Parameter(Mandatory)][string]$DeviceName, [int]$Width, [int]$Height, [int]$Hz)
     if (-not (Initialize-AfNative)) { return -1 }
     [Afina.Native]::ChangeMode($DeviceName, $Width, $Height, $Hz)
+}
+
+# Con Resizable BAR la ventana de la gráfica es casi toda su memoria; sin él, 256 MB. $null si no se pudo leer.
+function Get-AfGpuWindowMB {
+    param([string]$PnpId)
+    if (-not $PnpId -or -not (Initialize-AfNative)) { return $null }
+    $mb = [Afina.Native]::LargestWindowMB($PnpId)
+    if ($mb -ge 0) { $mb }
+}
+
+# 'UEFI', 'BIOS' (modo heredado) o $null si no se sabe.
+function Get-AfFirmwareType {
+    if (-not (Initialize-AfNative)) { return $null }
+    switch ([Afina.Native]::FirmwareType()) { 1 { 'BIOS' } 2 { 'UEFI' } default { $null } }
 }
 
 function Test-AfOnAcPower {

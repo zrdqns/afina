@@ -14,6 +14,14 @@ try {
     $report.Version = Get-AfVersion
     $report.Os = [string](Get-CimInstance Win32_OperatingSystem).Version
     $report.Admin = Test-AfAdmin
+    # El inicio de fábrica de cada servicio que repara hardware.services, leído en un Windows limpio antes de desafinar.
+    $report.ServiceDefaults = @(foreach ($group in Get-AfServiceGroups) {
+            foreach ($name in $group.Services.Keys) {
+                $start = Get-AfServiceStart -Name $name
+                $actual = if ($start) { ConvertTo-AfServiceMode -Start $start.Start -Delayed $start.Delayed } else { '(no existe)' }
+                [pscustomobject]@{ Name = $name; Expected = $group.Services[$name]; Actual = $actual; Same = $actual -eq $group.Services[$name] }
+            }
+        })
     $report.Detuned = @(Set-AfSandboxDetuned)
     Start-Sleep -Seconds 2
     $before = Get-AfSandboxState

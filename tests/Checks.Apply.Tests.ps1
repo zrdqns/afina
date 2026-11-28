@@ -36,7 +36,7 @@ Describe 'Contrato de Apply' {
             if ($check.Kind -eq 'Auto') { $check.Apply | Should -BeOfType [scriptblock] -Because $check.Id }
             else { $check.ContainsKey('Apply') | Should -BeFalse -Because $check.Id }
         }
-        @(Get-AfCatalog | Where-Object { $_.Apply }).Count | Should -Be 37
+        @(Get-AfCatalog | Where-Object { $_.Apply }).Count | Should -Be 38
     }
 }
 

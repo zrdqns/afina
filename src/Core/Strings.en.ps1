@@ -734,6 +734,53 @@ Microsoft: política de Inicio==>Microsoft: Start policy
 Apagadas==>Off
 Activas==>On
 Se apagan los programas recomendados, los sitios sugeridos y los avisos de la cuenta en Inicio, y también la lista de "Más usadas" y el historial de Ejecutar (Win+R). No toca los archivos recientes. En Pro y superiores también se oculta la sección Recomendado.==>Recommended programs, suggested sites and account notices are turned off in Start, along with the "Most used" list and the Run (Win+R) history. Recent files are not touched. On Pro and above the Recommended section is also hidden.
+# Servicios deshabilitados, Resizable BAR, juegos en disco mecánico y programas que estorban
+Windows no dejó cambiar el servicio==>Windows didn't allow changing the service
+Impresión==>Printing
+Xbox (Game Pass, mandos)==>Xbox (Game Pass, controllers)
+Ubicación==>Location
+Historial de archivos==>File History
+Solucionador de problemas==>Troubleshooters
+Tarjetas inteligentes==>Smart cards
+Capturas de Game Bar==>Game Bar captures
+Como vienen en Windows==>As Windows ships them
+1 función de Windows deshabilitada==>1 Windows feature disabled
+{0} funciones de Windows deshabilitadas==>{0} Windows features disabled
+Qué habilitar==>What to enable
+Vuelve a habilitar lo elegido con el inicio que trae Windows. Pide reiniciar.==>Enables what you picked again, with the startup type Windows ships with. Asks to restart.
+Servicios de Windows habilitados==>Windows services enabled
+Algunos "optimizadores" deshabilitan servicios que Windows necesita: después no se puede imprimir, actualizar o jugar con Game Pass.==>Some "optimizers" disable services Windows needs: afterwards you can't print, update or play with Game Pass.
+Inicio de fábrica de los servicios de Windows 10 y 11==>Default startup of Windows 10 and 11 services
+Resizable BAR activo==>Resizable BAR on
+Con Resizable BAR el procesador usa toda la memoria de la gráfica de una vez; en muchos juegos sube los FPS.==>With Resizable BAR the processor uses all of the graphics card's memory at once; in many games it raises FPS.
+Tamaño de la ventana de memoria de la gráfica==>Size of the graphics card's memory window
+Activo==>On
+Windows arranca en modo heredado: Resizable BAR necesita UEFI.==>Windows boots in legacy mode: Resizable BAR needs UEFI.
+Antes de apagar CSM hay que convertir el disco a GPT con mbr2gpt; al revés, Windows no arranca.==>Before turning CSM off, the disk has to be converted to GPT with mbr2gpt; the other way around, Windows won't boot.
+Entra a la BIOS: pulsa Supr o F2 al encender la PC.==>Enter the BIOS: press Del or F2 when the PC turns on.
+Activa Above 4G Decoding y Re-Size BAR Support (en AMD puede llamarse Smart Access Memory).==>Turn on Above 4G Decoding and Re-Size BAR Support (on AMD it may be called Smart Access Memory).
+Si no aparece, actualiza la BIOS de la placa.==>If it isn't there, update the motherboard BIOS.
+Resizable BAR apagado==>Resizable BAR off
+Sin "aceleradores" ni limpiadores==>No "boosters" or cleaners
+Los actualizadores de drivers pueden instalar drivers equivocados, y los limpiadores y "aceleradores" corren de fondo sin hacer la PC más rápida.==>Driver updaters can install the wrong drivers, and cleaners and "boosters" run in the background without making the PC faster.
+Programas instalados==>Installed programs
+Ninguno==>None
+{0} instalado==>{0} installed
+{0} programas que estorban==>{0} programs getting in the way
+Abre Configuración > Aplicaciones > Aplicaciones instaladas.==>Open Settings > Apps > Installed apps.
+Desinstala {0}.==>Uninstall {0}.
+{0} está apagado: si era una prueba que venció, desinstálalo y Microsoft Defender se activa solo.==>{0} is off: if it was an expired trial, uninstall it and Microsoft Defender turns on by itself.
+Juegos en SSD==>Games on SSD
+En un disco mecánico los juegos tardan mucho más en cargar y los mundos abiertos dan tirones.==>On a hard drive, games take much longer to load and open worlds stutter.
+Bibliotecas de Steam y Epic Games==>Steam and Epic Games libraries
+Ninguno en disco mecánico==>None on a hard drive
+1 juego en disco mecánico==>1 game on a hard drive
+{0} juegos en disco mecánico==>{0} games on a hard drive
+Con un SSD estos juegos cargarían mucho más rápido.==>With an SSD these games would load much faster.
+Primero libera espacio en el SSD: ahora no entra ninguno de estos juegos.==>First free up space on the SSD: none of these games fits right now.
+En Steam: clic derecho en el juego > Propiedades > Archivos instalados > Mover carpeta de instalación, y elige el SSD.==>In Steam: right-click the game > Properties > Installed Files > Move install folder, and pick the SSD.
+En Epic Games no se pueden mover: desinstálalo e instálalo de nuevo en el SSD.==>Epic Games can't move them: uninstall it and install it again on the SSD.
+{0} GB libres en el SSD==>{0} GB free on the SSD
 '@
 foreach ($afLine in ($script:AfStringsEnText -split "`r?`n")) {
     if (-not $afLine -or $afLine.StartsWith('#')) { continue }

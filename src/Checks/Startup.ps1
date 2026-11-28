@@ -76,4 +76,41 @@ function Get-AfStartupChecks {
                 -Steps @((T 'Abre Edge y entra a edge://settings/system.'), (T 'Apaga "Aumento de inicio".'), (T 'Apaga "Seguir ejecutando extensiones y aplicaciones en segundo plano".'))
         }
     }
+
+    @{
+        Id = 'startup.junk'; Category = 'startup'
+        Title = (T 'Sin "aceleradores" ni limpiadores')
+        Why = (T 'Los actualizadores de drivers pueden instalar drivers equivocados, y los limpiadores y "aceleradores" corren de fondo sin hacer la PC más rápida.')
+        Impact = 'Medium'; Risk = 'Safe'; Kind = 'Manual'; Preselect = $false; NeedsReboot = $false
+        Source = (T 'Programas instalados'); Undo = (T 'No cambia nada')
+        Reading = $true; Async = $true
+        Detect = { param($inv) New-AfDetection -State Info -Current (T 'Revisando…') -Data @{ Async = $true } }
+        AsyncDetect = {
+            param($inv)
+            $antivirus = if ($inv.Security) { @($inv.Security.Antivirus) } else { @() }
+            Get-AfJunkDetection -Programs @(Get-AfInstalledPrograms -User $inv.User) -Antivirus $antivirus
+        }
+    }
+}
+
+# "Aceleradores", limpiadores y actualizadores de drivers conocidos (lista cerrada), por el nombre en Programas instalados.
+function Get-AfJunkPattern {
+    '^(Driver ?(Booster|Easy|Genius|Reviver|Support|Max)|DriverPack|Auslogics (Driver Updater|BoostSpeed)|Outbyte (Driver Updater|PC Repair)|(Avast|AVG) (Driver Updater|Cleanup|TuneUp)|CCleaner|Advanced SystemCare|Wise (Care 365|Registry Cleaner)|Glary Utilities|Restoro|Reimage|Fortect|Ashampoo WinOptimizer|Norton Utilities)'
+}
+
+function Get-AfJunkDetection {
+    param([string[]]$Programs = @(), [object[]]$Antivirus = @())
+    $junk = @($Programs | Where-Object { $_ -match (Get-AfJunkPattern) } | Select-Object -Unique)
+    # Un antivirus apagado que sigue instalado (como una prueba vencida). Un registro viejo sin el programa no cuenta.
+    $off = @($Antivirus | Where-Object { $_ -and -not $_.IsDefender -and -not $_.Enabled } | Where-Object {
+            $brand = @(([string]$_.Name).Split(' '))[0]
+            $brand -and @($Programs | Where-Object { $_ -like "$brand*" }).Count
+        } | ForEach-Object { [string]$_.Name } | Select-Object -Unique)
+    $names = @($junk) + @($off)
+    if (-not $names.Count) { return New-AfDetection -State Ok -Current (T 'Ninguno') }
+    $title = if ($names.Count -eq 1) { (T '{0} instalado') -f $names[0] } else { (T '{0} programas que estorban') -f $names.Count }
+    $steps = @((T 'Abre Configuración > Aplicaciones > Aplicaciones instaladas.'))
+    if ($junk.Count) { $steps += (T 'Desinstala {0}.') -f (Join-AfNames $junk) }
+    if ($off.Count) { $steps += (T '{0} está apagado: si era una prueba que venció, desinstálalo y Microsoft Defender se activa solo.') -f (Join-AfNames $off) }
+    New-AfDetection -State Manual -Title $title -Current (Join-AfNames $names) -Steps $steps -Data @{ Programs = $names }
 }
