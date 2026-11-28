@@ -373,13 +373,13 @@
                   <ColumnDefinition Width="Auto"/>
                   <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Grid x:Name="HeroDialHost" Width="212" Height="200" VerticalAlignment="Center">
-                  <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,20" IsHitTestVisible="False">
-                    <TextBlock x:Name="HeroNumber" Text="0" FontFamily="{DynamicResource DisplayFont}" FontSize="40" FontWeight="Light" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="HeroUnit" FontSize="12" Foreground="{DynamicResource Text2}" HorizontalAlignment="Center" Margin="0,-3,0,0"/>
+                <Grid x:Name="HeroDialHost" Width="200" Height="200" VerticalAlignment="Center" Margin="4,0,0,0">
+                  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,4" IsHitTestVisible="False">
+                    <TextBlock x:Name="HeroNumber" Text="0" FontFamily="{DynamicResource DisplayFont}" FontSize="46" FontWeight="Light" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="HeroUnit" FontSize="12.5" Foreground="{DynamicResource Text2}" HorizontalAlignment="Center" Margin="0,-4,0,0"/>
                   </StackPanel>
                 </Grid>
-                <Grid Grid.Column="1" Margin="20,2,0,0">
+                <Grid Grid.Column="1" Margin="28,2,0,0">
                   <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -389,15 +389,11 @@
                     <Path x:Name="HeroIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text2}" VerticalAlignment="Center"/>
                     <TextBlock Text="Afinación" Style="{StaticResource CardTitle}"/>
                   </StackPanel>
-                  <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,12,0,12">
+                  <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,10,0,14">
                     <TextBlock x:Name="HeroTitle" FontFamily="{DynamicResource DisplayFont}" FontSize="21" FontWeight="Medium" TextWrapping="Wrap"/>
                     <TextBlock x:Name="HeroText" Margin="0,6,0,0" FontSize="13" Foreground="{DynamicResource Text2}" TextWrapping="Wrap"/>
-                    <DockPanel Margin="0,14,0,0">
-                      <Path x:Name="HeroNoteIcon" DockPanel.Dock="Left" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text3}" VerticalAlignment="Top" Margin="0,1,8,0"/>
-                      <TextBlock Text="Se crea un punto de restauración antes de aplicar" FontSize="12" Foreground="{DynamicResource Text3}" TextWrapping="Wrap"/>
-                    </DockPanel>
                   </StackPanel>
-                  <Button x:Name="HeroButton" Grid.Row="2" HorizontalAlignment="Left" Style="{StaticResource PrimaryButton}" Opacity="0">
+                  <Button x:Name="HeroButton" Grid.Row="2" HorizontalAlignment="Left" Style="{StaticResource PrimaryButton}" Opacity="0" ToolTip="Se crea un punto de restauración antes de aplicar">
                     <StackPanel Orientation="Horizontal">
                       <TextBlock x:Name="HeroButtonText" Text="Ver el detalle" VerticalAlignment="Center"/>
                       <Path x:Name="HeroButtonIcon" Width="13" Height="13" Margin="8,0,0,0" Stretch="Uniform" Fill="White" VerticalAlignment="Center"/>

@@ -56,18 +56,17 @@ Describe 'Resumen' {
         } finally { $window.Close() }
     }
 
-    It 'mientras analiza, enciende las barras hasta la parte revisada' {
+    It 'mientras analiza, llena el anillo hasta la parte revisada' {
         $window = New-ShownWindow
         try {
             $s = $window.Tag
             $s.Phase = 'scanning'
             $s.Revealed = 3
             Update-AfHome -Window $window
-            $lit = @($s.HeroDial.Ticks | Select-Object -SkipLast 1 | Where-Object { $_.Shape.Opacity -gt 0.3 }).Count
-            # 3 de 9 categorías: la tercera parte de las 43 marcas (más la primera), no una sola.
-            $lit | Should -BeGreaterThan 12
-            $lit | Should -BeLessThan 18
-            $s.HeroDial.Hand.RenderTransform.Angle | Should -Be (-135 + 270 * 3 / 9)
+            # 3 de 9 categorías: el anillo lleno en un tercio y el punto rojo en el mismo lugar.
+            [math]::Round($s.HeroDial.Fill.StrokeDashOffset, 3) | Should -Be ([math]::Round($s.HeroDial.Units * 2 / 3, 3))
+            $s.HeroDial.Knob.Angle | Should -Be (-150 + 300 / 3)
+            $s.HeroDial.Fill.Opacity | Should -Be 1
             $window.FindName('HeroUnit').Text | Should -Be 'revisados'
         } finally { $window.Close() }
     }

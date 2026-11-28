@@ -349,7 +349,6 @@ function Initialize-AfHome {
     Set-AfIconData -Path $Window.FindName('HeroIcon') -Name 'gauge'
     Set-AfIconData -Path $Window.FindName('ProfileIcon') -Name 'squares-four'
     Set-AfIconData -Path $Window.FindName('HeroButtonIcon') -Name 'arrow-right'
-    Set-AfIconData -Path $Window.FindName('HeroNoteIcon') -Name 'shield-check'
     $quick = $Window.FindName('Quick')
     $quick.Children.Clear()
     $s.QuickCards = @{}
@@ -620,74 +619,87 @@ function Set-AfSpark {
     $Tile.Dot.Visibility = 'Visible'
 }
 
-# Medidor principal: una esfera de 270° con 44 marcas que se encienden hasta la fracción y la aguja roja.
-# Mientras analiza, un destello recorre el aro exterior y las marcas siguen el avance.
+# Medidor principal: un anillo fino de 300° que se llena en blanco hasta la fracción y termina en un punto rojo,
+# con el número al centro. Mientras analiza, el anillo crece con el avance, un destello tenue lo recorre y el punto late.
 function Initialize-AfHeroDial {
     param([Parameter(Mandatory)]$Window)
     $hostGrid = $Window.FindName('HeroDialHost')
     $old = @($hostGrid.Children | Where-Object { $_ -is [System.Windows.Controls.Canvas] })
     foreach ($canvas in $old) { $hostGrid.Children.Remove($canvas) }
-    $dial = New-AfDial -Width 212 -Height 200 -CenterY 102 -Ticks 44 -Start -135 -Sweep 270 -Radius 90 -MinorLength 13 -MinorWidth 4 -MinorOpacity 0.12 -MajorEvery 0 -HandLength 60 -HandTail 14 -HandWidth 6 -HubSize 15 -HandAngle -135
-    $dial.IsHitTestVisible = $false
-    $last = $dial.Tag.Ticks[$dial.Tag.Ticks.Count - 1].Shape
-    $last.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Red')
-    $last.Opacity = 1
-    $arc = 'M{0},{1} A100,100 0 1 1 {2},{1}' -f (106 - 70.71).ToString([System.Globalization.CultureInfo]::InvariantCulture), (102 + 70.71).ToString([System.Globalization.CultureInfo]::InvariantCulture), (106 + 70.71).ToString([System.Globalization.CultureInfo]::InvariantCulture)
-    $track = New-Object System.Windows.Shapes.Path
-    $track.Data = [System.Windows.Media.Geometry]::Parse($arc)
-    $track.StrokeThickness = 1.5
-    $track.StrokeStartLineCap = 'Round'
-    $track.StrokeEndLineCap = 'Round'
-    $track.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Line2')
-    $comet = New-Object System.Windows.Shapes.Path
-    $comet.Data = $track.Data
-    $comet.StrokeThickness = 2.5
-    $comet.StrokeStartLineCap = 'Round'
-    $comet.StrokeEndLineCap = 'Round'
-    $comet.StrokeDashCap = 'Round'
-    $comet.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Text')
-    $length = (2 * [math]::PI * 100 * 0.75) / 2.5
-    $comet.StrokeDashArray = New-Object System.Windows.Media.DoubleCollection
-    $comet.StrokeDashArray.Add(14)
-    $comet.StrokeDashArray.Add($length + 14)
-    $comet.Opacity = 0
-    $dial.Children.Insert(0, $track)
-    $dial.Children.Insert(1, $comet)
-    foreach ($label in @(@('Desafinado', 42), @('Afinado', 170))) {
-        $text = New-AfText -Text (T $label[0]) -Size 11.5 -Brush 'Text3'
-        $text.TextWrapping = 'NoWrap'
-        $text.Measure((New-Object System.Windows.Size([double]::PositiveInfinity, [double]::PositiveInfinity)))
-        [System.Windows.Controls.Canvas]::SetLeft($text, $label[1] - $text.DesiredSize.Width / 2)
-        [System.Windows.Controls.Canvas]::SetTop($text, 182)
-        [void]$dial.Children.Add($text)
+    $c = 100
+    $canvas = New-Object System.Windows.Controls.Canvas
+    $canvas.Width = 200
+    $canvas.Height = 200
+    $canvas.IsHitTestVisible = $false
+    # De las 7 a las 5 en sentido horario, radio 80 (sin 5 y 7 en punto exactos: abre 60° abajo).
+    $geometry = [System.Windows.Media.Geometry]::Parse('M60,169.282 A80,80 0 1 1 140,169.282')
+    $thickness = 3
+    $units = (2 * [math]::PI * 80 * 300 / 360) / $thickness
+    $arc = {
+        param([string]$Brush, [double]$Opacity)
+        $p = New-Object System.Windows.Shapes.Path
+        $p.Data = $geometry
+        $p.StrokeThickness = $thickness
+        $p.StrokeStartLineCap = 'Round'
+        $p.StrokeEndLineCap = 'Round'
+        $p.StrokeDashCap = 'Round'
+        $p.Opacity = $Opacity
+        $p.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, $Brush)
+        [void]$canvas.Children.Add($p)
+        $p
     }
-    $hostGrid.Children.Insert(0, $dial)
-    $Window.Tag.HeroDial = [pscustomobject]@{ Ticks = $dial.Tag.Ticks; Hand = $dial.Tag.Hand; Comet = $comet; CometLength = $length; Fraction = 0.0 }
+    $null = & $arc 'Line2' 1
+    $comet = & $arc 'Text' 0
+    $comet.StrokeDashArray = New-Object System.Windows.Media.DoubleCollection
+    $comet.StrokeDashArray.Add(9)
+    $comet.StrokeDashArray.Add($units + 9)
+    $fill = & $arc 'Text' 0
+    $fill.StrokeDashArray = New-Object System.Windows.Media.DoubleCollection
+    $fill.StrokeDashArray.Add($units)
+    $fill.StrokeDashArray.Add($units)
+    $fill.StrokeDashOffset = $units
+    # Punto rojo al final del anillo: un círculo con el centro hueco que gira con la fracción.
+    $knob = New-Object System.Windows.Controls.Canvas
+    $dot = New-Object System.Windows.Controls.Grid
+    $dot.Width = 13
+    $dot.Height = 13
+    $outer = New-Object System.Windows.Shapes.Ellipse
+    $outer.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Red')
+    $inner = New-Object System.Windows.Shapes.Ellipse
+    $inner.Width = 5
+    $inner.Height = 5
+    $inner.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Panel')
+    [void]$dot.Children.Add($outer)
+    [void]$dot.Children.Add($inner)
+    $dot.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+    $dot.RenderTransform = New-Object System.Windows.Media.ScaleTransform(1, 1)
+    [System.Windows.Controls.Canvas]::SetLeft($dot, $c - 6.5)
+    [System.Windows.Controls.Canvas]::SetTop($dot, $c - 80 - 6.5)
+    [void]$knob.Children.Add($dot)
+    $rotate = New-Object System.Windows.Media.RotateTransform(-150, $c, $c)
+    $knob.RenderTransform = $rotate
+    [void]$canvas.Children.Add($knob)
+    $hostGrid.Children.Insert(0, $canvas)
+    $Window.Tag.HeroDial = [pscustomobject]@{ Fill = $fill; Comet = $comet; Units = $units; Knob = $rotate; Dot = $dot; Fraction = 0.0 }
 }
 
-# Enciende las marcas hasta la fracción (más claras hacia el final) y lleva la aguja al mismo lugar.
+# Llena el anillo hasta la fracción y lleva el punto rojo al mismo lugar.
 function Set-AfHeroFraction {
     param([Parameter(Mandatory)]$Window, [double]$Fraction, [bool]$Motion = $false, [switch]$Force, [switch]$Scanning)
     $dial = $Window.Tag.HeroDial
     if (-not $dial) { return }
     $f = [math]::Max(0.0, [math]::Min(1.0, $Fraction))
-    $previous = [double]$dial.Fraction
     $dial.Fraction = $f
-    $count = $dial.Ticks.Count
-    $upTo = [math]::Round($f * ($count - 1))
-    $from = [math]::Round($previous * ($count - 1))
-    for ($i = 0; $i -lt $count - 1; $i++) {
-        $target = if ($i -le $upTo -and $f -gt 0) { 0.4 + 0.6 * $i / ($count - 1) } else { 0.12 }
-        $shape = $dial.Ticks[$i].Shape
-        if (-not $Force -and [math]::Abs($shape.Opacity - $target) -lt 0.01) { continue }
-        $delay = if ($Motion) { [math]::Abs($i - $from) * 16 } else { 0 }
-        Start-AfAnimation -Target $shape -Property ([System.Windows.UIElement]::OpacityProperty) -To $target -DurationMs 260 -DelayMs $delay -Ease Out -Enabled $Motion | Out-Null
-    }
-    Start-AfAnimation -Target $dial.Hand.RenderTransform -Property ([System.Windows.Media.RotateTransform]::AngleProperty) -To (-135 + 270 * $f) -DurationMs $(if ($Scanning) { 520 } else { 900 }) -Ease $(if ($Scanning) { 'Out' } else { 'InOut' }) -Enabled $Motion | Out-Null
+    $ms = if ($Scanning) { 600 } else { 1000 }
+    $ease = if ($Scanning) { 'Out' } else { 'InOut' }
+    # Con la fracción en 0, la punta redonda del trazo dejaría un punto suelto: el relleno se esconde.
+    Start-AfAnimation -Target $dial.Fill -Property ([System.Windows.UIElement]::OpacityProperty) -To $(if ($f -gt 0.004) { 1 } else { 0 }) -DurationMs 200 -Ease Out -Enabled $Motion | Out-Null
+    Start-AfAnimation -Target $dial.Fill -Property ([System.Windows.Shapes.Shape]::StrokeDashOffsetProperty) -To ($dial.Units * (1 - $f)) -DurationMs $ms -Ease $ease -Enabled $Motion | Out-Null
+    Start-AfAnimation -Target $dial.Knob -Property ([System.Windows.Media.RotateTransform]::AngleProperty) -To (-150 + 300 * $f) -DurationMs $ms -Ease $ease -Enabled $Motion | Out-Null
     Set-AfHeroScanning -Window $Window -On ([bool]$Scanning) -Motion $Motion
 }
 
-# El destello del aro y el barrido del radar: solo mientras analiza y con animaciones.
+# Mientras analiza y con animaciones: el destello del anillo, el punto que late y el barrido del radar.
 function Set-AfHeroScanning {
     param([Parameter(Mandatory)]$Window, [bool]$On, [bool]$Motion = $false)
     $s = $Window.Tag
@@ -698,10 +710,16 @@ function Set-AfHeroScanning {
     $beam = if ($s.Radar) { $s.Radar.Beam } else { $null }
     if ($on) {
         if ($dial) {
-            $run = New-Object System.Windows.Media.Animation.DoubleAnimation(14, (-$dial.CometLength), (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(1500))))
+            $run = New-Object System.Windows.Media.Animation.DoubleAnimation(9, (-$dial.Units), (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(1700))))
             $run.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
             $dial.Comet.BeginAnimation([System.Windows.Shapes.Shape]::StrokeDashOffsetProperty, $run)
-            Start-AfAnimation -Target $dial.Comet -Property ([System.Windows.UIElement]::OpacityProperty) -To 0.9 -DurationMs 300 -Ease Out | Out-Null
+            Start-AfAnimation -Target $dial.Comet -Property ([System.Windows.UIElement]::OpacityProperty) -To 0.5 -DurationMs 300 -Ease Out | Out-Null
+            foreach ($axis in [System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty) {
+                $beat = New-Object System.Windows.Media.Animation.DoubleAnimation(1, 1.35, (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(700))))
+                $beat.AutoReverse = $true
+                $beat.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+                $dial.Dot.RenderTransform.BeginAnimation($axis, $beat)
+            }
         }
         if ($beam) {
             $spin = New-Object System.Windows.Media.Animation.DoubleAnimation(0, 360, (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(2200))))
@@ -710,24 +728,30 @@ function Set-AfHeroScanning {
             Start-AfAnimation -Target $beam -Property ([System.Windows.UIElement]::OpacityProperty) -To 1 -DurationMs 300 -Ease Out | Out-Null
         }
     } else {
-        if ($dial) { Start-AfAnimation -Target $dial.Comet -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 400 -Ease Out -Enabled $Motion | Out-Null }
+        if ($dial) {
+            Start-AfAnimation -Target $dial.Comet -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 400 -Ease Out -Enabled $Motion | Out-Null
+            foreach ($axis in [System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty) {
+                Start-AfAnimation -Target $dial.Dot.RenderTransform -Property $axis -To 1 -DurationMs 300 -Ease Out -Enabled $Motion | Out-Null
+            }
+        }
         if ($beam) { Start-AfAnimation -Target $beam -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 500 -Ease Out -Enabled $Motion | Out-Null }
     }
 }
 
-# Al quedar afinada, una ola recorre las marcas encendidas.
+# Al quedar afinada, el anillo destella una vez y el punto da un salto.
 function Start-AfHeroCelebration {
     param([Parameter(Mandatory)]$Window)
     $dial = $Window.Tag.HeroDial
     if (-not $dial) { return }
-    $i = 0
-    foreach ($tick in @($dial.Ticks | Select-Object -SkipLast 1)) {
-        $wave = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
-        $wave.BeginTime = [TimeSpan]::FromMilliseconds($i * 14)
-        [void]$wave.KeyFrames.Add((New-AfKeyFrame -Value 1 -At 140 -Ease Out))
-        [void]$wave.KeyFrames.Add((New-AfKeyFrame -Value $tick.Shape.Opacity -At 620 -Ease Out))
-        $tick.Shape.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $wave)
-        $i++
+    $flash = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+    [void]$flash.KeyFrames.Add((New-AfKeyFrame -Value 0.35 -At 220 -Ease Out))
+    [void]$flash.KeyFrames.Add((New-AfKeyFrame -Value 1 -At 700 -Ease Out))
+    $dial.Fill.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $flash)
+    foreach ($axis in [System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty) {
+        $pop = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+        [void]$pop.KeyFrames.Add((New-AfKeyFrame -Value 1.6 -At 200 -Ease Out))
+        [void]$pop.KeyFrames.Add((New-AfKeyFrame -Value 1 -At 560 -Ease Out))
+        $dial.Dot.RenderTransform.BeginAnimation($axis, $pop)
     }
 }
 
