@@ -50,7 +50,7 @@ if ($AutoPlay) {
         param($window)
         $timer = New-Object System.Windows.Threading.DispatcherTimer
         $timer.Interval = [TimeSpan]::FromMilliseconds(300)
-        $timer.Tag = @{ Window = $window; Shots = @{}; DoneTicks = 0 }
+        $timer.Tag = @{ Window = $window; Shots = @{}; DoneTicks = 0; Start = Get-Date }
         $timer.Add_Tick({
                 param($sender, $e)
                 $st = $sender.Tag
@@ -60,13 +60,29 @@ if ($AutoPlay) {
                 $st.Busy = $true
                 $shoot = { param($name) if (-not $st.Shots[$name]) { $st.Shots[$name] = $true; Save-AfWindowSnapshot -Window $w -Path (Join-Path $Global:AfDemoOut "demo-$name.png") } }
                 try {
+                # La pantalla de entrada, con la marca y el nombre ya a la vista.
+                if (-not $st.Shots['entrada'] -and $w.FindName('Splash').Visibility -eq 'Visible' -and $w.FindName('SplashTag').Opacity -ge 0.99) { & $shoot 'entrada' }
+                if ($w.FindName('Splash').Visibility -eq 'Visible') { return }
                 switch ($w.Tag.Phase) {
                     'scanning' {
                         # El análisis a medio armar: ya están los datos de la PC y quedan grupos fantasma.
+                        if ($w.Tag.Revealed -ge 3 -and -not $st.Shots['resumen-analizando']) { & $shoot 'resumen-analizando' }
                         if ($w.FindName('PcName').Text -and @($w.FindName('Groups').Children | Where-Object { "$($_.Tag)" -like 'skeleton:*' }).Count) { & $shoot 'analizando' }
                     }
                     'ready' {
                         if ($st.Shots['analisis']) { return }
+                        # El Resumen con unos segundos de estadísticas en vivo; después la barra desplegada y la lista.
+                        if (-not $st.Shots['resumen']) {
+                            if (@($w.Tag.LiveHistory.Cpu).Count -lt 4 -and ((Get-Date) - $st.Start).TotalSeconds -lt 40) { return }
+                            Wait-AfUi -Milliseconds 900
+                            & $shoot 'resumen'
+                            Set-AfRailOpen -Window $w -Open $true
+                            Wait-AfUi -Milliseconds 400
+                            & $shoot 'barra'
+                            Set-AfRailOpen -Window $w -Open $false
+                            Set-AfFilter -Window $w -Filter 'all'
+                            return
+                        }
                         if ($Global:AfDemoOptional -and -not $st.Shots['opcional']) {
                             # Primero terminan las búsquedas en segundo plano; después se elige solo Opcional (un tick prepara y el siguiente captura).
                             if (@(Get-AfRows -Window $w | Where-Object { $_.Tag.Detection.Data.Async }).Count) { return }

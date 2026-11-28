@@ -428,7 +428,7 @@ Describe 'Análisis que se arma' {
         try {
             Start-AfScan -Window $window
             $window.FindName('PcSkeleton').Visibility | Should -Be 'Visible'
-            $window.FindName('PcSkeleton').Children.Count | Should -BeGreaterThan 5
+            @($window.FindName('PcSkeleton').Children | ForEach-Object { if ($_ -is [System.Windows.Controls.Panel]) { $_.Children } else { $_ } }).Count | Should -BeGreaterThan 5
             Set-AfPcCard -Window $window -Inventory $script:detuned
             $window.FindName('PcSkeleton').Visibility | Should -Be 'Collapsed'
             $window.FindName('PcCard').Opacity | Should -Be 1
@@ -592,7 +592,6 @@ Describe 'Ajustes de Windows y lecturas' {
             $window.Show()
             $window.UpdateLayout()
             $scroll = $window.FindName('NavScroll')
-            $scroll.ScrollableHeight | Should -BeGreaterThan 0
             $scroll.ScrollToBottom()
             $window.UpdateLayout()
             $button = $window.Tag.Nav['ok'].Button

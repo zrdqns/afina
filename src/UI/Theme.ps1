@@ -14,6 +14,8 @@ function Get-AfFillIconNames {
 function Get-AfIconData {
     param([Parameter(Mandatory)][string]$Name, [ValidateSet('Bold', 'Fill')][string]$Variant = 'Bold')
     $key = '{0}|{1}' -f $Name, $Variant
+    # Dibujado aquí (no está en Phosphor 2.1.1 descargado): un arco de medidor con su aguja, con el mismo trazo de 24.
+    if ($key -eq 'gauge|Bold') { return 'F1 M20,160 A108,108 0 0 1 236,160 A12,12 0 0 1 212,160 A84,84 0 0 0 44,160 A12,12 0 0 1 20,160 Z M136.49,168.49 L181.74,123.24 A12,12 0 0 0 164.76,106.26 L119.51,151.51 A12,12 0 0 0 136.49,168.49 Z' }
     if (-not $script:AfIcons -or -not $script:AfIcons.ContainsKey($key)) { throw "Icono no incluido: $key" }
     $script:AfIcons[$key]
 }

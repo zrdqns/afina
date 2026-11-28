@@ -72,3 +72,71 @@ function Stop-AfScanWorker {
     if (-not $Worker) { return }
     try { [void]$Worker.PowerShell.BeginStop($null, $null) } catch { }
 }
+
+# Estadísticas en vivo: un runspace liviano mide CPU, memoria, disco y red cada segundo y deja la última muestra en $Sync.
+# Los contadores de Windows tardan en abrir la primera vez (hasta varios segundos): por eso no van en el hilo de la ventana.
+function Start-AfLiveWorker {
+    param([Parameter(Mandatory)]$Sync)
+    $runspace = [runspacefactory]::CreateRunspace()
+    $runspace.Open()
+    $runspace.SessionStateProxy.SetVariable('AfLive', $Sync)
+    $ps = [powershell]::Create()
+    $ps.Runspace = $runspace
+    [void]$ps.AddScript({
+            $failed = New-Object System.Collections.ArrayList
+            $open = { param($category, $counter) try { $c = New-Object System.Diagnostics.PerformanceCounter($category, $counter, '_Total'); [void]$c.NextValue(); $c } catch { $null } }
+            $info = $null
+            try { Add-Type -AssemblyName Microsoft.VisualBasic; $info = New-Object Microsoft.VisualBasic.Devices.ComputerInfo } catch { [void]$failed.Add('Mem') }
+            $cpu = $null
+            $disk = $null
+            $opened = $false
+            $last = $null
+            while (-not $AfLive.Stop) {
+                $sample = @{}
+                if ($info) { try { $total = [double]$info.TotalPhysicalMemory; $sample.MemTotal = $total; $sample.MemUsed = $total - [double]$info.AvailablePhysicalMemory } catch { } }
+                if ($cpu) { try { $sample.Cpu = [math]::Min(100.0, [math]::Max(0.0, $cpu.NextValue())) } catch { } }
+                if ($disk) { try { $sample.Disk = [math]::Min(100.0, [math]::Max(0.0, 100 - $disk.NextValue())) } catch { } }
+                # Solo adaptadores físicos conectados: los virtuales (Hyper-V, VPN) repiten el mismo tráfico.
+                $rx = 0
+                $tx = 0
+                try {
+                    foreach ($nic in [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces()) {
+                        if ($nic.OperationalStatus -ne 'Up' -or $nic.NetworkInterfaceType -in 'Loopback', 'Tunnel') { continue }
+                        if ($nic.Description -match 'Hyper-V|Virtual|VMware|VirtualBox|TAP-|Loopback|WAN Miniport|Bluetooth') { continue }
+                        $stats = $nic.GetIPStatistics()
+                        $rx += $stats.BytesReceived
+                        $tx += $stats.BytesSent
+                    }
+                    $now = [datetime]::UtcNow
+                    if ($last) {
+                        $seconds = ($now - $last.At).TotalSeconds
+                        if ($seconds -gt 0) { $sample.Down = [math]::Max(0.0, ($rx - $last.Rx) * 8 / $seconds); $sample.Up = [math]::Max(0.0, ($tx - $last.Tx) * 8 / $seconds) }
+                    }
+                    $last = @{ At = $now; Rx = $rx; Tx = $tx }
+                } catch { }
+                $AfLive.Sample = $sample
+                $AfLive.Seq = [int]$AfLive.Seq + 1
+                if (-not $opened) {
+                    $opened = $true
+                    $cpu = & $open 'Processor Information' '% Processor Utility'
+                    if (-not $cpu) { $cpu = & $open 'Processor' '% Processor Time' }
+                    if (-not $cpu) { [void]$failed.Add('Cpu') }
+                    $disk = & $open 'PhysicalDisk' '% Idle Time'
+                    if (-not $disk) { [void]$failed.Add('Disk') }
+                    $AfLive.Failed = $failed.ToArray()
+                    continue
+                }
+                Start-Sleep -Milliseconds 1000
+            }
+        })
+    $handle = $ps.BeginInvoke()
+    [pscustomobject]@{ PowerShell = $ps; Runspace = $runspace; Handle = $handle; Sync = $Sync }
+}
+
+function Stop-AfLiveWorker {
+    param($Worker)
+    if (-not $Worker) { return }
+    $Worker.Sync.Stop = $true
+    # Sin esperar: si justo está abriendo los contadores, Stop() trabaría el cierre de la ventana unos segundos.
+    try { [void]$Worker.PowerShell.BeginStop($null, $null) } catch { }
+}

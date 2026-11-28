@@ -42,6 +42,9 @@ function Get-AfUiState {
         New-AfNav -Window $Window
         $Window.FindName('Gauge').Add_SizeChanged({ param($sender, $e) Update-AfGaugeLayout -Window ([System.Windows.Window]::GetWindow($sender)) })
         Update-AfGaugeLayout -Window $Window
+        Initialize-AfHome -Window $Window
+        Initialize-AfRail -Window $Window
+        Set-AfView -Window $Window -View 'home'
     }
     $s
 }
@@ -50,13 +53,13 @@ function New-AfSpecRow {
     param([string]$Icon, [string]$Text)
     $row = New-Object System.Windows.Controls.StackPanel
     $row.Orientation = 'Horizontal'
-    $row.Margin = '0,0,0,9'
+    $row.Margin = '0,0,22,6'
     [void]$row.Children.Add((New-AfIcon -Name $Icon -Size 15))
     $label = New-AfText -Text $Text -Size 12.5 -Brush 'Text2'
     $label.Margin = '9,0,0,0'
     $label.TextWrapping = 'NoWrap'
     $label.TextTrimming = 'CharacterEllipsis'
-    $label.MaxWidth = 180
+    $label.MaxWidth = 240
     [void]$row.Children.Add($label)
     $row
 }
@@ -131,9 +134,11 @@ function Show-AfSkeleton {
     if (-not $Window.FindName('PcName').Text) {
         $pc = $Window.FindName('PcSkeleton')
         $pc.Children.Clear()
-        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 150 -Height 14 -Margin '0,3,0,8'))
-        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 72 -Height 9 -Margin '0,0,0,22'))
-        foreach ($width in 120, 140, 104, 150, 96, 88) { [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width $width -Height 9 -Margin '24,0,0,15')) }
+        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 260 -Height 18 -Margin '0,8,0,16'))
+        $specs = New-Object System.Windows.Controls.StackPanel
+        $specs.Orientation = 'Horizontal'
+        foreach ($width in 120, 140, 104, 150, 96, 88) { [void]$specs.Children.Add((New-AfShimmerBar -Brush $brush -Width $width -Height 10 -Margin '0,0,24,0')) }
+        [void]$pc.Children.Add($specs)
         $pc.Visibility = 'Visible'
     }
     $groups = $Window.FindName('Groups')
@@ -179,7 +184,7 @@ function Close-AfSkeletonGroup {
 }
 
 function Get-AfNavEntries {
-    @([pscustomobject]@{ Id = 'all'; Name = (T 'Todo'); Icon = 'squares-four' }) + @(Get-AfCategories) + @([pscustomobject]@{ Id = 'ok'; Name = (T 'En orden'); Icon = 'check-circle' })
+    @([pscustomobject]@{ Id = 'home'; Name = (T 'Resumen'); Icon = 'gauge' }, [pscustomobject]@{ Id = 'all'; Name = (T 'Todo'); Icon = 'squares-four' }) + @(Get-AfCategories) + @([pscustomobject]@{ Id = 'ok'; Name = (T 'En orden'); Icon = 'check-circle' })
 }
 
 function New-AfNav {
@@ -191,6 +196,7 @@ function New-AfNav {
         $button = New-Object System.Windows.Controls.Button
         $button.SetResourceReference([System.Windows.FrameworkElement]::StyleProperty, 'NavButton')
         $button.Tag = $entry.Id
+        [System.Windows.Automation.AutomationProperties]::SetName($button, $entry.Name)
         $grid = New-Object System.Windows.Controls.Grid
         foreach ($width in 'Auto', '*', 'Auto') {
             $column = New-Object System.Windows.Controls.ColumnDefinition
@@ -203,6 +209,16 @@ function New-AfNav {
         $iconOn.Visibility = 'Collapsed'
         [void]$iconHost.Children.Add($iconOff)
         [void]$iconHost.Children.Add($iconOn)
+        # Con la barra cerrada, un punto en el icono dice que la categoría tiene algo por hacer.
+        $dot = New-Object System.Windows.Shapes.Ellipse
+        $dot.Width = 5
+        $dot.Height = 5
+        $dot.HorizontalAlignment = 'Right'
+        $dot.VerticalAlignment = 'Top'
+        $dot.Margin = '0,-3,-5,0'
+        $dot.Visibility = 'Collapsed'
+        $dot.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Text')
+        [void]$iconHost.Children.Add($dot)
         $label = New-AfText -Text $entry.Name -Size 13 -Brush 'Text2'
         $label.Margin = '10,0,0,0'
         $label.TextWrapping = 'NoWrap'
@@ -222,16 +238,16 @@ function New-AfNav {
                 Set-AfFilter -Window $w -Filter $sender.Tag
             })
         [void]$nav.Children.Add($button)
-        $refs[$entry.Id] = @{ Button = $button; IconOff = $iconOff; IconOn = $iconOn; Label = $label; CountHost = $countHost; Count = 0 }
+        $refs[$entry.Id] = @{ Button = $button; IconOff = $iconOff; IconOn = $iconOn; Label = $label; CountHost = $countHost; Dot = $dot; Count = 0 }
     }
     $Window.Tag.Nav = $refs
-    Set-AfNavActive -Window $Window -Filter 'all' -Motion $false
+    Set-AfNavActive -Window $Window -Filter 'home' -Motion $false
 }
 
 function Set-AfNavSpinners {
     param([Parameter(Mandatory)]$Window)
     foreach ($id in $Window.Tag.Nav.Keys) {
-        if ($id -in 'all', 'windows') { continue }
+        if ($id -in 'home', 'all', 'windows') { continue }
         $hostGrid = $Window.Tag.Nav[$id].CountHost
         $hostGrid.Children.Clear()
         [void]$hostGrid.Children.Add((New-AfSpinner -Size 12))
@@ -252,6 +268,7 @@ function Set-AfNavCount {
     $ref.Count = $Count
     $hostGrid = $ref.CountHost
     $hostGrid.Children.Clear()
+    $ref.Dot.Visibility = if ($Count -gt 0 -and $Category -notin 'ok', 'windows') { 'Visible' } else { 'Collapsed' }
     # Ajustes de Windows no lleva número ni check: son opcionales.
     if ($Category -eq 'windows') { return }
     if ($Count -gt 0 -or $Category -eq 'ok') {
@@ -285,7 +302,7 @@ function Get-AfNavCount {
 function Update-AfNavCounts {
     param([Parameter(Mandatory)]$Window, [object[]]$Results = @(), [string[]]$Only, [bool]$Motion = $false)
     foreach ($entry in Get-AfNavEntries) {
-        if ($entry.Id -eq 'all') { continue }
+        if ($entry.Id -in 'home', 'all') { continue }
         if ($Only -and $entry.Id -notin $Only) { continue }
         Set-AfNavCount -Window $Window -Category $entry.Id -Count (Get-AfPendingCount -Category $entry.Id -Results $Results) -Motion $Motion
     }
@@ -322,6 +339,12 @@ function Set-AfFilter {
         if (Test-AfBusyPhase -Phase $state.Phase) { return }
         Hide-AfHistory -Window $Window
     }
+    if ($Filter -eq 'home') {
+        Set-AfNavActive -Window $Window -Filter 'home' -Motion $state.Motion
+        Set-AfView -Window $Window -View 'home'
+        return
+    }
+    Set-AfView -Window $Window -View 'list'
     $state.Filter = $Filter
     Set-AfNavActive -Window $Window -Filter $Filter -Motion $state.Motion
     foreach ($group in $Window.FindName('Groups').Children) {
@@ -593,9 +616,11 @@ function Update-AfVerdict {
     # El resumen sigue al título: si no, "Revisa el disco" convive con "ya está en orden".
     if ($s.Phase -eq 'ready') { Set-AfSummary -Window $Window -Summary (Get-AfSummary -Results @(Get-AfEffectiveResults -Window $Window)) -Motion $s.Motion }
     elseif ($s.Phase -eq 'done') { Set-AfDoneSummary -Window $Window }
+    Update-AfHome -Window $Window
     if ($Celebrate -and $verdict.Celebrate -and -not $s.Celebrated) {
         $s.Celebrated = $true
         Start-AfCelebration -Window $Window -Motion $s.Motion
+        if ($s.Motion) { Start-AfHeroCelebration -Window $Window }
     }
 }
 
@@ -821,4 +846,5 @@ function Show-AfResults {
     Update-AfPrimary -Window $Window
     Set-AfNeedle -Window $Window -Fraction (Get-AfScore -Results $Results) -Motion $Animate
     Update-AfEmptyState -Window $Window
+    Update-AfHome -Window $Window
 }

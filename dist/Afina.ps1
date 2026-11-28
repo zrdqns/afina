@@ -412,6 +412,34 @@ ya estaba al día==>it was already up to date
 Ya estaba al día.==>It was already up to date.
 ya no está en la PC; se reinstala desde la Microsoft Store==>it's no longer on the PC; reinstall it from the Microsoft Store
 # Interfaz
+Perfil por categoría==>Profile by category
+Acciones rápidas==>Quick actions
+Se actualiza cada segundo==>Updates every second
+En vivo==>Live
+Análisis y optimización de Windows==>Windows analysis and optimization
+Ver el detalle==>See the details
+Resumen==>Overview
+Disco, batería y memoria==>Disk, battery and memory
+Menú y Explorador==>Menu and File Explorer
+Deshacer cambios==>Undo changes
+Revisar otra vez==>Check again
+Memoria==>Memory
+Último minuto: promedio {0}, máximo {1}==>Last minute: average {0}, peak {1}
+{0} de {1} GB en uso==>{0} of {1} GB in use
+Tiempo activo==>Active time
+Tiempo activo · {0} GB libres==>Active time · {0} GB free
+Descarga · subida {0} {1}==>Download · upload {0} {1}
+Descarga==>Download
+Windows no da este dato==>Windows doesn't report this
+Nada para hacer a mano.==>Nothing to do by hand.
+1 para hacer a mano.==>1 to do by hand.
+{0} para hacer a mano.==>{0} to do by hand.
+en orden==>in order
+revisados==>checked
+Revisar y optimizar==>Review and optimize
+{0} de {1} en orden==>{0} of {1} in order
+Nada para ajustar==>Nothing to adjust
+{0} de {1} categorías revisadas==>{0} of {1} categories checked
 , {0} para hacer a mano y {1} en orden.==>, {0} to do by hand and {1} all good.
 , un canal==>, single channel
 {0} {1} GB, {2} GB libres==>{0} {1} GB, {2} GB free
@@ -5486,6 +5514,8 @@ function Get-AfFillIconNames {
 function Get-AfIconData {
     param([Parameter(Mandatory)][string]$Name, [ValidateSet('Bold', 'Fill')][string]$Variant = 'Bold')
     $key = '{0}|{1}' -f $Name, $Variant
+    # Dibujado aquí (no está en Phosphor 2.1.1 descargado): un arco de medidor con su aguja, con el mismo trazo de 24.
+    if ($key -eq 'gauge|Bold') { return 'F1 M20,160 A108,108 0 0 1 236,160 A12,12 0 0 1 212,160 A84,84 0 0 0 44,160 A12,12 0 0 1 20,160 Z M136.49,168.49 L181.74,123.24 A12,12 0 0 0 164.76,106.26 L119.51,151.51 A12,12 0 0 0 136.49,168.49 Z' }
     if (-not $script:AfIcons -or -not $script:AfIcons.ContainsKey($key)) { throw "Icono no incluido: $key" }
     $script:AfIcons[$key]
 }
@@ -5809,6 +5839,26 @@ function Get-AfWindowXaml {
       </Setter>
     </Style>
 
+    <Style x:Key="Card" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="14"/>
+    </Style>
+
+    <Style x:Key="SectionLabel" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+      <Setter Property="Margin" Value="2,24,0,10"/>
+    </Style>
+
+    <Style x:Key="CardTitle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+      <Setter Property="Margin" Value="8,0,0,0"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
     <Style TargetType="ScrollBar">
       <Setter Property="Width" Value="12"/>
       <Setter Property="Template">
@@ -5841,8 +5891,8 @@ function Get-AfWindowXaml {
     <Border x:Name="TitleBar" Grid.Row="0" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
       <Grid>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
-          <Border Width="2" Height="16" CornerRadius="1" Background="{DynamicResource Red}"/>
-          <TextBlock Text="Afina" Margin="10,0,0,1" FontFamily="{DynamicResource DisplayFont}" FontSize="15" FontWeight="Medium" VerticalAlignment="Center"/>
+          <Border x:Name="TitleMarkHost" Width="18" Height="18"/>
+          <TextBlock Text="Afina" Margin="9,0,0,1" FontFamily="{DynamicResource DisplayFont}" FontSize="15" FontWeight="Medium" VerticalAlignment="Center"/>
           <TextBlock x:Name="Version" Margin="10,0,0,0" FontFamily="{DynamicResource DisplayFont}" FontSize="12" Foreground="{DynamicResource Text3}" VerticalAlignment="Center"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -5862,30 +5912,11 @@ function Get-AfWindowXaml {
 
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="244"/>
+        <ColumnDefinition Width="64"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
 
-      <Border Grid.Column="0" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="14,22,14,12">
-        <DockPanel LastChildFill="True">
-          <Grid DockPanel.Dock="Top" Margin="8,0,8,0">
-            <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
-            <StackPanel x:Name="PcCard" Opacity="0">
-              <TextBlock x:Name="PcName" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
-              <TextBlock x:Name="PcKind" FontSize="12" Foreground="{DynamicResource Text3}" Margin="0,3,0,0"/>
-              <StackPanel x:Name="Specs" Margin="0,16,0,0"/>
-            </StackPanel>
-          </Grid>
-          <ScrollViewer x:Name="NavScroll" VerticalScrollBarVisibility="Auto" Focusable="False"><Grid x:Name="NavHost" Margin="0,24,0,0">
-            <StackPanel x:Name="Nav"/>
-            <Border x:Name="NavIndicator" Width="2" Height="32" CornerRadius="2" Background="{DynamicResource Red}" HorizontalAlignment="Left" VerticalAlignment="Top">
-              <Border.RenderTransform><TranslateTransform x:Name="NavIndicatorTransform"/></Border.RenderTransform>
-            </Border>
-          </Grid></ScrollViewer>
-        </DockPanel>
-      </Border>
-
-      <Grid Grid.Column="1">
+      <Grid x:Name="ListView" Grid.Column="1" Visibility="Collapsed">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="*"/>
@@ -5933,9 +5964,121 @@ function Get-AfWindowXaml {
           </StackPanel>
         </Border>
       </Grid>
+
+      <ScrollViewer x:Name="HomeScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel Margin="28,22,28,26">
+          <Grid MinHeight="62">
+            <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
+            <StackPanel x:Name="PcCard" Opacity="0">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="PcName" FontFamily="{DynamicResource DisplayFont}" FontSize="26" FontWeight="Light" TextTrimming="CharacterEllipsis"/>
+                <TextBlock x:Name="PcKind" FontSize="12.5" Foreground="{DynamicResource Text3}" Margin="12,0,0,5" VerticalAlignment="Bottom"/>
+              </StackPanel>
+              <WrapPanel x:Name="Specs" Margin="0,10,0,0"/>
+            </StackPanel>
+          </Grid>
+          <Grid Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="1.8*"/>
+              <ColumnDefinition Width="14"/>
+              <ColumnDefinition Width="*" MinWidth="250"/>
+            </Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Card}" Padding="22,18,22,18">
+              <Grid>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                  <Path x:Name="HeroIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text2}" VerticalAlignment="Center"/>
+                  <TextBlock Text="Afinación" Style="{StaticResource CardTitle}"/>
+                </StackPanel>
+                <Grid Grid.Row="1" Margin="0,12,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" MinWidth="168"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Bottom" Margin="0,0,24,0">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock x:Name="HeroNumber" Text="0" FontFamily="{DynamicResource DisplayFont}" FontSize="60" FontWeight="Light"/>
+                      <TextBlock x:Name="HeroUnit" Margin="10,0,0,14" FontSize="13" Foreground="{DynamicResource Text2}" VerticalAlignment="Bottom"/>
+                    </StackPanel>
+                    <TextBlock x:Name="HeroTitle" Margin="0,2,0,0" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextWrapping="Wrap" MaxWidth="230" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="HeroText" Margin="0,5,0,0" FontSize="12.5" Foreground="{DynamicResource Text2}" TextWrapping="Wrap" MaxWidth="230" HorizontalAlignment="Left"/>
+                  </StackPanel>
+                  <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="*"/>
+                      <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid x:Name="HeroMeter" MinHeight="104" Margin="0,8,0,0">
+                      <Canvas x:Name="HeroBars"/>
+                      <Canvas x:Name="HeroLit" IsHitTestVisible="False"/>
+                      <Canvas x:Name="HeroNeedle" Width="2" HorizontalAlignment="Left" VerticalAlignment="Bottom" Height="0" Opacity="0" IsHitTestVisible="False">
+                        <Canvas.RenderTransform><TranslateTransform x:Name="HeroNeedleTransform"/></Canvas.RenderTransform>
+                        <Rectangle x:Name="HeroNeedleLine" Width="2" RadiusX="1" RadiusY="1" Fill="{DynamicResource Red}" Canvas.Bottom="-4"/>
+                        <Polygon x:Name="HeroNeedleHead" Points="-3,0 5,0 1,6" Fill="{DynamicResource Red}"/>
+                      </Canvas>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,8,0,0">
+                      <TextBlock Text="Desafinado" FontSize="11.5" Foreground="{DynamicResource Text3}"/>
+                      <TextBlock Text="Afinado" FontSize="11.5" Foreground="{DynamicResource Text3}" HorizontalAlignment="Right"/>
+                    </Grid>
+                  </Grid>
+                </Grid>
+                <DockPanel Grid.Row="2" Margin="0,18,0,0">
+                  <Button x:Name="HeroButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Opacity="0">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock x:Name="HeroButtonText" Text="Ver el detalle" VerticalAlignment="Center"/>
+                      <Path x:Name="HeroButtonIcon" Width="13" Height="13" Margin="8,0,0,0" Stretch="Uniform" Fill="White" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <Path x:Name="HeroNoteIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text3}" VerticalAlignment="Center"/>
+                    <TextBlock Text="Se crea un punto de restauración antes de aplicar" Margin="8,0,0,0" FontSize="12" Foreground="{DynamicResource Text3}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                  </StackPanel>
+                </DockPanel>
+              </Grid>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="18,18,18,12">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                  <Path x:Name="ProfileIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text2}" VerticalAlignment="Center"/>
+                  <TextBlock Text="Perfil por categoría" Style="{StaticResource CardTitle}"/>
+                </StackPanel>
+                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="0,6,0,0" VerticalAlignment="Center">
+                  <Canvas x:Name="Radar" Width="300" Height="192"/>
+                </Viewbox>
+              </DockPanel>
+            </Border>
+          </Grid>
+          <TextBlock Text="Acciones rápidas" Style="{StaticResource SectionLabel}"/>
+          <UniformGrid x:Name="Quick" Rows="1" Margin="-6,0,-6,0"/>
+          <DockPanel Margin="2,24,0,10">
+            <TextBlock x:Name="LiveNote" DockPanel.Dock="Right" Text="Se actualiza cada segundo" FontSize="11.5" Foreground="{DynamicResource Text3}" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal">
+              <Ellipse x:Name="LiveDot" Width="6" Height="6" Fill="{DynamicResource Red}" VerticalAlignment="Center" Margin="0,1,8,0"/>
+              <TextBlock Text="En vivo" FontSize="12.5" Foreground="{DynamicResource Text2}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </DockPanel>
+          <UniformGrid x:Name="Live" Rows="1" Margin="-6,0,-6,0"/>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Border x:Name="Rail" Grid.Column="0" Grid.ColumnSpan="2" Width="64" HorizontalAlignment="Left" Panel.ZIndex="5" ClipToBounds="True"
+              Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="12,16,12,12">
+        <Border.Effect><DropShadowEffect x:Name="RailShadow" BlurRadius="28" ShadowDepth="0" Color="Black" Opacity="0"/></Border.Effect>
+        <ScrollViewer x:Name="NavScroll" VerticalScrollBarVisibility="Hidden" Focusable="False"><Grid x:Name="NavHost">
+          <StackPanel x:Name="Nav"/>
+          <Border x:Name="NavIndicator" Width="2" Height="32" CornerRadius="2" Background="{DynamicResource Red}" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Border.RenderTransform><TranslateTransform x:Name="NavIndicatorTransform"/></Border.RenderTransform>
+          </Border>
+        </Grid></ScrollViewer>
+      </Border>
     </Grid>
 
-    <Border Grid.Row="2" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="32,14">
+    <Border x:Name="Footer" Grid.Row="2" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="32,14">
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*"/>
@@ -5981,6 +6124,15 @@ function Get-AfWindowXaml {
         </StackPanel>
       </Grid>
     </Border>
+
+    <Grid x:Name="Splash" Grid.RowSpan="3" Panel.ZIndex="100" Background="{DynamicResource Bg}">
+      <StackPanel x:Name="SplashContent" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,24">
+        <Border x:Name="SplashMarkHost" Width="84" Height="84" HorizontalAlignment="Center"/>
+        <TextBlock x:Name="SplashName" Text="Afina" FontFamily="{DynamicResource DisplayFont}" FontSize="46" FontWeight="Light" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+        <TextBlock x:Name="SplashTag" Text="Análisis y optimización de Windows" FontSize="13" Foreground="{DynamicResource Text2}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+      </StackPanel>
+      <TextBlock x:Name="SplashVersion" FontFamily="{DynamicResource DisplayFont}" FontSize="12" Foreground="{DynamicResource Text3}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,26"/>
+    </Grid>
 
     <Popup x:Name="Prefs" StaysOpen="False" Placement="Bottom" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-200" VerticalOffset="4">
       <Border Background="{DynamicResource Panel}" CornerRadius="12" BorderBrush="{DynamicResource Line2}" BorderThickness="1" Padding="14" Width="280">
@@ -6047,6 +6199,14 @@ function Set-AfTheme {
     [void]$halo.GradientStops.Add((New-Object System.Windows.Media.GradientStop($red, 0)))
     [void]$halo.GradientStops.Add((New-Object System.Windows.Media.GradientStop([System.Windows.Media.Color]::FromArgb(0, $red.R, $red.G, $red.B), 1)))
     $dictionary.Add('NeedleHaloBrush', $halo)
+    # Resumen: tarjetas con un degradado muy leve, barras encendidas y rellenos de las gráficas, del color del texto del tema.
+    $text = $dictionary['Text'].Color
+    $fade = { param($top, $bottom) $b = New-Object System.Windows.Media.LinearGradientBrush; $b.StartPoint = '0,0'; $b.EndPoint = '0,1'; [void]$b.GradientStops.Add((New-Object System.Windows.Media.GradientStop($top, 0))); [void]$b.GradientStops.Add((New-Object System.Windows.Media.GradientStop($bottom, 1))); $b }
+    $alpha = { param($a) [System.Windows.Media.Color]::FromArgb($a, $text.R, $text.G, $text.B) }
+    $dictionary.Add('CardBg', $(if ($Theme -eq 'Black') { & $fade $dictionary['Raised'].Color $dictionary['Panel'].Color } else { $dictionary['Panel'] }))
+    $dictionary.Add('BarLit', (& $fade (& $alpha 235) (& $alpha 110)))
+    $dictionary.Add('SparkFill', (& $fade (& $alpha 46) (& $alpha 0)))
+    $dictionary.Add('RadarFill', (New-Object System.Windows.Media.SolidColorBrush((& $alpha 28))))
     $Window.Resources.MergedDictionaries.Clear()
     $Window.Resources.MergedDictionaries.Add($dictionary)
     $Window.Tag = if ($Window.Tag -is [hashtable]) { $Window.Tag } else { @{} }
@@ -6091,6 +6251,8 @@ function New-AfWindow {
     Set-AfIconData -Path $window.FindName('NoteIcon') -Name 'shield-check'
     Set-AfIconData -Path $window.FindName('GhostIcon') -Name 'arrow-clockwise'
     $window.FindName('Version').Text = 'v' + (Get-AfVersion)
+    $window.FindName('TitleMarkHost').Child = New-AfLogoMark -Size 18
+    try { $window.Icon = New-AfLogoImage } catch { }
     # Mover la lista a mano pausa el seguimiento del cambio en curso; la píldora lo retoma.
     $scroll = $window.FindName('ListScroll')
     $scroll.Add_PreviewMouseWheel({ param($sender, $e) Suspend-AfFollow -Window ([System.Windows.Window]::GetWindow($sender)) })
@@ -6637,6 +6799,9 @@ function Get-AfUiState {
         New-AfNav -Window $Window
         $Window.FindName('Gauge').Add_SizeChanged({ param($sender, $e) Update-AfGaugeLayout -Window ([System.Windows.Window]::GetWindow($sender)) })
         Update-AfGaugeLayout -Window $Window
+        Initialize-AfHome -Window $Window
+        Initialize-AfRail -Window $Window
+        Set-AfView -Window $Window -View 'home'
     }
     $s
 }
@@ -6645,13 +6810,13 @@ function New-AfSpecRow {
     param([string]$Icon, [string]$Text)
     $row = New-Object System.Windows.Controls.StackPanel
     $row.Orientation = 'Horizontal'
-    $row.Margin = '0,0,0,9'
+    $row.Margin = '0,0,22,6'
     [void]$row.Children.Add((New-AfIcon -Name $Icon -Size 15))
     $label = New-AfText -Text $Text -Size 12.5 -Brush 'Text2'
     $label.Margin = '9,0,0,0'
     $label.TextWrapping = 'NoWrap'
     $label.TextTrimming = 'CharacterEllipsis'
-    $label.MaxWidth = 180
+    $label.MaxWidth = 240
     [void]$row.Children.Add($label)
     $row
 }
@@ -6726,9 +6891,11 @@ function Show-AfSkeleton {
     if (-not $Window.FindName('PcName').Text) {
         $pc = $Window.FindName('PcSkeleton')
         $pc.Children.Clear()
-        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 150 -Height 14 -Margin '0,3,0,8'))
-        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 72 -Height 9 -Margin '0,0,0,22'))
-        foreach ($width in 120, 140, 104, 150, 96, 88) { [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width $width -Height 9 -Margin '24,0,0,15')) }
+        [void]$pc.Children.Add((New-AfShimmerBar -Brush $brush -Width 260 -Height 18 -Margin '0,8,0,16'))
+        $specs = New-Object System.Windows.Controls.StackPanel
+        $specs.Orientation = 'Horizontal'
+        foreach ($width in 120, 140, 104, 150, 96, 88) { [void]$specs.Children.Add((New-AfShimmerBar -Brush $brush -Width $width -Height 10 -Margin '0,0,24,0')) }
+        [void]$pc.Children.Add($specs)
         $pc.Visibility = 'Visible'
     }
     $groups = $Window.FindName('Groups')
@@ -6774,7 +6941,7 @@ function Close-AfSkeletonGroup {
 }
 
 function Get-AfNavEntries {
-    @([pscustomobject]@{ Id = 'all'; Name = (T 'Todo'); Icon = 'squares-four' }) + @(Get-AfCategories) + @([pscustomobject]@{ Id = 'ok'; Name = (T 'En orden'); Icon = 'check-circle' })
+    @([pscustomobject]@{ Id = 'home'; Name = (T 'Resumen'); Icon = 'gauge' }, [pscustomobject]@{ Id = 'all'; Name = (T 'Todo'); Icon = 'squares-four' }) + @(Get-AfCategories) + @([pscustomobject]@{ Id = 'ok'; Name = (T 'En orden'); Icon = 'check-circle' })
 }
 
 function New-AfNav {
@@ -6786,6 +6953,7 @@ function New-AfNav {
         $button = New-Object System.Windows.Controls.Button
         $button.SetResourceReference([System.Windows.FrameworkElement]::StyleProperty, 'NavButton')
         $button.Tag = $entry.Id
+        [System.Windows.Automation.AutomationProperties]::SetName($button, $entry.Name)
         $grid = New-Object System.Windows.Controls.Grid
         foreach ($width in 'Auto', '*', 'Auto') {
             $column = New-Object System.Windows.Controls.ColumnDefinition
@@ -6798,6 +6966,16 @@ function New-AfNav {
         $iconOn.Visibility = 'Collapsed'
         [void]$iconHost.Children.Add($iconOff)
         [void]$iconHost.Children.Add($iconOn)
+        # Con la barra cerrada, un punto en el icono dice que la categoría tiene algo por hacer.
+        $dot = New-Object System.Windows.Shapes.Ellipse
+        $dot.Width = 5
+        $dot.Height = 5
+        $dot.HorizontalAlignment = 'Right'
+        $dot.VerticalAlignment = 'Top'
+        $dot.Margin = '0,-3,-5,0'
+        $dot.Visibility = 'Collapsed'
+        $dot.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Text')
+        [void]$iconHost.Children.Add($dot)
         $label = New-AfText -Text $entry.Name -Size 13 -Brush 'Text2'
         $label.Margin = '10,0,0,0'
         $label.TextWrapping = 'NoWrap'
@@ -6817,16 +6995,16 @@ function New-AfNav {
                 Set-AfFilter -Window $w -Filter $sender.Tag
             })
         [void]$nav.Children.Add($button)
-        $refs[$entry.Id] = @{ Button = $button; IconOff = $iconOff; IconOn = $iconOn; Label = $label; CountHost = $countHost; Count = 0 }
+        $refs[$entry.Id] = @{ Button = $button; IconOff = $iconOff; IconOn = $iconOn; Label = $label; CountHost = $countHost; Dot = $dot; Count = 0 }
     }
     $Window.Tag.Nav = $refs
-    Set-AfNavActive -Window $Window -Filter 'all' -Motion $false
+    Set-AfNavActive -Window $Window -Filter 'home' -Motion $false
 }
 
 function Set-AfNavSpinners {
     param([Parameter(Mandatory)]$Window)
     foreach ($id in $Window.Tag.Nav.Keys) {
-        if ($id -in 'all', 'windows') { continue }
+        if ($id -in 'home', 'all', 'windows') { continue }
         $hostGrid = $Window.Tag.Nav[$id].CountHost
         $hostGrid.Children.Clear()
         [void]$hostGrid.Children.Add((New-AfSpinner -Size 12))
@@ -6847,6 +7025,7 @@ function Set-AfNavCount {
     $ref.Count = $Count
     $hostGrid = $ref.CountHost
     $hostGrid.Children.Clear()
+    $ref.Dot.Visibility = if ($Count -gt 0 -and $Category -notin 'ok', 'windows') { 'Visible' } else { 'Collapsed' }
     # Ajustes de Windows no lleva número ni check: son opcionales.
     if ($Category -eq 'windows') { return }
     if ($Count -gt 0 -or $Category -eq 'ok') {
@@ -6880,7 +7059,7 @@ function Get-AfNavCount {
 function Update-AfNavCounts {
     param([Parameter(Mandatory)]$Window, [object[]]$Results = @(), [string[]]$Only, [bool]$Motion = $false)
     foreach ($entry in Get-AfNavEntries) {
-        if ($entry.Id -eq 'all') { continue }
+        if ($entry.Id -in 'home', 'all') { continue }
         if ($Only -and $entry.Id -notin $Only) { continue }
         Set-AfNavCount -Window $Window -Category $entry.Id -Count (Get-AfPendingCount -Category $entry.Id -Results $Results) -Motion $Motion
     }
@@ -6917,6 +7096,12 @@ function Set-AfFilter {
         if (Test-AfBusyPhase -Phase $state.Phase) { return }
         Hide-AfHistory -Window $Window
     }
+    if ($Filter -eq 'home') {
+        Set-AfNavActive -Window $Window -Filter 'home' -Motion $state.Motion
+        Set-AfView -Window $Window -View 'home'
+        return
+    }
+    Set-AfView -Window $Window -View 'list'
     $state.Filter = $Filter
     Set-AfNavActive -Window $Window -Filter $Filter -Motion $state.Motion
     foreach ($group in $Window.FindName('Groups').Children) {
@@ -7188,9 +7373,11 @@ function Update-AfVerdict {
     # El resumen sigue al título: si no, "Revisa el disco" convive con "ya está en orden".
     if ($s.Phase -eq 'ready') { Set-AfSummary -Window $Window -Summary (Get-AfSummary -Results @(Get-AfEffectiveResults -Window $Window)) -Motion $s.Motion }
     elseif ($s.Phase -eq 'done') { Set-AfDoneSummary -Window $Window }
+    Update-AfHome -Window $Window
     if ($Celebrate -and $verdict.Celebrate -and -not $s.Celebrated) {
         $s.Celebrated = $true
         Start-AfCelebration -Window $Window -Motion $s.Motion
+        if ($s.Motion) { Start-AfHeroCelebration -Window $Window }
     }
 }
 
@@ -7416,6 +7603,766 @@ function Show-AfResults {
     Update-AfPrimary -Window $Window
     Set-AfNeedle -Window $Window -Fraction (Get-AfScore -Results $Results) -Motion $Animate
     Update-AfEmptyState -Window $Window
+    Update-AfHome -Window $Window
+}
+
+# Resumen (panel de inicio), logo, pantalla de entrada y barra lateral que se despliega.
+
+# Marca de Afina en una cuadrícula de 64: la escala de un afinador con la aguja roja al centro (afinado).
+# -Fixed usa colores fijos (para el icono de la ventana, que se dibuja fuera del árbol y no ve el tema).
+function New-AfLogoMark {
+    param([double]$Size = 64, [switch]$Fixed)
+    $canvas = New-Object System.Windows.Controls.Canvas
+    $canvas.Width = 64
+    $canvas.Height = 64
+    $bars = New-Object System.Collections.ArrayList
+    # Marcas de afuera hacia adentro a cada lado: mayor, menor, media.
+    foreach ($tick in @(@(6, 18), @(15, 11), @(24, 14), @(36, 14), @(45, 11), @(54, 18))) {
+        $bar = New-Object System.Windows.Shapes.Rectangle
+        $bar.Width = 4
+        $bar.Height = $tick[1]
+        $bar.RadiusX = 1.5
+        $bar.RadiusY = 1.5
+        $bar.Opacity = if ($tick[1] -eq 18) { 0.95 } else { 0.6 }
+        if ($Fixed) { $bar.Fill = [System.Windows.Media.Brushes]::WhiteSmoke } else { $bar.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Text') }
+        [System.Windows.Controls.Canvas]::SetLeft($bar, $tick[0])
+        [System.Windows.Controls.Canvas]::SetTop($bar, 52 - $tick[1])
+        $bar.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 1)
+        $bar.RenderTransform = New-Object System.Windows.Media.ScaleTransform(1, 1)
+        [void]$canvas.Children.Add($bar)
+        [void]$bars.Add($bar)
+    }
+    $needle = New-Object System.Windows.Controls.Canvas
+    $line = New-Object System.Windows.Shapes.Rectangle
+    $line.Width = 4
+    $line.Height = 47
+    $line.RadiusX = 2
+    $line.RadiusY = 2
+    [System.Windows.Controls.Canvas]::SetLeft($line, 30)
+    [System.Windows.Controls.Canvas]::SetTop($line, 9)
+    $head = New-Object System.Windows.Shapes.Polygon
+    $head.Points = [System.Windows.Media.PointCollection]::Parse('26.5,2 37.5,2 32,8.5')
+    foreach ($shape in $line, $head) {
+        if ($Fixed) { $shape.Fill = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(255, 59, 71)) } else { $shape.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Red') }
+        [void]$needle.Children.Add($shape)
+    }
+    # Gira sobre su base, como la aguja de un afinador que se asienta.
+    $needle.RenderTransform = New-Object System.Windows.Media.RotateTransform(0, 32, 56)
+    [void]$canvas.Children.Add($needle)
+    $canvas.Tag = @{ Bars = $bars; Needle = $needle }
+    $box = New-Object System.Windows.Controls.Viewbox
+    $box.Width = $Size
+    $box.Height = $Size
+    $box.Child = $canvas
+    $box
+}
+
+# Icono de la ventana y de la barra de tareas: la marca sobre un cuadrado negro.
+function New-AfLogoImage {
+    $tile = New-Object System.Windows.Controls.Border
+    $tile.Width = 64
+    $tile.Height = 64
+    $tile.CornerRadius = 14
+    $tile.Background = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(20, 20, 22))
+    $mark = New-AfLogoMark -Size 48 -Fixed
+    $mark.HorizontalAlignment = 'Center'
+    $mark.VerticalAlignment = 'Center'
+    $tile.Child = $mark
+    $tile.Measure((New-Object System.Windows.Size(64, 64)))
+    $tile.Arrange((New-Object System.Windows.Rect(0, 0, 64, 64)))
+    $bitmap = New-Object System.Windows.Media.Imaging.RenderTargetBitmap(64, 64, 96, 96, [System.Windows.Media.PixelFormats]::Pbgra32)
+    $bitmap.Render($tile)
+    $bitmap.Freeze()
+    $bitmap
+}
+
+# Pantalla de entrada: se prepara antes de mostrar la ventana y se anima con el primer cuadro.
+function Initialize-AfSplash {
+    param([Parameter(Mandatory)]$Window, [bool]$Motion = $false)
+    $mark = New-AfLogoMark -Size 84
+    $Window.FindName('SplashMarkHost').Child = $mark
+    $Window.FindName('SplashVersion').Text = 'v' + (Get-AfVersion)
+    $Window.Tag.SplashParts = $mark.Child.Tag
+    if (-not $Motion) { return }
+    foreach ($bar in $mark.Child.Tag.Bars) { $bar.RenderTransform.ScaleY = 0 }
+    $mark.Child.Tag.Needle.Opacity = 0
+    $mark.Child.Tag.Needle.RenderTransform.Angle = -28
+    foreach ($name in 'SplashName', 'SplashTag', 'SplashVersion') { $Window.FindName($name).Opacity = 0 }
+}
+
+function Start-AfSplash {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $splash = $Window.FindName('Splash')
+    if ($splash.Visibility -ne 'Visible') { return }
+    $splash.Add_MouseLeftButtonUp({ param($sender, $e) Hide-AfSplash -Window ([System.Windows.Window]::GetWindow($sender)) })
+    $parts = $s.SplashParts
+    if ($s.Motion -and $parts) {
+        # Las marcas suben de adentro hacia afuera; la aguja entra torcida y se asienta al centro.
+        $order = @(2, 1, 0, 0, 1, 2)
+        for ($k = 0; $k -lt $parts.Bars.Count; $k++) {
+            Start-AfAnimation -Target $parts.Bars[$k].RenderTransform -Property ([System.Windows.Media.ScaleTransform]::ScaleYProperty) -From 0 -To 1 -DurationMs 460 -DelayMs (120 + 90 * $order[$k]) -Ease Out | Out-Null
+        }
+        Start-AfAnimation -Target $parts.Needle -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 200 -DelayMs 300 -Ease Out | Out-Null
+        $settle = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+        $settle.BeginTime = [TimeSpan]::FromMilliseconds(300)
+        foreach ($frame in @(@(-28, 0), @(14, 380), @(-6, 640), @(2, 840), @(0, 1000))) {
+            [void]$settle.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame($frame[0], [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds($frame[1])), (New-AfKeySpline -Ease InOut))))
+        }
+        $parts.Needle.RenderTransform.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $settle)
+        $name = $Window.FindName('SplashName')
+        $shift = New-Object System.Windows.Media.TranslateTransform(0, 12)
+        $name.RenderTransform = $shift
+        Start-AfAnimation -Target $name -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 520 -DelayMs 520 -Ease Out | Out-Null
+        Start-AfAnimation -Target $shift -Property ([System.Windows.Media.TranslateTransform]::YProperty) -From 12 -To 0 -DurationMs 620 -DelayMs 520 -Ease Out | Out-Null
+        Start-AfAnimation -Target $Window.FindName('SplashTag') -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 520 -DelayMs 760 -Ease Out | Out-Null
+        Start-AfAnimation -Target $Window.FindName('SplashVersion') -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 520 -DelayMs 900 -Ease Out | Out-Null
+    }
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds($(if ($s.Motion) { 2300 } else { 900 }))
+    $timer.Tag = $Window
+    $timer.Add_Tick({ param($sender, $e) $sender.Stop(); Hide-AfSplash -Window $sender.Tag })
+    $timer.Start()
+}
+
+function Hide-AfSplash {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    if ($s.SplashGone) { return }
+    $s.SplashGone = $true
+    $splash = $Window.FindName('Splash')
+    if (-not $s.Motion) { $splash.Visibility = 'Collapsed'; return }
+    $splash.IsHitTestVisible = $false
+    $zoom = New-Object System.Windows.Media.ScaleTransform(1, 1)
+    $content = $Window.FindName('SplashContent')
+    $content.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
+    $content.RenderTransform = $zoom
+    Start-AfAnimation -Target $zoom -Property ([System.Windows.Media.ScaleTransform]::ScaleXProperty) -To 1.04 -DurationMs 420 -Ease Out | Out-Null
+    Start-AfAnimation -Target $zoom -Property ([System.Windows.Media.ScaleTransform]::ScaleYProperty) -To 1.04 -DurationMs 420 -Ease Out | Out-Null
+    Start-AfAnimation -Target $splash -Property ([System.Windows.UIElement]::OpacityProperty) -To 0 -DurationMs 420 -Ease Out | Out-Null
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds(440)
+    $timer.Tag = $splash
+    $timer.Add_Tick({ param($sender, $e) $sender.Stop(); $sender.Tag.Visibility = 'Collapsed' })
+    $timer.Start()
+}
+
+# Barra lateral: solo iconos; al pasar el mouse se despliega sobre el contenido con nombres y números.
+function Set-AfRailOpen {
+    param([Parameter(Mandatory)]$Window, [bool]$Open)
+    $s = $Window.Tag
+    if ($s.RailOpen -eq $Open) { return }
+    $s.RailOpen = $Open
+    $motion = [bool]$s.Motion
+    Start-AfAnimation -Target $Window.FindName('Rail') -Property ([System.Windows.FrameworkElement]::WidthProperty) -To $(if ($Open) { 236 } else { 64 }) -DurationMs $(if ($Open) { 260 } else { 200 }) -Ease Out -Enabled $motion | Out-Null
+    Start-AfAnimation -Target $Window.FindName('RailShadow') -Property ([System.Windows.Media.Effects.DropShadowEffect]::OpacityProperty) -To $(if ($Open) { 0.55 } else { 0 }) -DurationMs 220 -Ease Out -Enabled $motion | Out-Null
+    if (-not $s.Nav) { return }
+    foreach ($ref in $s.Nav.Values) {
+        foreach ($element in $ref.Label, $ref.CountHost) {
+            Start-AfAnimation -Target $element -Property ([System.Windows.UIElement]::OpacityProperty) -To $(if ($Open) { 1 } else { 0 }) -DurationMs $(if ($Open) { 220 } else { 120 }) -DelayMs $(if ($Open) { 70 } else { 0 }) -Ease Out -Enabled $motion | Out-Null
+        }
+        Start-AfAnimation -Target $ref.Dot -Property ([System.Windows.UIElement]::OpacityProperty) -To $(if ($Open) { 0 } else { 1 }) -DurationMs 160 -Ease Out -Enabled $motion | Out-Null
+    }
+}
+
+function Initialize-AfRail {
+    param([Parameter(Mandatory)]$Window)
+    $rail = $Window.FindName('Rail')
+    $hover = New-Object System.Windows.Threading.DispatcherTimer
+    $hover.Interval = [TimeSpan]::FromMilliseconds(140)
+    $hover.Tag = $Window
+    $hover.Add_Tick({ param($sender, $e) $sender.Stop(); Set-AfRailOpen -Window $sender.Tag -Open $true })
+    $Window.Tag.RailHover = $hover
+    $rail.Add_MouseEnter({ param($sender, $e) [System.Windows.Window]::GetWindow($sender).Tag.RailHover.Start() })
+    $rail.Add_MouseLeave({ param($sender, $e)
+            $w = [System.Windows.Window]::GetWindow($sender)
+            $w.Tag.RailHover.Stop()
+            Set-AfRailOpen -Window $w -Open $false
+        })
+    Set-AfRailOpen -Window $Window -Open $false
+}
+
+# Resumen o lista. El pie (nota y botones) se esconde en el Resumen mientras no hay nada en curso: ahí el botón va en la tarjeta.
+function Set-AfView {
+    param([Parameter(Mandatory)]$Window, [ValidateSet('home', 'list')][string]$View)
+    $s = $Window.Tag
+    $changed = $s.View -ne $View
+    $s.View = $View
+    $homeScroll = $Window.FindName('HomeScroll')
+    $homeScroll.Visibility = if ($View -eq 'home') { 'Visible' } else { 'Collapsed' }
+    $Window.FindName('ListView').Visibility = if ($View -eq 'home') { 'Collapsed' } else { 'Visible' }
+    Update-AfFooterVisibility -Window $Window
+    if ($View -eq 'home' -and $changed) {
+        Update-AfHome -Window $Window
+        Update-AfLiveTiles -Window $Window
+        Start-AfAnimation -Target $homeScroll -Property ([System.Windows.UIElement]::OpacityProperty) -From 0 -To 1 -DurationMs 240 -Ease Out -Enabled ([bool]$s.Motion) | Out-Null
+    }
+}
+
+function Update-AfFooterVisibility {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $Window.FindName('Footer').Visibility = if ($s.View -eq 'home' -and $s.Phase -in 'scanning', 'ready') { 'Collapsed' } else { 'Visible' }
+}
+
+function Get-AfRadarAxes { 'gaming', 'network', 'security', 'storage', 'startup', 'energy' }
+
+function Initialize-AfHome {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    Set-AfIconData -Path $Window.FindName('HeroIcon') -Name 'gauge'
+    Set-AfIconData -Path $Window.FindName('ProfileIcon') -Name 'squares-four'
+    Set-AfIconData -Path $Window.FindName('HeroButtonIcon') -Name 'arrow-right'
+    Set-AfIconData -Path $Window.FindName('HeroNoteIcon') -Name 'shield-check'
+    $quick = $Window.FindName('Quick')
+    $quick.Children.Clear()
+    $s.QuickCards = @{}
+    foreach ($q in @(
+            @{ Id = 'hardware'; Icon = 'wrench'; Title = (T 'Diagnóstico'); Text = (T 'Disco, batería y memoria') }
+            @{ Id = 'windows'; Icon = 'windows-logo'; Title = (T 'Ajustes de Windows'); Text = (T 'Menú y Explorador') }
+            @{ Id = 'history'; Icon = 'clock-counter-clockwise'; Title = (T 'Historial'); Text = (T 'Deshacer cambios') }
+            @{ Id = 'rescan'; Icon = 'arrow-clockwise'; Title = (T 'Volver a analizar'); Text = (T 'Revisar otra vez') }
+        )) {
+        $card = New-AfQuickCard @q
+        [void]$quick.Children.Add($card)
+        $s.QuickCards[$q.Id] = $card
+    }
+    $live = $Window.FindName('Live')
+    $live.Children.Clear()
+    $s.LiveTiles = [ordered]@{}
+    foreach ($t in @(
+            @{ Key = 'Cpu'; Icon = 'cpu'; Label = 'CPU' }
+            @{ Key = 'Mem'; Icon = 'memory'; Label = (T 'Memoria') }
+            @{ Key = 'Disk'; Icon = 'hard-drives'; Label = (T 'Disco') }
+            @{ Key = 'Net'; Icon = 'wifi-high'; Label = (T 'Red') }
+        )) {
+        $tile = New-AfLiveTile -Icon $t.Icon -Label $t.Label
+        $tile.Spark.Tag = $t.Key
+        [void]$live.Children.Add($tile.Element)
+        $s.LiveTiles[$t.Key] = $tile
+    }
+    if (-not $s.LiveHistory) { $s.LiveHistory = @{ Cpu = New-Object System.Collections.ArrayList; Mem = New-Object System.Collections.ArrayList; Disk = New-Object System.Collections.ArrayList; Net = New-Object System.Collections.ArrayList } }
+    New-AfRadar -Window $Window
+    if (-not $s.HomeReady) {
+        $s.HomeReady = $true
+        $Window.FindName('HeroMeter').Add_SizeChanged({ param($sender, $e) Update-AfHeroLayout -Window ([System.Windows.Window]::GetWindow($sender)) })
+        $Window.FindName('HeroButton').Add_Click({ param($sender, $e) Set-AfFilter -Window ([System.Windows.Window]::GetWindow($sender)) -Filter 'all' })
+    }
+    Update-AfLiveTiles -Window $Window
+}
+
+function New-AfQuickCard {
+    param([string]$Id, [string]$Icon, [string]$Title, [string]$Text)
+    $card = New-Object System.Windows.Controls.Border
+    $card.SetResourceReference([System.Windows.FrameworkElement]::StyleProperty, 'Card')
+    $card.Margin = '6,0,6,0'
+    $card.Padding = '14,12,14,12'
+    $card.Cursor = 'Hand'
+    $card.Tag = $Id
+    [System.Windows.Automation.AutomationProperties]::SetName($card, $Title)
+    $dock = New-Object System.Windows.Controls.DockPanel
+    $badge = New-Object System.Windows.Controls.Border
+    $badge.Width = 34
+    $badge.Height = 34
+    $badge.CornerRadius = 9
+    $badge.BorderThickness = 1
+    $badge.Margin = '0,0,12,0'
+    $badge.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Raised')
+    $badge.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Line2')
+    $glyph = New-AfIcon -Name $Icon -Size 16 -Brush 'Text'
+    $glyph.HorizontalAlignment = 'Center'
+    $badge.Child = $glyph
+    [System.Windows.Controls.DockPanel]::SetDock($badge, 'Left')
+    [void]$dock.Children.Add($badge)
+    $texts = New-Object System.Windows.Controls.StackPanel
+    $texts.VerticalAlignment = 'Center'
+    $head = New-AfText -Text $Title -Size 13 -Brush 'Text' -Weight 'Medium'
+    $head.TextWrapping = 'NoWrap'
+    $head.TextTrimming = 'CharacterEllipsis'
+    [void]$texts.Children.Add($head)
+    $sub = New-AfText -Text $Text -Size 11.5 -Brush 'Text3'
+    $sub.Margin = '0,2,0,0'
+    $sub.TextWrapping = 'NoWrap'
+    $sub.TextTrimming = 'CharacterEllipsis'
+    [void]$texts.Children.Add($sub)
+    [void]$dock.Children.Add($texts)
+    $card.Child = $dock
+    $card.Add_MouseEnter({ param($sender, $e)
+            $sender.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Raised')
+            $sender.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Line2')
+        })
+    $card.Add_MouseLeave({ param($sender, $e)
+            $sender.ClearValue([System.Windows.Controls.Border]::BackgroundProperty)
+            $sender.ClearValue([System.Windows.Controls.Border]::BorderBrushProperty)
+        })
+    $card.Add_MouseLeftButtonUp({ param($sender, $e) Invoke-AfQuickAction -Window ([System.Windows.Window]::GetWindow($sender)) -Id $sender.Tag })
+    $card
+}
+
+function Invoke-AfQuickAction {
+    param([Parameter(Mandatory)]$Window, [string]$Id)
+    $s = $Window.Tag
+    switch ($Id) {
+        'history' { if ($s.Phase -in 'ready', 'done') { Show-AfHistory -Window $Window } }
+        'rescan' { if ($s.Phase -in 'ready', 'done') { Start-AfScan -Window $Window } }
+        default { Set-AfFilter -Window $Window -Filter $Id }
+    }
+}
+
+function New-AfLiveTile {
+    param([string]$Icon, [string]$Label)
+    $card = New-Object System.Windows.Controls.Border
+    $card.SetResourceReference([System.Windows.FrameworkElement]::StyleProperty, 'Card')
+    $card.Margin = '6,0,6,0'
+    $card.Padding = '16,14,16,12'
+    $stack = New-Object System.Windows.Controls.StackPanel
+    $head = New-Object System.Windows.Controls.DockPanel
+    $values = New-Object System.Windows.Controls.StackPanel
+    $values.Orientation = 'Horizontal'
+    [System.Windows.Controls.DockPanel]::SetDock($values, 'Right')
+    $value = New-AfText -Text '—' -Size 22 -Brush 'Text' -Display -Weight 'Medium'
+    $value.TextWrapping = 'NoWrap'
+    $unit = New-AfText -Text '' -Size 12 -Brush 'Text2'
+    $unit.Margin = '3,0,0,3'
+    $unit.VerticalAlignment = 'Bottom'
+    [void]$values.Children.Add($value)
+    [void]$values.Children.Add($unit)
+    [void]$head.Children.Add($values)
+    $name = New-Object System.Windows.Controls.StackPanel
+    $name.Orientation = 'Horizontal'
+    $name.VerticalAlignment = 'Center'
+    [void]$name.Children.Add((New-AfIcon -Name $Icon -Size 14 -Brush 'Text2'))
+    $caption = New-AfText -Text $Label -Size 12.5 -Brush 'Text2'
+    $caption.Margin = '8,0,0,0'
+    [void]$name.Children.Add($caption)
+    [void]$head.Children.Add($name)
+    [void]$stack.Children.Add($head)
+    $spark = New-Object System.Windows.Controls.Grid
+    $spark.Height = 44
+    $spark.Margin = '0,12,0,8'
+    $spark.Background = [System.Windows.Media.Brushes]::Transparent
+    $spark.ToolTip = ''
+    $area = New-Object System.Windows.Shapes.Polygon
+    $area.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'SparkFill')
+    $line = New-Object System.Windows.Shapes.Polyline
+    $line.StrokeThickness = 1.5
+    $line.StrokeLineJoin = 'Round'
+    $line.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Text')
+    $dot = New-Object System.Windows.Shapes.Ellipse
+    $dot.Width = 5
+    $dot.Height = 5
+    $dot.HorizontalAlignment = 'Left'
+    $dot.VerticalAlignment = 'Top'
+    $dot.Visibility = 'Collapsed'
+    $dot.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Text')
+    $base = New-Object System.Windows.Shapes.Rectangle
+    $base.Height = 1
+    $base.VerticalAlignment = 'Bottom'
+    $base.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Line')
+    foreach ($part in $base, $area, $line, $dot) { [void]$spark.Children.Add($part) }
+    $spark.Add_SizeChanged({ param($sender, $e) Update-AfLiveTiles -Window ([System.Windows.Window]::GetWindow($sender)) })
+    $spark.Add_ToolTipOpening({ param($sender, $e)
+            $w = [System.Windows.Window]::GetWindow($sender)
+            $sender.ToolTip = Get-AfLiveTip -Window $w -Key $sender.Tag
+            if (-not $sender.ToolTip) { $e.Handled = $true }
+        })
+    [void]$stack.Children.Add($spark)
+    $foot = New-AfText -Text ' ' -Size 11.5 -Brush 'Text3'
+    $foot.TextWrapping = 'NoWrap'
+    $foot.TextTrimming = 'CharacterEllipsis'
+    [void]$stack.Children.Add($foot)
+    $card.Child = $stack
+    [pscustomobject]@{ Element = $card; Value = $value; Unit = $unit; Spark = $spark; Area = $area; Line = $line; Dot = $dot; Foot = $foot }
+}
+
+# Velocidad de red en bits por segundo, como el Administrador de tareas.
+function Format-AfRate {
+    param([double]$BitsPerSecond)
+    $culture = Get-AfCulture
+    if ($BitsPerSecond -ge 1e6) { @(($BitsPerSecond / 1e6).ToString('N1', $culture), 'Mbps') } else { @(($BitsPerSecond / 1e3).ToString('N0', $culture), 'Kbps') }
+}
+
+function Get-AfLiveTip {
+    param([Parameter(Mandatory)]$Window, [string]$Key)
+    $values = @($Window.Tag.LiveHistory[$Key])
+    if ($values.Count -lt 2) { return $null }
+    $avg = ($values | Measure-Object -Average).Average
+    $max = ($values | Measure-Object -Maximum).Maximum
+    if ($Key -eq 'Net') {
+        $a = Format-AfRate -BitsPerSecond $avg
+        $m = Format-AfRate -BitsPerSecond $max
+        return (T 'Último minuto: promedio {0}, máximo {1}') -f ('{0} {1}' -f $a[0], $a[1]), ('{0} {1}' -f $m[0], $m[1])
+    }
+    (T 'Último minuto: promedio {0}, máximo {1}') -f ('{0:N0} %' -f $avg), ('{0:N0} %' -f $max)
+}
+
+# Lee la última muestra del trabajo en segundo plano y la guarda; solo dibuja si el Resumen está a la vista.
+function Receive-AfLiveSample {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    $sync = $s.LiveSync
+    if (-not $sync -or $sync.Seq -eq $s.LiveSeq) { return }
+    $s.LiveSeq = $sync.Seq
+    $sample = $sync.Sample
+    if (-not $sample -or -not $s.LiveHistory) { return }
+    $s.LiveLast = $sample
+    $map = @{ Cpu = $sample.Cpu; Disk = $sample.Disk; Net = $sample.Down }
+    if ($sample.MemTotal) { $map.Mem = 100 * $sample.MemUsed / $sample.MemTotal }
+    foreach ($key in $map.Keys) {
+        if ($null -eq $map[$key]) { continue }
+        $list = $s.LiveHistory[$key]
+        [void]$list.Add([double]$map[$key])
+        while ($list.Count -gt 60) { $list.RemoveAt(0) }
+    }
+    if ($s.View -eq 'home' -and $Window.WindowState -ne 'Minimized') { Update-AfLiveTiles -Window $Window }
+}
+
+function Update-AfLiveTiles {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    if (-not $s.LiveTiles) { return }
+    $last = $s.LiveLast
+    $inv = $s.Inventory
+    $culture = Get-AfCulture
+    foreach ($key in @($s.LiveTiles.Keys)) {
+        $tile = $s.LiveTiles[$key]
+        $history = @($s.LiveHistory[$key])
+        $max = 100
+        $foot = ''
+        $has = $history.Count -gt 0
+        switch ($key) {
+            'Cpu' {
+                if ($has) { $tile.Value.Text = '{0:N0}' -f $history[-1]; $tile.Unit.Text = '%' }
+                if ($inv -and $inv.Cpu) { $foot = Format-AfCpuName -Name $inv.Cpu.Name }
+            }
+            'Mem' {
+                if ($has) { $tile.Value.Text = '{0:N0}' -f $history[-1]; $tile.Unit.Text = '%' }
+                if ($last -and $last.MemTotal) { $foot = (T '{0} de {1} GB en uso') -f ($last.MemUsed / 1GB).ToString('N1', $culture), ($last.MemTotal / 1GB).ToString('N1', $culture) }
+            }
+            'Disk' {
+                if ($has) { $tile.Value.Text = '{0:N0}' -f $history[-1]; $tile.Unit.Text = '%' }
+                $foot = (T 'Tiempo activo')
+                if ($inv -and $inv.Storage) { $foot = (T 'Tiempo activo · {0} GB libres') -f $inv.Storage.FreeGB }
+            }
+            'Net' {
+                if ($has) {
+                    $rate = Format-AfRate -BitsPerSecond $history[-1]
+                    $tile.Value.Text = $rate[0]
+                    $tile.Unit.Text = $rate[1]
+                    # La escala sigue lo más alto del último minuto, con un piso de 1 Mbps para que el ruido no llene la gráfica.
+                    $max = [math]::Max(1e6, ($history | Measure-Object -Maximum).Maximum * 1.15)
+                }
+                if ($last -and $null -ne $last.Up) { $up = Format-AfRate -BitsPerSecond $last.Up; $foot = (T 'Descarga · subida {0} {1}') -f $up[0], $up[1] } else { $foot = (T 'Descarga') }
+            }
+        }
+        if (-not $has -and $s.LiveSync -and $s.LiveSync.Failed -and $s.LiveSync.Failed.Contains($key)) { $foot = (T 'Windows no da este dato') }
+        $tile.Foot.Text = if ($foot) { $foot } else { ' ' }
+        Set-AfSpark -Tile $tile -Values $history -Max $max
+    }
+}
+
+function Set-AfSpark {
+    param([Parameter(Mandatory)]$Tile, [double[]]$Values = @(), [double]$Max = 100)
+    $width = $Tile.Spark.ActualWidth
+    $height = $Tile.Spark.ActualHeight
+    if ($width -le 0 -or $Values.Count -lt 2) { $Tile.Line.Points = $null; $Tile.Area.Points = $null; $Tile.Dot.Visibility = 'Collapsed'; return }
+    $step = $width / 59
+    $points = New-Object System.Windows.Media.PointCollection
+    $n = $Values.Count
+    for ($i = 0; $i -lt $n; $i++) {
+        $x = $width - ($n - 1 - $i) * $step
+        $y = $height - 1 - ([math]::Min($Max, [math]::Max(0.0, $Values[$i])) / $Max) * ($height - 5)
+        $points.Add((New-Object System.Windows.Point($x, $y)))
+    }
+    $Tile.Line.Points = $points
+    $area = $points.Clone()
+    $area.Add((New-Object System.Windows.Point($width, $height)))
+    $area.Add((New-Object System.Windows.Point(($width - ($n - 1) * $step), $height)))
+    $Tile.Area.Points = $area
+    $lastPoint = $points[$n - 1]
+    $Tile.Dot.Margin = New-Object System.Windows.Thickness(($lastPoint.X - 2.5), ($lastPoint.Y - 2.5), 0, 0)
+    $Tile.Dot.Visibility = 'Visible'
+}
+
+# Medidor grande del Resumen: 48 barras que suben de izquierda a derecha; la última es roja, como la marca final del medidor.
+function Update-AfHeroLayout {
+    param([Parameter(Mandatory)]$Window)
+    $meter = $Window.FindName('HeroMeter')
+    $width = $meter.ActualWidth
+    $height = $meter.ActualHeight
+    if ($width -le 0 -or $height -le 0) { return }
+    $n = 48
+    $gap = if ($width / $n -ge 7) { 3 } else { 2 }
+    $barWidth = ($width - $gap * ($n - 1)) / $n
+    foreach ($canvasName in 'HeroBars', 'HeroLit') {
+        $canvas = $Window.FindName($canvasName)
+        if ($canvas.Children.Count -ne $n) {
+            $canvas.Children.Clear()
+            for ($i = 0; $i -lt $n; $i++) {
+                $bar = New-Object System.Windows.Shapes.Rectangle
+                $bar.RadiusX = 1.5
+                $bar.RadiusY = 1.5
+                $brush = if ($i -eq $n - 1) { 'Red' } elseif ($canvasName -eq 'HeroLit') { 'BarLit' } else { 'Tick' }
+                $bar.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, $brush)
+                if ($canvasName -eq 'HeroLit') { $bar.Opacity = 0 }
+                [void]$canvas.Children.Add($bar)
+            }
+        }
+        for ($i = 0; $i -lt $n; $i++) {
+            $bar = $canvas.Children[$i]
+            $bar.Width = [math]::Max(1.0, $barWidth)
+            $bar.Height = 10 + ($height - 22) * [math]::Pow($i / ($n - 1), 1.35)
+            [System.Windows.Controls.Canvas]::SetLeft($bar, $i * ($barWidth + $gap))
+            [System.Windows.Controls.Canvas]::SetTop($bar, $height - $bar.Height)
+        }
+    }
+    $Window.Tag.HeroStep = $barWidth + $gap
+    $Window.Tag.HeroBarWidth = $barWidth
+    $Window.FindName('HeroNeedleLine').Height = $height - 6
+    [System.Windows.Controls.Canvas]::SetTop($Window.FindName('HeroNeedleHead'), 3 - $height)
+    $needle = $Window.FindName('HeroNeedleTransform')
+    $needle.BeginAnimation([System.Windows.Media.TranslateTransform]::XProperty, $null)
+    $needle.X = Get-AfHeroNeedleX -Window $Window -Fraction ([double]$Window.Tag.HeroF)
+    Set-AfHeroFraction -Window $Window -Fraction ([double]$Window.Tag.HeroF) -Motion $false -Force
+}
+
+function Get-AfHeroNeedleX {
+    param([Parameter(Mandatory)]$Window, [double]$Fraction)
+    $index = [math]::Round([math]::Max(0.0, [math]::Min(1.0, $Fraction)) * 47)
+    $index * [double]$Window.Tag.HeroStep + [double]$Window.Tag.HeroBarWidth / 2 - 1
+}
+
+# Enciende las barras hasta la fracción, una tras otra; la aguja va al mismo lugar.
+function Set-AfHeroFraction {
+    param([Parameter(Mandatory)]$Window, [double]$Fraction, [bool]$Motion = $false, [switch]$Force, [switch]$HideNeedle)
+    $s = $Window.Tag
+    $previous = [double]$s.HeroF
+    $s.HeroF = $Fraction
+    $lit = $Window.FindName('HeroLit').Children
+    if (-not $lit.Count) { return }
+    $upTo = [math]::Round([math]::Max(0.0, [math]::Min(1.0, $Fraction)) * 47)
+    $from = [math]::Round([math]::Max(0.0, [math]::Min(1.0, $previous)) * 47)
+    for ($i = 0; $i -lt $lit.Count; $i++) {
+        $target = if ($i -le $upTo -and $Fraction -gt 0) { 1 } else { 0 }
+        $bar = $lit[$i]
+        if (-not $Force -and $bar.Opacity -eq $target) { continue }
+        $delay = if ($Motion) { [math]::Abs($i - $from) * 14 } else { 0 }
+        Start-AfAnimation -Target $bar -Property ([System.Windows.UIElement]::OpacityProperty) -To $target -DurationMs 220 -DelayMs $delay -Ease Out -Enabled $Motion | Out-Null
+    }
+    $needle = $Window.FindName('HeroNeedle')
+    Start-AfAnimation -Target $needle -Property ([System.Windows.UIElement]::OpacityProperty) -To $(if ($HideNeedle) { 0 } else { 1 }) -DurationMs 260 -Ease Out -Enabled $Motion | Out-Null
+    if ($s.HeroStep) {
+        Start-AfAnimation -Target $Window.FindName('HeroNeedleTransform') -Property ([System.Windows.Media.TranslateTransform]::XProperty) -To (Get-AfHeroNeedleX -Window $Window -Fraction $Fraction) -DurationMs 700 -Ease Out -Enabled $Motion | Out-Null
+    }
+}
+
+# Al quedar afinada, una ola recorre las barras encendidas.
+function Start-AfHeroCelebration {
+    param([Parameter(Mandatory)]$Window)
+    $i = 0
+    foreach ($bar in $Window.FindName('HeroLit').Children) {
+        $wave = New-Object System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames
+        $wave.BeginTime = [TimeSpan]::FromMilliseconds($i * 12)
+        $wave.Duration = New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(520))
+        [void]$wave.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame(0.3, [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds(180)), (New-AfKeySpline -Ease Out))))
+        [void]$wave.KeyFrames.Add((New-Object System.Windows.Media.Animation.SplineDoubleKeyFrame(1, [System.Windows.Media.Animation.KeyTime]::FromTimeSpan([TimeSpan]::FromMilliseconds(520)), (New-AfKeySpline -Ease Out))))
+        $bar.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $wave)
+        $i++
+    }
+}
+
+# Número grande que cuenta hasta su valor.
+function Set-AfCountUp {
+    param([Parameter(Mandatory)]$Block, [int]$To, [bool]$Motion = $false)
+    $from = 0
+    [void][int]::TryParse($Block.Text, [ref]$from)
+    if ($Block.Tag -is [System.Windows.Threading.DispatcherTimer]) { $Block.Tag.Stop() }
+    if (-not $Motion -or $from -eq $To) { $Block.Text = [string]$To; return }
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds(16)
+    $timer.Tag = @{ Block = $Block; From = $from; To = $To; Start = Get-Date }
+    $timer.Add_Tick({ param($sender, $e)
+            $st = $sender.Tag
+            $t = [math]::Min(1.0, ((Get-Date) - $st.Start).TotalMilliseconds / 500)
+            $st.Block.Text = [string][math]::Round($st.From + ($st.To - $st.From) * (1 - [math]::Pow(1 - $t, 3)))
+            if ($t -ge 1) { $sender.Stop() }
+        })
+    $Block.Tag = $timer
+    $timer.Start()
+}
+
+# Texto plano de un TextBlock armado con Runs (el título y el resumen de la lista).
+function Get-AfBlockText {
+    param([Parameter(Mandatory)]$Block)
+    $runs = @($Block.Inlines | Where-Object { $_ -is [System.Windows.Documents.Run] })
+    if ($runs.Count) { ($runs | ForEach-Object { $_.Text }) -join '' } else { $Block.Text }
+}
+
+# Tarjeta principal, perfil y acciones según la fase y los resultados.
+function Update-AfHome {
+    param([Parameter(Mandatory)]$Window)
+    $s = $Window.Tag
+    if (-not $s.HomeReady) { return }
+    $motion = [bool]$s.Motion -and $s.View -eq 'home'
+    $results = @(Get-AfEffectiveResults -Window $Window)
+    $button = $Window.FindName('HeroButton')
+    if ($s.Phase -eq 'scanning') {
+        $total = @(Get-AfCategories).Count
+        $done = [int]$s.Revealed
+        Set-AfCountUp -Block $Window.FindName('HeroNumber') -To $results.Count -Motion $motion
+        $Window.FindName('HeroUnit').Text = (T 'revisados')
+        $Window.FindName('HeroTitle').Text = (T 'Analizando esta PC')
+        $Window.FindName('HeroText').Text = if ($done -gt 0) { (T '{0} de {1} categorías revisadas') -f $done, $total } elseif ($s.PartPhrase) { $s.PartPhrase } else { (T 'Revisando el hardware…') }
+        $button.Opacity = 0
+        $button.IsHitTestVisible = $false
+        Set-AfHeroFraction -Window $Window -Fraction ($done / [math]::Max(1.0, $total)) -Motion $motion -HideNeedle
+    } else {
+        $summary = Get-AfSummary -Results $results
+        $verdict = Get-AfVerdict -Results $results
+        Set-AfCountUp -Block $Window.FindName('HeroNumber') -To $summary.Ok -Motion $motion
+        $Window.FindName('HeroUnit').Text = (T 'en orden')
+        if ($s.Phase -eq 'ready') {
+            $title = if ($verdict.Celebrate) { (T 'Esta PC está afinada') } elseif ($summary.Ready -eq 1) { (T '1 cambio listo') } elseif ($summary.Ready -gt 1) { (T '{0} cambios listos') -f $summary.Ready } else { $verdict.Title }
+            $text = switch ($summary.Manual) { 0 { (T 'Nada para hacer a mano.') } 1 { (T '1 para hacer a mano.') } default { (T '{0} para hacer a mano.') -f $summary.Manual } }
+            if ($verdict.Title -eq (T 'Revisa el disco')) { $title = $verdict.Title }
+        } else {
+            $title = $Window.FindName('Title').Text
+            $text = Get-AfBlockText -Block $Window.FindName('Summary')
+        }
+        $Window.FindName('HeroTitle').Text = $title
+        $Window.FindName('HeroText').Text = $text
+        $Window.FindName('HeroButtonText').Text = if ($summary.Ready -gt 0 -and $s.Phase -eq 'ready') { (T 'Revisar y optimizar') } else { (T 'Ver el detalle') }
+        $button.IsHitTestVisible = $true
+        Start-AfAnimation -Target $button -Property ([System.Windows.UIElement]::OpacityProperty) -To 1 -DurationMs 300 -Ease Out -Enabled $motion | Out-Null
+        Set-AfHeroFraction -Window $Window -Fraction (Get-AfScore -Results $results) -Motion $motion
+    }
+    foreach ($id in 'history', 'rescan') {
+        $card = $s.QuickCards[$id]
+        if (-not $card) { continue }
+        $on = $s.Phase -in 'ready', 'done'
+        $card.IsHitTestVisible = $on
+        $card.Opacity = if ($on) { 1 } else { 0.45 }
+    }
+    Update-AfRadar -Window $Window -Results $results -Motion $motion
+}
+
+# Perfil por categoría: qué parte de lo que Afina ajusta en cada una ya está en orden (la misma cuenta que la aguja).
+function New-AfRadar {
+    param([Parameter(Mandatory)]$Window)
+    $canvas = $Window.FindName('Radar')
+    $canvas.Children.Clear()
+    $axes = @(Get-AfRadarAxes)
+    $cx = 150
+    $cy = 96
+    $r = 64
+    $vertex = { param($k, $f) New-Object System.Windows.Point(($cx + $r * $f * [math]::Cos((-90 + 60 * $k) * [math]::PI / 180)), ($cy + $r * $f * [math]::Sin((-90 + 60 * $k) * [math]::PI / 180))) }
+    foreach ($f in 0.25, 0.5, 0.75, 1) {
+        $ring = New-Object System.Windows.Shapes.Polygon
+        $ring.StrokeThickness = 1
+        $ring.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, $(if ($f -eq 1) { 'Line2' } else { 'Line' }))
+        for ($k = 0; $k -lt 6; $k++) { $ring.Points.Add((& $vertex $k $f)) }
+        [void]$canvas.Children.Add($ring)
+    }
+    for ($k = 0; $k -lt 6; $k++) {
+        $spoke = New-Object System.Windows.Shapes.Line
+        $end = & $vertex $k 1
+        $spoke.X1 = $cx
+        $spoke.Y1 = $cy
+        $spoke.X2 = $end.X
+        $spoke.Y2 = $end.Y
+        $spoke.StrokeThickness = 1
+        $spoke.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Line')
+        [void]$canvas.Children.Add($spoke)
+    }
+    $shape = New-Object System.Windows.Shapes.Polygon
+    $shape.StrokeThickness = 1.5
+    $shape.StrokeLineJoin = 'Round'
+    $shape.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'RadarFill')
+    $shape.SetResourceReference([System.Windows.Shapes.Shape]::StrokeProperty, 'Text')
+    [void]$canvas.Children.Add($shape)
+    $dots = @()
+    $labels = @()
+    $categories = @(Get-AfCategories)
+    for ($k = 0; $k -lt 6; $k++) {
+        $dot = New-Object System.Windows.Shapes.Ellipse
+        $dot.Width = 7
+        $dot.Height = 7
+        $dot.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Text')
+        [void]$canvas.Children.Add($dot)
+        $dots += $dot
+        $category = @($categories | Where-Object { $_.Id -eq $axes[$k] })[0]
+        $label = New-AfText -Text $category.Name -Size 11.5 -Brush 'Text2'
+        $label.TextWrapping = 'NoWrap'
+        $label.Cursor = 'Hand'
+        $label.Tag = $category.Id
+        $label.ToolTip = ''
+        $label.Add_MouseLeftButtonUp({ param($sender, $e) Set-AfFilter -Window ([System.Windows.Window]::GetWindow($sender)) -Filter $sender.Tag })
+        $label.Add_MouseEnter({ param($sender, $e) $sender.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, 'Text') })
+        $label.Add_MouseLeave({ param($sender, $e) $sender.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, 'Text2') })
+        $label.Measure((New-Object System.Windows.Size([double]::PositiveInfinity, [double]::PositiveInfinity)))
+        $at = & $vertex $k 1.2
+        $angle = -90 + 60 * $k
+        $left = if ($angle -eq -90 -or $angle -eq 90) { $at.X - $label.DesiredSize.Width / 2 } elseif ([math]::Cos($angle * [math]::PI / 180) -gt 0) { $at.X } else { $at.X - $label.DesiredSize.Width }
+        $top = if ($angle -eq -90) { $at.Y - $label.DesiredSize.Height + 2 } elseif ($angle -eq 90) { $at.Y - 2 } else { $at.Y - $label.DesiredSize.Height / 2 }
+        [System.Windows.Controls.Canvas]::SetLeft($label, $left)
+        [System.Windows.Controls.Canvas]::SetTop($label, $top)
+        [void]$canvas.Children.Add($label)
+        $labels += $label
+    }
+    $Window.Tag.Radar = @{ Shape = $shape; Dots = $dots; Labels = $labels; Values = @(0, 0, 0, 0, 0, 0); Center = (New-Object System.Windows.Point($cx, $cy)); Radius = $r }
+    Set-AfRadarShape -Window $Window -Values @(0, 0, 0, 0, 0, 0)
+}
+
+function Set-AfRadarShape {
+    param([Parameter(Mandatory)]$Window, [double[]]$Values)
+    $radar = $Window.Tag.Radar
+    $points = New-Object System.Windows.Media.PointCollection
+    for ($k = 0; $k -lt 6; $k++) {
+        $f = [math]::Max(0.04, $Values[$k])
+        $angle = (-90 + 60 * $k) * [math]::PI / 180
+        $p = New-Object System.Windows.Point(($radar.Center.X + $radar.Radius * $f * [math]::Cos($angle)), ($radar.Center.Y + $radar.Radius * $f * [math]::Sin($angle)))
+        $points.Add($p)
+        [System.Windows.Controls.Canvas]::SetLeft($radar.Dots[$k], $p.X - 3.5)
+        [System.Windows.Controls.Canvas]::SetTop($radar.Dots[$k], $p.Y - 3.5)
+    }
+    $radar.Shape.Points = $points
+    $radar.Values = $Values
+}
+
+function Update-AfRadar {
+    param([Parameter(Mandatory)]$Window, [object[]]$Results = @(), [bool]$Motion = $false)
+    $s = $Window.Tag
+    $radar = $s.Radar
+    if (-not $radar) { return }
+    $axes = @(Get-AfRadarAxes)
+    $target = New-Object double[] 6
+    for ($k = 0; $k -lt 6; $k++) {
+        $id = $axes[$k]
+        $mine = @($Results | Where-Object { $_.Check.Category -eq $id })
+        $counted = @($mine | Where-Object { Test-AfCountsForScore $_ })
+        $seen = $mine.Count -gt 0 -or $s.Phase -ne 'scanning'
+        $target[$k] = if (-not $seen) { 0 } else { Get-AfScore -Results $mine }
+        $pending = Get-AfPendingCount -Category $id -Results $Results
+        $radar.Dots[$k].SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, $(if ($pending -gt 0) { 'Red' } else { 'Text' }))
+        $ok = @($counted | Where-Object { $_.Detection.State -eq 'Ok' }).Count
+        $radar.Labels[$k].ToolTip = if ($counted.Count) { (T '{0} de {1} en orden') -f $ok, $counted.Count } elseif ($seen) { (T 'Nada para ajustar') } else { $null }
+    }
+    if ($radar.Timer) { $radar.Timer.Stop() }
+    if (-not $Motion) { Set-AfRadarShape -Window $Window -Values $target; return }
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds(16)
+    $timer.Tag = @{ Window = $Window; From = @($radar.Values); To = $target; Start = Get-Date }
+    $timer.Add_Tick({ param($sender, $e)
+            $st = $sender.Tag
+            $t = [math]::Min(1.0, ((Get-Date) - $st.Start).TotalMilliseconds / 520)
+            $ease = 1 - [math]::Pow(1 - $t, 3)
+            $now = New-Object double[] 6
+            for ($k = 0; $k -lt 6; $k++) { $now[$k] = $st.From[$k] + ($st.To[$k] - $st.From[$k]) * $ease }
+            Set-AfRadarShape -Window $st.Window -Values $now
+            if ($t -ge 1) { $sender.Stop() }
+        })
+    $radar.Timer = $timer
+    $timer.Start()
 }
 
 # Confirmación, aplicando, listo y deshacer (diseño, sección 8, pasos 4 a 8).
@@ -7540,6 +8487,7 @@ function Update-AfProgressView {
     $effective = @(Get-AfEffectiveResults -Window $Window)
     Set-AfNeedle -Window $Window -Fraction (Get-AfScore -Results $effective) -Motion $Motion -DurationMs 460 -Ease InOut
     Update-AfNavCounts -Window $Window -Results $effective -Motion $Motion
+    Update-AfHome -Window $Window
 }
 
 function Set-AfProgress {
@@ -8058,8 +9006,9 @@ function Set-AfHistoryLineBusy {
 function Show-AfHistory {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
-    if ($s.Phase -ne 'history' -and $s.Phase -ne 'undoing') { $s.PhaseBeforeHistory = $s.Phase }
+    if ($s.Phase -ne 'history' -and $s.Phase -ne 'undoing') { $s.PhaseBeforeHistory = $s.Phase; $s.ViewBeforeHistory = $s.View }
     $s.Phase = 'history'
+    Set-AfView -Window $Window -View 'list'
     $Window.FindName('Title').Text = (T 'Historial')
     $Window.FindName('GaugeArea').Visibility = 'Collapsed'
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
@@ -8103,6 +9052,8 @@ function Hide-AfHistory {
     Update-AfEmptyState -Window $Window
     # Lo que llegó mientras se veía el Historial se evalúa ahora.
     Update-AfVerdict -Window $Window -Celebrate
+    # Abierto desde el Resumen, Volver regresa al Resumen.
+    if ($s.ViewBeforeHistory -eq 'home') { $s.ViewBeforeHistory = $null; Set-AfView -Window $Window -View 'home' }
 }
 
 # El análisis corre en un runspace aparte y solo encola eventos; la ventana los lee con un DispatcherTimer.
@@ -8180,6 +9131,74 @@ function Stop-AfScanWorker {
     try { [void]$Worker.PowerShell.BeginStop($null, $null) } catch { }
 }
 
+# Estadísticas en vivo: un runspace liviano mide CPU, memoria, disco y red cada segundo y deja la última muestra en $Sync.
+# Los contadores de Windows tardan en abrir la primera vez (hasta varios segundos): por eso no van en el hilo de la ventana.
+function Start-AfLiveWorker {
+    param([Parameter(Mandatory)]$Sync)
+    $runspace = [runspacefactory]::CreateRunspace()
+    $runspace.Open()
+    $runspace.SessionStateProxy.SetVariable('AfLive', $Sync)
+    $ps = [powershell]::Create()
+    $ps.Runspace = $runspace
+    [void]$ps.AddScript({
+            $failed = New-Object System.Collections.ArrayList
+            $open = { param($category, $counter) try { $c = New-Object System.Diagnostics.PerformanceCounter($category, $counter, '_Total'); [void]$c.NextValue(); $c } catch { $null } }
+            $info = $null
+            try { Add-Type -AssemblyName Microsoft.VisualBasic; $info = New-Object Microsoft.VisualBasic.Devices.ComputerInfo } catch { [void]$failed.Add('Mem') }
+            $cpu = $null
+            $disk = $null
+            $opened = $false
+            $last = $null
+            while (-not $AfLive.Stop) {
+                $sample = @{}
+                if ($info) { try { $total = [double]$info.TotalPhysicalMemory; $sample.MemTotal = $total; $sample.MemUsed = $total - [double]$info.AvailablePhysicalMemory } catch { } }
+                if ($cpu) { try { $sample.Cpu = [math]::Min(100.0, [math]::Max(0.0, $cpu.NextValue())) } catch { } }
+                if ($disk) { try { $sample.Disk = [math]::Min(100.0, [math]::Max(0.0, 100 - $disk.NextValue())) } catch { } }
+                # Solo adaptadores físicos conectados: los virtuales (Hyper-V, VPN) repiten el mismo tráfico.
+                $rx = 0
+                $tx = 0
+                try {
+                    foreach ($nic in [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces()) {
+                        if ($nic.OperationalStatus -ne 'Up' -or $nic.NetworkInterfaceType -in 'Loopback', 'Tunnel') { continue }
+                        if ($nic.Description -match 'Hyper-V|Virtual|VMware|VirtualBox|TAP-|Loopback|WAN Miniport|Bluetooth') { continue }
+                        $stats = $nic.GetIPStatistics()
+                        $rx += $stats.BytesReceived
+                        $tx += $stats.BytesSent
+                    }
+                    $now = [datetime]::UtcNow
+                    if ($last) {
+                        $seconds = ($now - $last.At).TotalSeconds
+                        if ($seconds -gt 0) { $sample.Down = [math]::Max(0.0, ($rx - $last.Rx) * 8 / $seconds); $sample.Up = [math]::Max(0.0, ($tx - $last.Tx) * 8 / $seconds) }
+                    }
+                    $last = @{ At = $now; Rx = $rx; Tx = $tx }
+                } catch { }
+                $AfLive.Sample = $sample
+                $AfLive.Seq = [int]$AfLive.Seq + 1
+                if (-not $opened) {
+                    $opened = $true
+                    $cpu = & $open 'Processor Information' '% Processor Utility'
+                    if (-not $cpu) { $cpu = & $open 'Processor' '% Processor Time' }
+                    if (-not $cpu) { [void]$failed.Add('Cpu') }
+                    $disk = & $open 'PhysicalDisk' '% Idle Time'
+                    if (-not $disk) { [void]$failed.Add('Disk') }
+                    $AfLive.Failed = $failed.ToArray()
+                    continue
+                }
+                Start-Sleep -Milliseconds 1000
+            }
+        })
+    $handle = $ps.BeginInvoke()
+    [pscustomobject]@{ PowerShell = $ps; Runspace = $runspace; Handle = $handle; Sync = $Sync }
+}
+
+function Stop-AfLiveWorker {
+    param($Worker)
+    if (-not $Worker) { return }
+    $Worker.Sync.Stop = $true
+    # Sin esperar: si justo está abriendo los contadores, Stop() trabaría el cierre de la ventana unos segundos.
+    try { [void]$Worker.PowerShell.BeginStop($null, $null) } catch { }
+}
+
 function Get-AfPartPhrase {
     param([string]$Part)
     switch ($Part) {
@@ -8223,7 +9242,10 @@ function Start-AfScan {
     $s.Filter = 'all'
     $s.StartedAt = Get-Date
     $s.Celebrated = $false
-    Set-AfNavActive -Window $Window -Filter 'all' -Motion $false
+    $s.Revealed = 0
+    $s.PartPhrase = $null
+    Set-AfNavActive -Window $Window -Filter 'home' -Motion $false
+    Set-AfView -Window $Window -View 'home'
     $Window.FindName('Groups').Children.Clear()
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
     Show-AfSkeleton -Window $Window
@@ -8243,6 +9265,8 @@ function Start-AfScan {
     Start-AfAnimation -Target $needle -Property ([System.Windows.UIElement]::OpacityProperty) -To 0.4 -DurationMs 300 -DelayMs $(if ($s.Motion) { 1500 } else { 0 }) -Ease Out -Enabled $true | Out-Null
     $s.Queue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
     $s.Worker = Start-AfScanWorker -Code $Global:AfCode -Queue $s.Queue -Language (Get-AfLanguage)
+    Update-AfFooterVisibility -Window $Window
+    Update-AfHome -Window $Window
 }
 
 function Update-AfAsyncResult {
@@ -8280,6 +9304,7 @@ function Complete-AfScan {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
     $s.Phase = 'ready'
+    Update-AfFooterVisibility -Window $Window
     $results = @($s.Results)
     $groups = $Window.FindName('Groups')
     foreach ($ghost in @($groups.Children | Where-Object { "$($_.Tag)" -like 'skeleton*' })) { $groups.Children.Remove($ghost) }
@@ -8319,8 +9344,14 @@ function Receive-AfEvents {
     if (-not $s.Queue) { return }
     while ($s.Queue.TryDequeue([ref]$item)) {
         switch ($item.Type) {
-            'Part' { if ($s.Phase -eq 'scanning') { $Window.FindName('Summary').Text = Get-AfPartPhrase -Part $item.Part } }
-            'Inventory' { $s.Inventory = $item.Inventory; Set-AfPcCard -Window $Window -Inventory $item.Inventory -Animate $s.Motion }
+            'Part' {
+                if ($s.Phase -eq 'scanning') {
+                    $s.PartPhrase = Get-AfPartPhrase -Part $item.Part
+                    $Window.FindName('Summary').Text = $s.PartPhrase
+                    Update-AfHome -Window $Window
+                }
+            }
+            'Inventory' { $s.Inventory = $item.Inventory; Set-AfPcCard -Window $Window -Inventory $item.Inventory -Animate $s.Motion; Update-AfLiveTiles -Window $Window }
             'Category' { $s.Pending.Enqueue($item) }
             'Done' { $s.ScanDone = $true }
             'Async' {
@@ -8346,6 +9377,8 @@ function Receive-AfEvents {
             $category = Get-AfCategories | Where-Object Id -eq $next.Category
             Add-AfCategoryGroup -Window $Window -Category $category -Results $next.Results -Motion $s.Motion
             Update-AfNavCounts -Window $Window -Results @($s.Results) -Only @($next.Category) -Motion $s.Motion
+            $s.Revealed = [int]$s.Revealed + 1
+            Update-AfHome -Window $Window
             $s.LastReveal = Get-Date
             $revealed = $true
         }
@@ -8391,6 +9424,8 @@ function Initialize-AfPrefs {
                         Set-AfLanguage -Language $chosen
                         Set-AfStaticTexts -Window $w
                         if ($state.Nav) { foreach ($entry in Get-AfNavEntries) { if ($state.Nav[$entry.Id]) { $state.Nav[$entry.Id].Label.Text = $entry.Name } } }
+                        # Las tarjetas del Resumen se arman en código: se rehacen en el idioma nuevo.
+                        Initialize-AfHome -Window $w
                         if ($state.Phase -in 'ready', 'done', 'history') { Start-AfScan -Window $w }
                     }
                 }
@@ -8453,6 +9488,14 @@ function Show-AfApp {
     $window = New-AfWindow -Theme (Resolve-AfTheme -Setting $Config.Theme -User $user)
     $s = Get-AfUiState -Window $window
     $s.Motion = Test-AfMotionEnabled -Setting $Config.Motion
+    # La pantalla de entrada no va en la captura automática (-Snapshot).
+    if ($Snapshot) { $window.FindName('Splash').Visibility = 'Collapsed'; $s.SplashGone = $true } else { Initialize-AfSplash -Window $window -Motion $s.Motion }
+    if ($s.Motion) {
+        $pulse = New-Object System.Windows.Media.Animation.DoubleAnimation(1, 0.3, (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(1100))))
+        $pulse.AutoReverse = $true
+        $pulse.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+        $window.FindName('LiveDot').BeginAnimation([System.Windows.UIElement]::OpacityProperty, $pulse)
+    }
     $s.Config = $Config
     $s.ConfigPath = $ConfigPath
     $s.Snapshot = $Snapshot
@@ -8518,13 +9561,17 @@ function Show-AfApp {
     $timer = New-Object System.Windows.Threading.DispatcherTimer
     $timer.Interval = [TimeSpan]::FromMilliseconds(50)
     $timer.Tag = $window
-    $timer.Add_Tick({ param($sender, $e) Receive-AfEvents -Window $sender.Tag })
+    $timer.Add_Tick({ param($sender, $e) Receive-AfEvents -Window $sender.Tag; Receive-AfLiveSample -Window $sender.Tag })
     $s.Timer = $timer
+    $s.LiveSync = [hashtable]::Synchronized(@{ Stop = $false; Seq = 0; Sample = $null; Failed = $null })
+    $s.LiveWorker = Start-AfLiveWorker -Sync $s.LiveSync
     $window.Add_ContentRendered({ param($sender, $e)
+            # Primero arranca el análisis (abre su runspace en este hilo) y después la entrada, para que su animación no se trabe.
             Start-AfScan -Window $sender
+            Start-AfSplash -Window $sender
             if ($sender.Tag.OnShown) { & $sender.Tag.OnShown $sender }
         })
-    $window.Add_Closed({ param($sender, $e) $sender.Tag.Timer.Stop(); Stop-AfScanWorker -Worker $sender.Tag.Worker })
+    $window.Add_Closed({ param($sender, $e) $sender.Tag.Timer.Stop(); Stop-AfScanWorker -Worker $sender.Tag.Worker; Stop-AfLiveWorker -Worker $sender.Tag.LiveWorker })
     $timer.Start()
     [void]$window.ShowDialog()
 }

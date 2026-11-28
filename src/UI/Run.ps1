@@ -41,7 +41,10 @@ function Start-AfScan {
     $s.Filter = 'all'
     $s.StartedAt = Get-Date
     $s.Celebrated = $false
-    Set-AfNavActive -Window $Window -Filter 'all' -Motion $false
+    $s.Revealed = 0
+    $s.PartPhrase = $null
+    Set-AfNavActive -Window $Window -Filter 'home' -Motion $false
+    Set-AfView -Window $Window -View 'home'
     $Window.FindName('Groups').Children.Clear()
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
     Show-AfSkeleton -Window $Window
@@ -61,6 +64,8 @@ function Start-AfScan {
     Start-AfAnimation -Target $needle -Property ([System.Windows.UIElement]::OpacityProperty) -To 0.4 -DurationMs 300 -DelayMs $(if ($s.Motion) { 1500 } else { 0 }) -Ease Out -Enabled $true | Out-Null
     $s.Queue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
     $s.Worker = Start-AfScanWorker -Code $Global:AfCode -Queue $s.Queue -Language (Get-AfLanguage)
+    Update-AfFooterVisibility -Window $Window
+    Update-AfHome -Window $Window
 }
 
 function Update-AfAsyncResult {
@@ -98,6 +103,7 @@ function Complete-AfScan {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
     $s.Phase = 'ready'
+    Update-AfFooterVisibility -Window $Window
     $results = @($s.Results)
     $groups = $Window.FindName('Groups')
     foreach ($ghost in @($groups.Children | Where-Object { "$($_.Tag)" -like 'skeleton*' })) { $groups.Children.Remove($ghost) }
@@ -137,8 +143,14 @@ function Receive-AfEvents {
     if (-not $s.Queue) { return }
     while ($s.Queue.TryDequeue([ref]$item)) {
         switch ($item.Type) {
-            'Part' { if ($s.Phase -eq 'scanning') { $Window.FindName('Summary').Text = Get-AfPartPhrase -Part $item.Part } }
-            'Inventory' { $s.Inventory = $item.Inventory; Set-AfPcCard -Window $Window -Inventory $item.Inventory -Animate $s.Motion }
+            'Part' {
+                if ($s.Phase -eq 'scanning') {
+                    $s.PartPhrase = Get-AfPartPhrase -Part $item.Part
+                    $Window.FindName('Summary').Text = $s.PartPhrase
+                    Update-AfHome -Window $Window
+                }
+            }
+            'Inventory' { $s.Inventory = $item.Inventory; Set-AfPcCard -Window $Window -Inventory $item.Inventory -Animate $s.Motion; Update-AfLiveTiles -Window $Window }
             'Category' { $s.Pending.Enqueue($item) }
             'Done' { $s.ScanDone = $true }
             'Async' {
@@ -164,6 +176,8 @@ function Receive-AfEvents {
             $category = Get-AfCategories | Where-Object Id -eq $next.Category
             Add-AfCategoryGroup -Window $Window -Category $category -Results $next.Results -Motion $s.Motion
             Update-AfNavCounts -Window $Window -Results @($s.Results) -Only @($next.Category) -Motion $s.Motion
+            $s.Revealed = [int]$s.Revealed + 1
+            Update-AfHome -Window $Window
             $s.LastReveal = Get-Date
             $revealed = $true
         }
@@ -209,6 +223,8 @@ function Initialize-AfPrefs {
                         Set-AfLanguage -Language $chosen
                         Set-AfStaticTexts -Window $w
                         if ($state.Nav) { foreach ($entry in Get-AfNavEntries) { if ($state.Nav[$entry.Id]) { $state.Nav[$entry.Id].Label.Text = $entry.Name } } }
+                        # Las tarjetas del Resumen se arman en código: se rehacen en el idioma nuevo.
+                        Initialize-AfHome -Window $w
                         if ($state.Phase -in 'ready', 'done', 'history') { Start-AfScan -Window $w }
                     }
                 }
@@ -271,6 +287,14 @@ function Show-AfApp {
     $window = New-AfWindow -Theme (Resolve-AfTheme -Setting $Config.Theme -User $user)
     $s = Get-AfUiState -Window $window
     $s.Motion = Test-AfMotionEnabled -Setting $Config.Motion
+    # La pantalla de entrada no va en la captura automática (-Snapshot).
+    if ($Snapshot) { $window.FindName('Splash').Visibility = 'Collapsed'; $s.SplashGone = $true } else { Initialize-AfSplash -Window $window -Motion $s.Motion }
+    if ($s.Motion) {
+        $pulse = New-Object System.Windows.Media.Animation.DoubleAnimation(1, 0.3, (New-Object System.Windows.Duration([TimeSpan]::FromMilliseconds(1100))))
+        $pulse.AutoReverse = $true
+        $pulse.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+        $window.FindName('LiveDot').BeginAnimation([System.Windows.UIElement]::OpacityProperty, $pulse)
+    }
     $s.Config = $Config
     $s.ConfigPath = $ConfigPath
     $s.Snapshot = $Snapshot
@@ -336,13 +360,17 @@ function Show-AfApp {
     $timer = New-Object System.Windows.Threading.DispatcherTimer
     $timer.Interval = [TimeSpan]::FromMilliseconds(50)
     $timer.Tag = $window
-    $timer.Add_Tick({ param($sender, $e) Receive-AfEvents -Window $sender.Tag })
+    $timer.Add_Tick({ param($sender, $e) Receive-AfEvents -Window $sender.Tag; Receive-AfLiveSample -Window $sender.Tag })
     $s.Timer = $timer
+    $s.LiveSync = [hashtable]::Synchronized(@{ Stop = $false; Seq = 0; Sample = $null; Failed = $null })
+    $s.LiveWorker = Start-AfLiveWorker -Sync $s.LiveSync
     $window.Add_ContentRendered({ param($sender, $e)
+            # Primero arranca el análisis (abre su runspace en este hilo) y después la entrada, para que su animación no se trabe.
             Start-AfScan -Window $sender
+            Start-AfSplash -Window $sender
             if ($sender.Tag.OnShown) { & $sender.Tag.OnShown $sender }
         })
-    $window.Add_Closed({ param($sender, $e) $sender.Tag.Timer.Stop(); Stop-AfScanWorker -Worker $sender.Tag.Worker })
+    $window.Add_Closed({ param($sender, $e) $sender.Tag.Timer.Stop(); Stop-AfScanWorker -Worker $sender.Tag.Worker; Stop-AfLiveWorker -Worker $sender.Tag.LiveWorker })
     $timer.Start()
     [void]$window.ShowDialog()
 }

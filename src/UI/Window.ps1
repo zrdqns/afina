@@ -223,6 +223,26 @@
       </Setter>
     </Style>
 
+    <Style x:Key="Card" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="14"/>
+    </Style>
+
+    <Style x:Key="SectionLabel" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+      <Setter Property="Margin" Value="2,24,0,10"/>
+    </Style>
+
+    <Style x:Key="CardTitle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+      <Setter Property="Margin" Value="8,0,0,0"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
     <Style TargetType="ScrollBar">
       <Setter Property="Width" Value="12"/>
       <Setter Property="Template">
@@ -255,8 +275,8 @@
     <Border x:Name="TitleBar" Grid.Row="0" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
       <Grid>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
-          <Border Width="2" Height="16" CornerRadius="1" Background="{DynamicResource Red}"/>
-          <TextBlock Text="Afina" Margin="10,0,0,1" FontFamily="{DynamicResource DisplayFont}" FontSize="15" FontWeight="Medium" VerticalAlignment="Center"/>
+          <Border x:Name="TitleMarkHost" Width="18" Height="18"/>
+          <TextBlock Text="Afina" Margin="9,0,0,1" FontFamily="{DynamicResource DisplayFont}" FontSize="15" FontWeight="Medium" VerticalAlignment="Center"/>
           <TextBlock x:Name="Version" Margin="10,0,0,0" FontFamily="{DynamicResource DisplayFont}" FontSize="12" Foreground="{DynamicResource Text3}" VerticalAlignment="Center"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -276,30 +296,11 @@
 
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="244"/>
+        <ColumnDefinition Width="64"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
 
-      <Border Grid.Column="0" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="14,22,14,12">
-        <DockPanel LastChildFill="True">
-          <Grid DockPanel.Dock="Top" Margin="8,0,8,0">
-            <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
-            <StackPanel x:Name="PcCard" Opacity="0">
-              <TextBlock x:Name="PcName" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
-              <TextBlock x:Name="PcKind" FontSize="12" Foreground="{DynamicResource Text3}" Margin="0,3,0,0"/>
-              <StackPanel x:Name="Specs" Margin="0,16,0,0"/>
-            </StackPanel>
-          </Grid>
-          <ScrollViewer x:Name="NavScroll" VerticalScrollBarVisibility="Auto" Focusable="False"><Grid x:Name="NavHost" Margin="0,24,0,0">
-            <StackPanel x:Name="Nav"/>
-            <Border x:Name="NavIndicator" Width="2" Height="32" CornerRadius="2" Background="{DynamicResource Red}" HorizontalAlignment="Left" VerticalAlignment="Top">
-              <Border.RenderTransform><TranslateTransform x:Name="NavIndicatorTransform"/></Border.RenderTransform>
-            </Border>
-          </Grid></ScrollViewer>
-        </DockPanel>
-      </Border>
-
-      <Grid Grid.Column="1">
+      <Grid x:Name="ListView" Grid.Column="1" Visibility="Collapsed">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="*"/>
@@ -347,9 +348,121 @@
           </StackPanel>
         </Border>
       </Grid>
+
+      <ScrollViewer x:Name="HomeScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel Margin="28,22,28,26">
+          <Grid MinHeight="62">
+            <StackPanel x:Name="PcSkeleton" Visibility="Collapsed"/>
+            <StackPanel x:Name="PcCard" Opacity="0">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="PcName" FontFamily="{DynamicResource DisplayFont}" FontSize="26" FontWeight="Light" TextTrimming="CharacterEllipsis"/>
+                <TextBlock x:Name="PcKind" FontSize="12.5" Foreground="{DynamicResource Text3}" Margin="12,0,0,5" VerticalAlignment="Bottom"/>
+              </StackPanel>
+              <WrapPanel x:Name="Specs" Margin="0,10,0,0"/>
+            </StackPanel>
+          </Grid>
+          <Grid Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="1.8*"/>
+              <ColumnDefinition Width="14"/>
+              <ColumnDefinition Width="*" MinWidth="250"/>
+            </Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Card}" Padding="22,18,22,18">
+              <Grid>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                  <Path x:Name="HeroIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text2}" VerticalAlignment="Center"/>
+                  <TextBlock Text="Afinación" Style="{StaticResource CardTitle}"/>
+                </StackPanel>
+                <Grid Grid.Row="1" Margin="0,12,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" MinWidth="168"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Bottom" Margin="0,0,24,0">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock x:Name="HeroNumber" Text="0" FontFamily="{DynamicResource DisplayFont}" FontSize="60" FontWeight="Light"/>
+                      <TextBlock x:Name="HeroUnit" Margin="10,0,0,14" FontSize="13" Foreground="{DynamicResource Text2}" VerticalAlignment="Bottom"/>
+                    </StackPanel>
+                    <TextBlock x:Name="HeroTitle" Margin="0,2,0,0" FontFamily="{DynamicResource DisplayFont}" FontSize="17" FontWeight="Medium" TextWrapping="Wrap" MaxWidth="230" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="HeroText" Margin="0,5,0,0" FontSize="12.5" Foreground="{DynamicResource Text2}" TextWrapping="Wrap" MaxWidth="230" HorizontalAlignment="Left"/>
+                  </StackPanel>
+                  <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="*"/>
+                      <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid x:Name="HeroMeter" MinHeight="104" Margin="0,8,0,0">
+                      <Canvas x:Name="HeroBars"/>
+                      <Canvas x:Name="HeroLit" IsHitTestVisible="False"/>
+                      <Canvas x:Name="HeroNeedle" Width="2" HorizontalAlignment="Left" VerticalAlignment="Bottom" Height="0" Opacity="0" IsHitTestVisible="False">
+                        <Canvas.RenderTransform><TranslateTransform x:Name="HeroNeedleTransform"/></Canvas.RenderTransform>
+                        <Rectangle x:Name="HeroNeedleLine" Width="2" RadiusX="1" RadiusY="1" Fill="{DynamicResource Red}" Canvas.Bottom="-4"/>
+                        <Polygon x:Name="HeroNeedleHead" Points="-3,0 5,0 1,6" Fill="{DynamicResource Red}"/>
+                      </Canvas>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,8,0,0">
+                      <TextBlock Text="Desafinado" FontSize="11.5" Foreground="{DynamicResource Text3}"/>
+                      <TextBlock Text="Afinado" FontSize="11.5" Foreground="{DynamicResource Text3}" HorizontalAlignment="Right"/>
+                    </Grid>
+                  </Grid>
+                </Grid>
+                <DockPanel Grid.Row="2" Margin="0,18,0,0">
+                  <Button x:Name="HeroButton" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Opacity="0">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock x:Name="HeroButtonText" Text="Ver el detalle" VerticalAlignment="Center"/>
+                      <Path x:Name="HeroButtonIcon" Width="13" Height="13" Margin="8,0,0,0" Stretch="Uniform" Fill="White" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <Path x:Name="HeroNoteIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text3}" VerticalAlignment="Center"/>
+                    <TextBlock Text="Se crea un punto de restauración antes de aplicar" Margin="8,0,0,0" FontSize="12" Foreground="{DynamicResource Text3}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                  </StackPanel>
+                </DockPanel>
+              </Grid>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="18,18,18,12">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                  <Path x:Name="ProfileIcon" Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource Text2}" VerticalAlignment="Center"/>
+                  <TextBlock Text="Perfil por categoría" Style="{StaticResource CardTitle}"/>
+                </StackPanel>
+                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="0,6,0,0" VerticalAlignment="Center">
+                  <Canvas x:Name="Radar" Width="300" Height="192"/>
+                </Viewbox>
+              </DockPanel>
+            </Border>
+          </Grid>
+          <TextBlock Text="Acciones rápidas" Style="{StaticResource SectionLabel}"/>
+          <UniformGrid x:Name="Quick" Rows="1" Margin="-6,0,-6,0"/>
+          <DockPanel Margin="2,24,0,10">
+            <TextBlock x:Name="LiveNote" DockPanel.Dock="Right" Text="Se actualiza cada segundo" FontSize="11.5" Foreground="{DynamicResource Text3}" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal">
+              <Ellipse x:Name="LiveDot" Width="6" Height="6" Fill="{DynamicResource Red}" VerticalAlignment="Center" Margin="0,1,8,0"/>
+              <TextBlock Text="En vivo" FontSize="12.5" Foreground="{DynamicResource Text2}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </DockPanel>
+          <UniformGrid x:Name="Live" Rows="1" Margin="-6,0,-6,0"/>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Border x:Name="Rail" Grid.Column="0" Grid.ColumnSpan="2" Width="64" HorizontalAlignment="Left" Panel.ZIndex="5" ClipToBounds="True"
+              Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="12,16,12,12">
+        <Border.Effect><DropShadowEffect x:Name="RailShadow" BlurRadius="28" ShadowDepth="0" Color="Black" Opacity="0"/></Border.Effect>
+        <ScrollViewer x:Name="NavScroll" VerticalScrollBarVisibility="Hidden" Focusable="False"><Grid x:Name="NavHost">
+          <StackPanel x:Name="Nav"/>
+          <Border x:Name="NavIndicator" Width="2" Height="32" CornerRadius="2" Background="{DynamicResource Red}" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Border.RenderTransform><TranslateTransform x:Name="NavIndicatorTransform"/></Border.RenderTransform>
+          </Border>
+        </Grid></ScrollViewer>
+      </Border>
     </Grid>
 
-    <Border Grid.Row="2" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="32,14">
+    <Border x:Name="Footer" Grid.Row="2" Background="{DynamicResource Rail}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="32,14">
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*"/>
@@ -395,6 +508,15 @@
         </StackPanel>
       </Grid>
     </Border>
+
+    <Grid x:Name="Splash" Grid.RowSpan="3" Panel.ZIndex="100" Background="{DynamicResource Bg}">
+      <StackPanel x:Name="SplashContent" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,24">
+        <Border x:Name="SplashMarkHost" Width="84" Height="84" HorizontalAlignment="Center"/>
+        <TextBlock x:Name="SplashName" Text="Afina" FontFamily="{DynamicResource DisplayFont}" FontSize="46" FontWeight="Light" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+        <TextBlock x:Name="SplashTag" Text="Análisis y optimización de Windows" FontSize="13" Foreground="{DynamicResource Text2}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+      </StackPanel>
+      <TextBlock x:Name="SplashVersion" FontFamily="{DynamicResource DisplayFont}" FontSize="12" Foreground="{DynamicResource Text3}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,26"/>
+    </Grid>
 
     <Popup x:Name="Prefs" StaysOpen="False" Placement="Bottom" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-200" VerticalOffset="4">
       <Border Background="{DynamicResource Panel}" CornerRadius="12" BorderBrush="{DynamicResource Line2}" BorderThickness="1" Padding="14" Width="280">
@@ -461,6 +583,14 @@ function Set-AfTheme {
     [void]$halo.GradientStops.Add((New-Object System.Windows.Media.GradientStop($red, 0)))
     [void]$halo.GradientStops.Add((New-Object System.Windows.Media.GradientStop([System.Windows.Media.Color]::FromArgb(0, $red.R, $red.G, $red.B), 1)))
     $dictionary.Add('NeedleHaloBrush', $halo)
+    # Resumen: tarjetas con un degradado muy leve, barras encendidas y rellenos de las gráficas, del color del texto del tema.
+    $text = $dictionary['Text'].Color
+    $fade = { param($top, $bottom) $b = New-Object System.Windows.Media.LinearGradientBrush; $b.StartPoint = '0,0'; $b.EndPoint = '0,1'; [void]$b.GradientStops.Add((New-Object System.Windows.Media.GradientStop($top, 0))); [void]$b.GradientStops.Add((New-Object System.Windows.Media.GradientStop($bottom, 1))); $b }
+    $alpha = { param($a) [System.Windows.Media.Color]::FromArgb($a, $text.R, $text.G, $text.B) }
+    $dictionary.Add('CardBg', $(if ($Theme -eq 'Black') { & $fade $dictionary['Raised'].Color $dictionary['Panel'].Color } else { $dictionary['Panel'] }))
+    $dictionary.Add('BarLit', (& $fade (& $alpha 235) (& $alpha 110)))
+    $dictionary.Add('SparkFill', (& $fade (& $alpha 46) (& $alpha 0)))
+    $dictionary.Add('RadarFill', (New-Object System.Windows.Media.SolidColorBrush((& $alpha 28))))
     $Window.Resources.MergedDictionaries.Clear()
     $Window.Resources.MergedDictionaries.Add($dictionary)
     $Window.Tag = if ($Window.Tag -is [hashtable]) { $Window.Tag } else { @{} }
@@ -505,6 +635,8 @@ function New-AfWindow {
     Set-AfIconData -Path $window.FindName('NoteIcon') -Name 'shield-check'
     Set-AfIconData -Path $window.FindName('GhostIcon') -Name 'arrow-clockwise'
     $window.FindName('Version').Text = 'v' + (Get-AfVersion)
+    $window.FindName('TitleMarkHost').Child = New-AfLogoMark -Size 18
+    try { $window.Icon = New-AfLogoImage } catch { }
     # Mover la lista a mano pausa el seguimiento del cambio en curso; la píldora lo retoma.
     $scroll = $window.FindName('ListScroll')
     $scroll.Add_PreviewMouseWheel({ param($sender, $e) Suspend-AfFollow -Window ([System.Windows.Window]::GetWindow($sender)) })

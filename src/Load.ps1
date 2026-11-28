@@ -59,6 +59,7 @@ $Global:AfFiles = @(
     'UI\Window.ps1'
     'UI\Rows.ps1'
     'UI\App.ps1'
+    'UI\Home.ps1'
     'UI\Apply.ps1'
     'UI\History.ps1'
     'UI\Worker.ps1'

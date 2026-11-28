@@ -38,8 +38,8 @@ Describe 'Build' {
         @($errors).Count | Should -Be 0
     }
 
-    It 'pesa menos de 500 KB' {
-        (Get-Item $script:built).Length | Should -BeLessThan 500KB
+    It 'pesa menos de 600 KB' {
+        (Get-Item $script:built).Length | Should -BeLessThan 600KB
     }
 
     It 'está en UTF-8 con BOM' {

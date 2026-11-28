@@ -120,6 +120,7 @@ function Update-AfProgressView {
     $effective = @(Get-AfEffectiveResults -Window $Window)
     Set-AfNeedle -Window $Window -Fraction (Get-AfScore -Results $effective) -Motion $Motion -DurationMs 460 -Ease InOut
     Update-AfNavCounts -Window $Window -Results $effective -Motion $Motion
+    Update-AfHome -Window $Window
 }
 
 function Set-AfProgress {

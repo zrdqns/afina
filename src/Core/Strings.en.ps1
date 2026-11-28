@@ -390,6 +390,34 @@ ya estaba al día==>it was already up to date
 Ya estaba al día.==>It was already up to date.
 ya no está en la PC; se reinstala desde la Microsoft Store==>it's no longer on the PC; reinstall it from the Microsoft Store
 # Interfaz
+Perfil por categoría==>Profile by category
+Acciones rápidas==>Quick actions
+Se actualiza cada segundo==>Updates every second
+En vivo==>Live
+Análisis y optimización de Windows==>Windows analysis and optimization
+Ver el detalle==>See the details
+Resumen==>Overview
+Disco, batería y memoria==>Disk, battery and memory
+Menú y Explorador==>Menu and File Explorer
+Deshacer cambios==>Undo changes
+Revisar otra vez==>Check again
+Memoria==>Memory
+Último minuto: promedio {0}, máximo {1}==>Last minute: average {0}, peak {1}
+{0} de {1} GB en uso==>{0} of {1} GB in use
+Tiempo activo==>Active time
+Tiempo activo · {0} GB libres==>Active time · {0} GB free
+Descarga · subida {0} {1}==>Download · upload {0} {1}
+Descarga==>Download
+Windows no da este dato==>Windows doesn't report this
+Nada para hacer a mano.==>Nothing to do by hand.
+1 para hacer a mano.==>1 to do by hand.
+{0} para hacer a mano.==>{0} to do by hand.
+en orden==>in order
+revisados==>checked
+Revisar y optimizar==>Review and optimize
+{0} de {1} en orden==>{0} of {1} in order
+Nada para ajustar==>Nothing to adjust
+{0} de {1} categorías revisadas==>{0} of {1} categories checked
 , {0} para hacer a mano y {1} en orden.==>, {0} to do by hand and {1} all good.
 , un canal==>, single channel
 {0} {1} GB, {2} GB libres==>{0} {1} GB, {2} GB free

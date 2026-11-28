@@ -138,8 +138,9 @@ function Set-AfHistoryLineBusy {
 function Show-AfHistory {
     param([Parameter(Mandatory)]$Window)
     $s = $Window.Tag
-    if ($s.Phase -ne 'history' -and $s.Phase -ne 'undoing') { $s.PhaseBeforeHistory = $s.Phase }
+    if ($s.Phase -ne 'history' -and $s.Phase -ne 'undoing') { $s.PhaseBeforeHistory = $s.Phase; $s.ViewBeforeHistory = $s.View }
     $s.Phase = 'history'
+    Set-AfView -Window $Window -View 'list'
     $Window.FindName('Title').Text = (T 'Historial')
     $Window.FindName('GaugeArea').Visibility = 'Collapsed'
     $Window.FindName('PanelBorder').Visibility = 'Collapsed'
@@ -183,4 +184,6 @@ function Hide-AfHistory {
     Update-AfEmptyState -Window $Window
     # Lo que llegó mientras se veía el Historial se evalúa ahora.
     Update-AfVerdict -Window $Window -Celebrate
+    # Abierto desde el Resumen, Volver regresa al Resumen.
+    if ($s.ViewBeforeHistory -eq 'home') { $s.ViewBeforeHistory = $null; Set-AfView -Window $Window -View 'home' }
 }
