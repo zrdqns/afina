@@ -1,0 +1,31 @@
+<# <!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Afina</title>
+<style>
+html, body { margin: 0; background: #0c0c0d; }
+.page { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #0c0c0d; color: #ececee; font: 16px/1.55 "Segoe UI", system-ui, sans-serif; }
+.box { max-width: 560px; padding: 32px; }
+h1 { margin: 0 0 6px; font-size: 44px; font-weight: 600; letter-spacing: -0.5px; }
+h1 span { color: #e5484d; }
+p { margin: 0 0 18px; color: #a1a1a8; }
+code { display: block; margin: 0 0 18px; padding: 14px 16px; border: 1px solid #2a2a2e; border-radius: 10px; background: #141416; color: #ececee; font: 15px Consolas, monospace; user-select: all; }
+.en { font-size: 14px; color: #77777e; }
+a { color: #ececee; }
+</style>
+</head>
+<body>
+<div class="page"><div class="box">
+<h1>Afina<span>.</span></h1>
+<p>Analiza Windows y lo deja afinado para juegos y rendimiento. Abre PowerShell como administrador y pega:</p>
+<code>irm zrdqns.github.io/afina | iex</code>
+<p class="en">Scans Windows and tunes it for gaming and performance. Open PowerShell as administrator and paste the line above.</p>
+<p><a href="https://github.com/zrdqns/afina">Afina en GitHub</a></p>
+</div></div>
+</body>
+</html><!--
+#>
+irm https://raw.githubusercontent.com/zrdqns/afina/main/dist/Afina.ps1 | iex
+<# --> #>
